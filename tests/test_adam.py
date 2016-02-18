@@ -1,8 +1,7 @@
 from adam.adam import *
 
-def test_identical_assets_have_different_id():
+def test_asset_can_be_retrieved():
     storage = AssetStorage()
     a = Asset()
-    b = Asset()
-    storage.add(a, b)
-    assert(a.id != b.id)
+    storage['key'] = a
+    assert storage['key'] == a

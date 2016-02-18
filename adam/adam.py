@@ -1,12 +1,12 @@
 class AssetStorage:
     def __init__(self):
-        self.assets = []
+        self.assets = {}
         
-    def add(self, *assets):
-        for asset in assets:
-            asset_count = len(self.assets)
-            asset.id = asset_count
-            self.assets.append(asset)
+    def __setitem__(self, id, asset):
+        self.assets[id] = asset
+        
+    def __getitem__(self, id):
+        return self.assets[id]
         
 class Asset:
     def __init__(self):
