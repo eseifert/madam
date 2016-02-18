@@ -28,6 +28,7 @@ class WavReader:
     def read(self, file_path):
         asset = Asset()
         with wave.open(file_path, 'rb') as wave_file:
+            asset.mime_type = 'audio/wav'
             asset.channels = wave_file.getnchannels()
             asset.framerate = wave_file.getframerate()
         return asset
