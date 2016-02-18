@@ -37,3 +37,9 @@ def test_deleting_unkown_key_raises_exception():
     storage = AssetStorage()
     with pytest.raises(KeyError):
         del storage['key']
+
+def test_create_asset_from_wav():
+    reader = WavReader()
+    asset = reader.read('tests/16-bit-mono.wav')
+    assert asset.framerate == 48000
+    assert asset.channels == 1
