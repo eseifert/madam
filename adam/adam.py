@@ -1,4 +1,5 @@
 import collections
+import wave
 
 class AssetStorage:
     def __init__(self):
@@ -22,3 +23,11 @@ class AssetStorage:
 class Asset:
     def __init__(self):
         pass
+
+class WavReader:
+    def read(self, file_path):
+        asset = Asset()
+        with wave.open(file_path, 'rb') as wave_file:
+            asset.channels = wave_file.getnchannels()
+            asset.framerate = wave_file.getframerate()
+        return asset
