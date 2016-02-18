@@ -44,3 +44,4 @@ def test_create_asset_from_wav():
     assert asset.mime_type == 'audio/wav'
     assert asset.framerate == 48000
     assert asset.channels == 1
+    assert asset.essence != None
