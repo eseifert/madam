@@ -1,3 +1,5 @@
+import pytest
+
 from adam.adam import *
 
 def test_contains_asset():
@@ -30,3 +32,8 @@ def test_asset_is_deleted():
     storage['key'] = a
     del storage['key']
     assert 'key' not in storage
+
+def test_deleting_unkown_key_raises_exception():
+    storage = AssetStorage()
+    with pytest.raises(KeyError):
+        del storage['key']
