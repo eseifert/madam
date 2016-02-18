@@ -23,4 +23,10 @@ def test_asset_is_versioned():
     assert len(versions) == 2
     assert versions[0] == a
     assert versions[1] == updated_a
-    
+
+def test_asset_is_deleted():
+    storage = AssetStorage()
+    a = Asset()
+    storage['key'] = a
+    del storage['key']
+    assert 'key' not in storage
