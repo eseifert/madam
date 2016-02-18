@@ -7,6 +7,9 @@ class AssetStorage:
         
     def __getitem__(self, id):
         return self.assets[id]
+    
+    def __contains__(self, id):
+        return id in self.assets
         
 class Asset:
     def __init__(self):
