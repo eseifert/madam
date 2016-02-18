@@ -31,4 +31,5 @@ class WavReader:
             asset.mime_type = 'audio/wav'
             asset.channels = wave_file.getnchannels()
             asset.framerate = wave_file.getframerate()
+            asset.essence = wave_file.readframes(wave_file.getnframes())
         return asset
