@@ -13,6 +13,9 @@ class AssetStorage:
     def __contains__(self, id):
         return id in self.assets
     
+    def __delitem__(self, key):
+        del self.assets[key]
+    
     def versions_of(self, id):
         return self.assets[id]
         
