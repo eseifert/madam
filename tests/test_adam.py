@@ -45,3 +45,9 @@ def test_create_asset_from_wav():
     assert asset.framerate == 48000
     assert asset.channels == 1
     assert asset.essence != None
+    
+def test_create_asset_from_mp3():
+    reader = Mp3Reader()
+    asset = reader.read('tests/64kbits.mp3')
+    assert asset.mime_type == 'audio/mpeg'
+    assert asset.essence != None
