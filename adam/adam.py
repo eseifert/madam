@@ -1,4 +1,5 @@
 import collections
+import taglib
 import wave
 
 class AssetStorage:
@@ -32,4 +33,13 @@ class WavReader:
             asset.channels = wave_file.getnchannels()
             asset.framerate = wave_file.getframerate()
             asset.essence = wave_file.readframes(wave_file.getnframes())
+        return asset
+
+class Mp3Reader:
+    def read(self, file_path):
+        asset = Asset()
+        mp3 = taglib.File(file_path)
+        asset.mime_type = 'audio/mpeg'
+        with open(file_path, 'rb') as mp3_file:
+            asset.essence = mp3_file.read()
         return asset
