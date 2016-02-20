@@ -1,5 +1,8 @@
 import collections
+import os
+import shutil
 import taglib
+import tempfile
 import wave
 
 class AssetStorage:
@@ -38,8 +41,17 @@ class WavReader:
 class Mp3Reader:
     def read(self, file_path):
         asset = Asset()
-        mp3 = taglib.File(file_path)
         asset.mime_type = 'audio/mpeg'
-        with open(file_path, 'rb') as mp3_file:
-            asset.essence = mp3_file.read()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            filename = os.path.basename(file_path)
+            copy_path = os.path.join(temp_dir, filename)
+            shutil.copyfile(file_path, copy_path)
+        
+            mp3 = taglib.File(copy_path)
+            mp3.tags.clear()
+            mp3.save()
+            
+            with open(copy_path, 'rb') as mp3_file:
+                asset.essence = mp3_file.read()
         return asset
