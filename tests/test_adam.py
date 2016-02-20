@@ -48,6 +48,11 @@ def test_create_asset_from_wav():
     
 def test_create_asset_from_mp3():
     reader = Mp3Reader()
-    asset = reader.read('tests/64kbits.mp3')
+    mp3_file_path = 'tests/64kbits.mp3'
+    asset = reader.read(mp3_file_path)
     assert asset.mime_type == 'audio/mpeg'
     assert asset.essence != None
+
+    # Assert that essence was stripped from metadata
+    with open(mp3_file_path, 'rb') as mp3_file:
+        assert asset.essence != mp3_file.read()
