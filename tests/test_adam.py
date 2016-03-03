@@ -82,3 +82,7 @@ def test_mp3_reader_does_not_change_file():
 def test_asset_has_mime_type():
     a = Asset()
     assert hasattr(a, 'mime_type')
+
+def test_asset_has_essence():
+    asset = Asset()
+    assert hasattr(asset, 'essence')
