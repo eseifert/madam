@@ -43,7 +43,21 @@ class Asset:
             return other.__dict__ == self.__dict__
         return False
 
-class WavReader:
+class AssetReaderRegistry(type):
+    def __init__(cls, name, bases, dict):
+        super(AssetReaderRegistry, cls).__init__(name, bases, dict)
+        if not hasattr(cls, 'delegate_reader_classes'):
+            cls.delegate_reader_classes = []
+        else:
+            cls.delegate_reader_classes.append(cls)
+
+class AssetReader(metaclass = AssetReaderRegistry):
+    def read(self, file_path):
+        reader_class = self.delegate_reader_classes[0]
+        reader = reader_class()
+        return reader.read(file_path)
+
+class WavReader(AssetReader):
     def read(self, file_path):
         asset = Asset()
         with wave.open(file_path, 'rb') as wave_file:
