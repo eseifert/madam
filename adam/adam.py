@@ -23,6 +23,15 @@ class AssetStorage:
     
     def versions_of(self, id):
         return self.assets[id]
+    
+    def get(self, **kwargs):
+        matches = []
+        for asset_versions in self.assets.values():
+            for asset in asset_versions:
+                for key,value in kwargs.items():
+                    if hasattr(asset, key) and getattr(asset, key) == value:
+                        matches.append(asset)
+        return matches
         
 class Asset:
     def __init__(self):
