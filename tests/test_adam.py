@@ -56,3 +56,13 @@ def test_create_asset_from_mp3():
     # Assert that essence was stripped from metadata
     with open(mp3_file_path, 'rb') as mp3_file:
         assert asset.essence != mp3_file.read()
+
+def test_mp3_reader_does_not_change_file():
+    mp3_file_path = 'tests/64kbits.mp3'
+    with open(mp3_file_path, 'rb') as mp3_file:
+        expected_data = mp3_file.read()
+    reader = Mp3Reader()
+    reader.read(mp3_file_path)
+    with open(mp3_file_path, 'rb') as mp3_file:
+        actual_data = mp3_file.read()
+    assert expected_data == actual_data
