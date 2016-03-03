@@ -36,6 +36,14 @@ def test_asset_is_deleted(storage):
 def test_search_asset(storage):
     assets_with_1s_duration = storage.get(duration=1)
     assert not assets_with_1s_duration
+    
+    a = Asset()
+    a.duration = 1
+    storage['key'] = a
+
+    assets_with_1s_duration = storage.get(duration=1)
+    assert len(assets_with_1s_duration) == 1
+    assert assets_with_1s_duration[0] == a
 
 def test_deleting_unkown_key_raises_exception(storage):
     with pytest.raises(KeyError):
