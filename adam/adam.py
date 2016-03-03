@@ -1,7 +1,7 @@
 import collections
 import os
 import shutil
-import taglib
+import mutagen.mp3
 import tempfile
 import wave
 
@@ -48,9 +48,8 @@ class Mp3Reader:
             copy_path = os.path.join(temp_dir, filename)
             shutil.copyfile(file_path, copy_path)
         
-            mp3 = taglib.File(copy_path)
-            mp3.tags.clear()
-            mp3.save()
+            mp3 = mutagen.mp3.MP3(copy_path)
+            mp3.tags.delete()
             
             with open(copy_path, 'rb') as mp3_file:
                 asset.essence = mp3_file.read()
