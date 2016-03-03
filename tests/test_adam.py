@@ -86,3 +86,12 @@ def test_asset_has_mime_type():
 def test_asset_has_essence():
     asset = Asset()
     assert hasattr(asset, 'essence')
+
+def test_asset_equality():
+    a = Asset()
+    a.some_attr = 42
+    b = Asset()
+    b.some_attr = 42
+    
+    assert a is not b
+    assert a == b
