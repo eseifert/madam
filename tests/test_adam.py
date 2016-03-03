@@ -33,6 +33,10 @@ def test_asset_is_deleted(storage):
     del storage['key']
     assert 'key' not in storage
 
+def test_search_asset(storage):
+    assets_with_1s_duration = storage.get(duration=1)
+    assert not assets_with_1s_duration
+
 def test_deleting_unkown_key_raises_exception(storage):
     with pytest.raises(KeyError):
         del storage['key']
