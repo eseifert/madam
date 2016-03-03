@@ -37,6 +37,11 @@ class Asset:
     def __init__(self):
         self.essence = None
         self.mime_type = None
+        
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return other.__dict__ == self.__dict__
+        return False
 
 class WavReader:
     def read(self, file_path):
