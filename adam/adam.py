@@ -35,7 +35,7 @@ class AssetStorage:
         
 class Asset:
     def __init__(self):
-        pass
+        self.mime_type = None
 
 class WavReader:
     def read(self, file_path):
