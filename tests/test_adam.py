@@ -45,6 +45,12 @@ def test_search_asset(storage):
     assert len(assets_with_1s_duration) == 1
     assert assets_with_1s_duration[0] == a
 
+def test_read_unkown_file():
+    reader = AssetReader()
+    file_path = 'tests/16-bit-mono.wav'
+    asset = reader.read(file_path)
+    assert asset == WavReader().read(file_path)
+
 def test_deleting_unkown_key_raises_exception(storage):
     with pytest.raises(KeyError):
         del storage['key']
