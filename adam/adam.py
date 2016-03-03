@@ -49,6 +49,7 @@ class Mp3Reader:
             shutil.copyfile(file_path, copy_path)
         
             mp3 = mutagen.mp3.MP3(copy_path)
+            asset.duration = mp3.info.length
             mp3.tags.delete()
             
             with open(copy_path, 'rb') as mp3_file:
