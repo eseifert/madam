@@ -78,3 +78,7 @@ def test_mp3_reader_does_not_change_file():
     with open(mp3_file_path, 'rb') as mp3_file:
         actual_data = mp3_file.read()
     assert expected_data == actual_data
+    
+def test_asset_has_mime_type():
+    a = Asset()
+    assert hasattr(a, 'mime_type')
