@@ -45,28 +45,28 @@ class Asset:
         return False
 
 supported_mime_types = []
+reader_classes_by_mime_type = {}
 class AssetReaderRegistry(type):
     def __init__(cls, name, bases, dict):
         super(AssetReaderRegistry, cls).__init__(name, bases, dict)
-        if not hasattr(cls, 'reader_classes_by_mime_type'):
-            cls.reader_classes_by_mime_type = {}
-        else:
-            for mime_type in cls.supported_mime_types:
-                supported_mime_types.append(mime_type)
-                cls.reader_classes_by_mime_type[mime_type] = cls
+        for mime_type in cls.supported_mime_types:
+            supported_mime_types.append(mime_type)
+            reader_classes_by_mime_type[mime_type] = cls
 
 class UnknownMimeTypeError(ValueError):
     pass
 
 class AssetReader(metaclass = AssetReaderRegistry):
+    supported_mime_types = []
+    
     def __init__(self):
         mimetypes.init()
     
     def read(self, file_path):
         format,encoding = mimetypes.guess_type(file_path)
-        if format not in self.reader_classes_by_mime_type:
+        if format not in reader_classes_by_mime_type:
             raise UnknownMimeTypeError('Unable to determine MIME type for file "%s"' % file_path)
-        reader_class = self.reader_classes_by_mime_type[format]
+        reader_class = reader_classes_by_mime_type[format]
         reader = reader_class()
         return reader.read(file_path)
     
