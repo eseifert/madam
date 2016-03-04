@@ -65,6 +65,23 @@ def read(file_path):
     reader = reader_class()
     return reader.read(file_path)
 
+def readMp3(file_path):
+    asset = Asset()
+    asset.mime_type = 'audio/mpeg'
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        filename = os.path.basename(file_path)
+        copy_path = os.path.join(temp_dir, filename)
+        shutil.copyfile(file_path, copy_path)
+    
+        mp3 = mutagen.mp3.MP3(copy_path)
+        asset.duration = mp3.info.length
+        mp3.tags.delete()
+        
+        with open(copy_path, 'rb') as mp3_file:
+            asset.essence = mp3_file.read()
+    return asset
+
 class WavReader(metaclass = AssetReaderRegistry):
     supported_mime_types = ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
         
@@ -81,18 +98,4 @@ class Mp3Reader(metaclass = AssetReaderRegistry):
     supported_mime_types = ['audio/mpeg']
     
     def read(self, file_path):
-        asset = Asset()
-        asset.mime_type = 'audio/mpeg'
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            filename = os.path.basename(file_path)
-            copy_path = os.path.join(temp_dir, filename)
-            shutil.copyfile(file_path, copy_path)
-        
-            mp3 = mutagen.mp3.MP3(copy_path)
-            asset.duration = mp3.info.length
-            mp3.tags.delete()
-            
-            with open(copy_path, 'rb') as mp3_file:
-                asset.essence = mp3_file.read()
-        return asset
+        return readMp3(file_path)
