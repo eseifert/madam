@@ -70,6 +70,10 @@ class WavReader(AssetReader):
             asset.framerate = wave_file.getframerate()
             asset.essence = wave_file.readframes(wave_file.getnframes())
         return asset
+    
+    @AssetReader.supported_mime_types.getter
+    def supported_mime_types(self):
+        return ['audio/wav']
 
 class Mp3Reader:
     def read(self, file_path):
