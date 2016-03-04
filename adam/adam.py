@@ -55,12 +55,17 @@ class AssetReaderRegistry(type):
                 AssetReader.supported_mime_types.append(mime_type)
                 cls.reader_classes_by_mime_type[mime_type] = cls
 
+class UnknownMimeTypeError(ValueError):
+    pass
+
 class AssetReader(metaclass = AssetReaderRegistry):
     def __init__(self):
         mimetypes.init()
     
     def read(self, file_path):
         format,encoding = mimetypes.guess_type(file_path)
+        if format not in self.reader_classes_by_mime_type:
+            raise UnknownMimeTypeError('Unable to determine MIME type for file "%s"' % file_path)
         reader_class = self.reader_classes_by_mime_type[format]
         reader = reader_class()
         return reader.read(file_path)
