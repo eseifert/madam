@@ -66,7 +66,7 @@ class AssetReader(metaclass = AssetReaderRegistry):
         return reader.read(file_path)
     
 class WavReader(AssetReader):
-    supported_mime_types = ['audio/wav', 'audio/x-wav']
+    supported_mime_types = ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
         
     def read(self, file_path):
         asset = Asset()
