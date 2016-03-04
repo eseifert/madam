@@ -51,6 +51,10 @@ def test_read_unkown_file():
     asset = reader.read(file_path)
     assert asset == WavReader().read(file_path)
 
+def test_supported_mime_types():
+    reader = AssetReader()
+    assert len(reader.supported_mime_types) > 0
+
 def test_deleting_unkown_key_raises_exception(storage):
     with pytest.raises(KeyError):
         del storage['key']
