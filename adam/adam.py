@@ -1,6 +1,7 @@
 import collections
 import os
 import shutil
+import mimetypes
 import mutagen.mp3
 import tempfile
 import wave
@@ -46,22 +47,27 @@ class Asset:
 class AssetReaderRegistry(type):
     def __init__(cls, name, bases, dict):
         super(AssetReaderRegistry, cls).__init__(name, bases, dict)
-        if not hasattr(cls, 'delegate_reader_classes'):
-            cls.delegate_reader_classes = []
+        if not hasattr(cls, 'reader_classes_by_mime_type'):
+            cls.reader_classes_by_mime_type = {}
+            cls.supported_mime_types = []
         else:
-            cls.delegate_reader_classes.append(cls)
+            for mime_type in cls.supported_mime_types:
+                AssetReader.supported_mime_types.append(mime_type)
+                cls.reader_classes_by_mime_type[mime_type] = cls
 
 class AssetReader(metaclass = AssetReaderRegistry):
+    def __init__(self):
+        mimetypes.init()
+    
     def read(self, file_path):
-        reader_class = self.delegate_reader_classes[0]
+        format,encoding = mimetypes.guess_type(file_path)
+        reader_class = self.reader_classes_by_mime_type[format]
         reader = reader_class()
         return reader.read(file_path)
     
-    @property
-    def supported_mime_types(self):
-        return ['audio/wav']
-
 class WavReader(AssetReader):
+    supported_mime_types = ['audio/wav', 'audio/x-wav']
+        
     def read(self, file_path):
         asset = Asset()
         with wave.open(file_path, 'rb') as wave_file:
@@ -71,10 +77,6 @@ class WavReader(AssetReader):
             asset.essence = wave_file.readframes(wave_file.getnframes())
         return asset
     
-    @AssetReader.supported_mime_types.getter
-    def supported_mime_types(self):
-        return ['audio/wav']
-
 class Mp3Reader:
     def read(self, file_path):
         asset = Asset()
