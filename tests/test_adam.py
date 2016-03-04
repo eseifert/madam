@@ -48,9 +48,13 @@ def test_search_asset(storage):
 
 def test_read_unkown_file():
     reader = AssetReader()
-    file_path = 'tests/16-bit-mono.wav'
-    asset = reader.read(file_path)
-    assert asset == WavReader().read(file_path)
+    wav_path = 'tests/16-bit-mono.wav'
+    asset = reader.read(wav_path)
+    assert asset == WavReader().read(wav_path)
+
+    mp3_path = 'tests/64kbits.mp3'
+    asset = reader.read(mp3_path)
+    assert asset == Mp3Reader().read(mp3_path)
     
 def test_reading_file_with_unknown_mime_type_raises_exception():
     reader = AssetReader()
