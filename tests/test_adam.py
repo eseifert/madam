@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 
+import adam
 from adam.core import AssetStorage
 from adam.core import Asset
 from adam.core import AssetReader
@@ -69,7 +70,7 @@ def test_reading_file_with_unknown_mime_type_raises_exception():
 
 
 def test_supported_mime_types():
-    assert len(AssetReader.supported_mime_types) > 0
+    assert len(adam.supported_mime_types) > 0
 
 def test_deleting_unkown_key_raises_exception(storage):
     with pytest.raises(KeyError):

@@ -44,15 +44,15 @@ class Asset:
             return other.__dict__ == self.__dict__
         return False
 
+supported_mime_types = []
 class AssetReaderRegistry(type):
     def __init__(cls, name, bases, dict):
         super(AssetReaderRegistry, cls).__init__(name, bases, dict)
         if not hasattr(cls, 'reader_classes_by_mime_type'):
             cls.reader_classes_by_mime_type = {}
-            cls.supported_mime_types = []
         else:
             for mime_type in cls.supported_mime_types:
-                AssetReader.supported_mime_types.append(mime_type)
+                supported_mime_types.append(mime_type)
                 cls.reader_classes_by_mime_type[mime_type] = cls
 
 class UnknownMimeTypeError(ValueError):
