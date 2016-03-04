@@ -1,7 +1,12 @@
 import pytest
 import tempfile
 
-from adam.adam import *
+from adam.adam import AssetStorage
+from adam.adam import Asset
+from adam.adam import AssetReader
+from adam.adam import Mp3Reader
+from adam.adam import WavReader
+from adam.adam import UnknownMimeTypeError
 
 @pytest.fixture
 def storage():
