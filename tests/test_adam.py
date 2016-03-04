@@ -1,4 +1,5 @@
 import pytest
+import tempfile
 
 from adam.adam import *
 
@@ -50,6 +51,13 @@ def test_read_unkown_file():
     file_path = 'tests/16-bit-mono.wav'
     asset = reader.read(file_path)
     assert asset == WavReader().read(file_path)
+    
+def test_reading_file_with_unknown_mime_type_raises_exception():
+    reader = AssetReader()
+    with tempfile.NamedTemporaryFile() as tmp:
+        with pytest.raises(UnknownMimeTypeError):
+            reader.read(tmp.name)
+
 
 def test_supported_mime_types():
     assert len(AssetReader.supported_mime_types) > 0
