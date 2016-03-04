@@ -4,7 +4,6 @@ import tempfile
 import adam
 from adam.core import AssetStorage
 from adam.core import Asset
-from adam.core import AssetReader
 from adam.core import Mp3Reader
 from adam.core import WavReader
 from adam.core import UnknownMimeTypeError
@@ -53,20 +52,18 @@ def test_search_asset(storage):
     assert assets_with_1s_duration[0] == a
 
 def test_read_unkown_file():
-    reader = AssetReader()
     wav_path = 'tests/16-bit-mono.wav'
-    asset = reader.read(wav_path)
+    asset = adam.read(wav_path)
     assert asset == WavReader().read(wav_path)
 
     mp3_path = 'tests/64kbits.mp3'
-    asset = reader.read(mp3_path)
+    asset = adam.read(mp3_path)
     assert asset == Mp3Reader().read(mp3_path)
     
 def test_reading_file_with_unknown_mime_type_raises_exception():
-    reader = AssetReader()
     with tempfile.NamedTemporaryFile() as tmp:
         with pytest.raises(UnknownMimeTypeError):
-            reader.read(tmp.name)
+            adam.read(tmp.name)
 
 
 def test_supported_mime_types():

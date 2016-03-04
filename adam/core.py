@@ -56,21 +56,16 @@ class AssetReaderRegistry(type):
 class UnknownMimeTypeError(ValueError):
     pass
 
-class AssetReader(metaclass = AssetReaderRegistry):
-    supported_mime_types = []
-    
-    def __init__(self):
-        mimetypes.init()
-    
-    def read(self, file_path):
-        format,encoding = mimetypes.guess_type(file_path)
-        if format not in reader_classes_by_mime_type:
-            raise UnknownMimeTypeError('Unable to determine MIME type for file "%s"' % file_path)
-        reader_class = reader_classes_by_mime_type[format]
-        reader = reader_class()
-        return reader.read(file_path)
-    
-class WavReader(AssetReader):
+mimetypes.init()
+def read(file_path):
+    format,encoding = mimetypes.guess_type(file_path)
+    if format not in reader_classes_by_mime_type:
+        raise UnknownMimeTypeError('Unable to determine MIME type for file "%s"' % file_path)
+    reader_class = reader_classes_by_mime_type[format]
+    reader = reader_class()
+    return reader.read(file_path)
+
+class WavReader(metaclass = AssetReaderRegistry):
     supported_mime_types = ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
         
     def read(self, file_path):
@@ -82,7 +77,7 @@ class WavReader(AssetReader):
             asset.essence = wave_file.readframes(wave_file.getnframes())
         return asset
     
-class Mp3Reader(AssetReader):
+class Mp3Reader(metaclass = AssetReaderRegistry):
     supported_mime_types = ['audio/mpeg']
     
     def read(self, file_path):
