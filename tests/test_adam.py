@@ -4,7 +4,6 @@ import tempfile
 import adam
 from adam.core import AssetStorage
 from adam.core import Asset
-from adam.core import WavReader
 from adam.core import UnknownMimeTypeError
 
 @pytest.fixture
@@ -53,7 +52,7 @@ def test_search_asset(storage):
 def test_read_unkown_file():
     wav_path = 'tests/16-bit-mono.wav'
     asset = adam.read(wav_path)
-    assert asset == WavReader().read(wav_path)
+    assert asset == adam.readWav(wav_path)
 
     mp3_path = 'tests/64kbits.mp3'
     asset = adam.read(mp3_path)
@@ -73,8 +72,7 @@ def test_deleting_unkown_key_raises_exception(storage):
         del storage['key']
 
 def test_create_asset_from_wav():
-    reader = WavReader()
-    asset = reader.read('tests/16-bit-mono.wav')
+    asset = adam.readWav('tests/16-bit-mono.wav')
     assert asset.mime_type == 'audio/wav'
     assert asset.framerate == 48000
     assert asset.channels == 1
