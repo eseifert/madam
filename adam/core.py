@@ -65,6 +65,16 @@ def read(file_path):
     reader = reader_class()
     return reader.read(file_path)
 
+def readWav(file_path):
+    asset = Asset()
+    with wave.open(file_path, 'rb') as wave_file:
+        asset.mime_type = 'audio/wav'
+        asset.channels = wave_file.getnchannels()
+        asset.framerate = wave_file.getframerate()
+        asset.essence = wave_file.readframes(wave_file.getnframes())
+    return asset
+
+
 def readMp3(file_path):
     asset = Asset()
     asset.mime_type = 'audio/mpeg'
@@ -86,13 +96,7 @@ class WavReader(metaclass = AssetReaderRegistry):
     supported_mime_types = ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
         
     def read(self, file_path):
-        asset = Asset()
-        with wave.open(file_path, 'rb') as wave_file:
-            asset.mime_type = 'audio/wav'
-            asset.channels = wave_file.getnchannels()
-            asset.framerate = wave_file.getframerate()
-            asset.essence = wave_file.readframes(wave_file.getnframes())
-        return asset
+        return readWav(file_path)
     
 class Mp3Reader(metaclass = AssetReaderRegistry):
     supported_mime_types = ['audio/mpeg']
