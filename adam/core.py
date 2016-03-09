@@ -44,14 +44,7 @@ class Asset:
             return other.__dict__ == self.__dict__
         return False
 
-supported_mime_types = []
-reader_classes_by_mime_type = {}
-class AssetReaderRegistry(type):
-    def __init__(cls, name, bases, dict):
-        super(AssetReaderRegistry, cls).__init__(name, bases, dict)
-        for mime_type in cls.supported_mime_types:
-            supported_mime_types.append(mime_type)
-            reader_classes_by_mime_type[mime_type] = cls
+read_method_by_mime_type = {}
 
 class UnknownMimeTypeError(ValueError):
     pass
@@ -59,12 +52,19 @@ class UnknownMimeTypeError(ValueError):
 mimetypes.init()
 def read(file_path):
     format,encoding = mimetypes.guess_type(file_path)
-    if format not in reader_classes_by_mime_type:
+    if format not in read_method_by_mime_type:
         raise UnknownMimeTypeError('Unable to determine MIME type for file "%s"' % file_path)
-    reader_class = reader_classes_by_mime_type[format]
-    reader = reader_class()
-    return reader.read(file_path)
+    read_method = read_method_by_mime_type[format]
+    return read_method(file_path)
 
+def supports_mime_types(*types):
+    def wrap(f):
+        for type in types:
+            read_method_by_mime_type[type] = f
+        return f
+    return wrap
+
+@supports_mime_types('audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav')
 def readWav(file_path):
     asset = Asset()
     with wave.open(file_path, 'rb') as wave_file:
@@ -74,7 +74,7 @@ def readWav(file_path):
         asset.essence = wave_file.readframes(wave_file.getnframes())
     return asset
 
-
+@supports_mime_types('audio/mpeg')
 def readMp3(file_path):
     asset = Asset()
     asset.mime_type = 'audio/mpeg'
@@ -91,15 +91,3 @@ def readMp3(file_path):
         with open(copy_path, 'rb') as mp3_file:
             asset.essence = mp3_file.read()
     return asset
-
-class WavReader(metaclass = AssetReaderRegistry):
-    supported_mime_types = ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
-        
-    def read(self, file_path):
-        return readWav(file_path)
-    
-class Mp3Reader(metaclass = AssetReaderRegistry):
-    supported_mime_types = ['audio/mpeg']
-    
-    def read(self, file_path):
-        return readMp3(file_path)
