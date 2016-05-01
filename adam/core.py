@@ -91,3 +91,9 @@ def readMp3(file_path):
         with open(copy_path, 'rb') as mp3_file:
             asset.essence = mp3_file.read()
     return asset
+
+@supports_mime_types('image/jpeg')
+def readJpeg(file_path):
+    asset = Asset()
+    asset.mime_type = 'image/jpeg'
+    return asset
