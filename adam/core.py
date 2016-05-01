@@ -55,7 +55,9 @@ def read(file_path):
     if format not in read_method_by_mime_type:
         raise UnknownMimeTypeError('Unable to determine MIME type for file "%s"' % file_path)
     read_method = read_method_by_mime_type[format]
-    return read_method(file_path)
+    with open(file_path, 'rb') as file:
+        asset = read_method(file)
+    return asset
 
 def supports_mime_types(*types):
     def wrap(f):
@@ -65,21 +67,22 @@ def supports_mime_types(*types):
     return wrap
 
 @supports_mime_types('audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav')
-def readWav(file_path):
+def readWav(wave_file):
     asset = Asset()
-    with wave.open(file_path, 'rb') as wave_file:
-        asset.mime_type = 'audio/wav'
-        asset.channels = wave_file.getnchannels()
-        asset.framerate = wave_file.getframerate()
-        asset.essence = wave_file.readframes(wave_file.getnframes())
+    asset.mime_type = 'audio/wav'
+    with wave.open(wave_file) as wave_data:
+        asset.channels = wave_data.getnchannels()
+        asset.framerate = wave_data.getframerate()
+        asset.essence = wave_data.readframes(wave_data.getnframes())
     return asset
 
 @supports_mime_types('audio/mpeg')
-def readMp3(file_path):
+def readMp3(mp3_file):
     asset = Asset()
     asset.mime_type = 'audio/mpeg'
 
     with tempfile.TemporaryDirectory() as temp_dir:
+        file_path = mp3_file.name
         filename = os.path.basename(file_path)
         copy_path = os.path.join(temp_dir, filename)
         shutil.copyfile(file_path, copy_path)
@@ -88,12 +91,12 @@ def readMp3(file_path):
         asset.duration = mp3.info.length
         mp3.tags.delete()
         
-        with open(copy_path, 'rb') as mp3_file:
-            asset.essence = mp3_file.read()
+        with open(copy_path, 'rb') as mp3_file_copy:
+            asset.essence = mp3_file_copy.read()
     return asset
 
 @supports_mime_types('image/jpeg')
-def readJpeg(file_path):
+def readJpeg(jpeg_file):
     asset = Asset()
     asset.mime_type = 'image/jpeg'
     asset.essence = 0
