@@ -96,4 +96,5 @@ def readMp3(file_path):
 def readJpeg(file_path):
     asset = Asset()
     asset.mime_type = 'image/jpeg'
+    asset.essence = 0
     return asset
