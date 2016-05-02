@@ -37,8 +37,8 @@ def test_jpeg_asset_essence_is_filled(jpeg_asset):
 
 
 def test_jpeg_asset_contains_size_information(jpeg_asset):
-    assert jpeg_asset.width == 1
-    assert jpeg_asset.height == 1
+    assert jpeg_asset.metadata['adam']['width'] == 1
+    assert jpeg_asset.metadata['adam']['height'] == 1
 
 
 def test_jpeg_asset_essence_is_a_jpeg(jpeg_asset):
@@ -64,7 +64,7 @@ def test_jpeg_asset_essence_does_not_contain_exif_metadata(jpeg_asset):
 
 
 def test_jpeg_asset_contains_artist_information(jpeg_asset):
-    assert jpeg_asset.artist == 'Test artist'
+    assert jpeg_asset.metadata['adam']['artist'] == 'Test artist'
 
 
 def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset):
