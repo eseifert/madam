@@ -10,5 +10,5 @@ def read_jpeg(jpeg_file):
     asset.width = image.width
     asset.height = image.height
     jpeg_file.seek(0)
-    asset.essence = jpeg_file.read()
+    asset.essence = jpeg_file
     return asset

@@ -1,4 +1,5 @@
 from adam.core import Asset, supports_mime_types
+import io
 import mutagen.mp3
 import os
 import shutil
@@ -13,8 +14,13 @@ def read_wav(wave_file):
     with wave.open(wave_file) as wave_data:
         asset.channels = wave_data.getnchannels()
         asset.framerate = wave_data.getframerate()
-        asset.essence = wave_data.readframes(wave_data.getnframes())
+        essence_bytes = wave_data.readframes(wave_data.getnframes())
+        essence_stream = io.BytesIO()
+        essence_stream.write(essence_bytes)
+        essence_stream.seek(0)
+        asset.essence = essence_stream
     return asset
+
 
 @supports_mime_types('audio/mpeg')
 def read_mp3(mp3_file):
@@ -32,7 +38,7 @@ def read_mp3(mp3_file):
         mp3.tags.delete()
         
         with open(copy_path, 'rb') as mp3_file_copy:
-            asset.essence = mp3_file_copy.read()
+            asset.essence = mp3_file_copy
     return asset
 
 

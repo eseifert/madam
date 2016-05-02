@@ -49,7 +49,7 @@ class Asset:
 
     @essence.setter
     def essence(self, value):
-        self.essence_data = value
+        self.essence_data = value.read()
 
 read_method_by_mime_type = {}
 
