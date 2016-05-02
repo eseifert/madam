@@ -60,10 +60,3 @@ def supports_mime_types(*types):
             read_method_by_mime_type[type] = f
         return f
     return wrap
-
-@supports_mime_types('image/jpeg')
-def readJpeg(jpeg_file):
-    asset = Asset()
-    asset.mime_type = 'image/jpeg'
-    asset.essence = 0
-    return asset
