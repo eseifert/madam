@@ -9,5 +9,6 @@ def read_jpeg(jpeg_file):
     image = PIL.Image.open(jpeg_file)
     asset.width = image.width
     asset.height = image.height
-    asset.essence = jpeg_file
+    jpeg_file.seek(0)
+    asset.essence = jpeg_file.read()
     return asset

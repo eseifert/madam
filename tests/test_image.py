@@ -43,3 +43,12 @@ def test_jpeg_asset_essence_is_a_jpeg(jpeg_rgb_image):
     jpeg_image = PIL.Image.open(jpeg_asset.essence)
 
     assert jpeg_image.format == 'JPEG'
+
+
+def test_jpeg_asset_essence_can_be_read_multiple_times(jpeg_rgb_image):
+    jpeg_asset = adam.image.read_jpeg(jpeg_rgb_image)
+
+    essence_contents = jpeg_asset.essence.read()
+    same_essence_contents = jpeg_asset.essence.read()
+
+    assert essence_contents == same_essence_contents

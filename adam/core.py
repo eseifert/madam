@@ -1,4 +1,5 @@
 import collections
+import io
 import mimetypes
 
 class AssetStorage:
@@ -28,16 +29,27 @@ class AssetStorage:
                     if hasattr(asset, key) and getattr(asset, key) == value:
                         matches.append(asset)
         return matches
-        
+
 class Asset:
     def __init__(self):
-        self.essence = None
+        self.essence_data = b''
         self.mime_type = None
-        
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return other.__dict__ == self.__dict__
         return False
+
+    @property
+    def essence(self):
+        essence_file = io.BytesIO()
+        essence_file.write(self.essence_data)
+        essence_file.seek(0)
+        return essence_file
+
+    @essence.setter
+    def essence(self, value):
+        self.essence_data = value
 
 read_method_by_mime_type = {}
 
