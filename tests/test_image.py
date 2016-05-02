@@ -1,5 +1,4 @@
 import adam
-import adam.image
 import tempfile
 import PIL.Image
 
