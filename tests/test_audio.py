@@ -2,17 +2,17 @@ import adam
 
 def test_create_asset_from_wav():
     asset = adam.read_wav('tests/16-bit-mono.wav')
-    assert asset.mime_type == 'audio/wav'
-    assert asset.framerate == 48000
-    assert asset.channels == 1
+    assert asset['mime_type'] == 'audio/wav'
+    assert asset['framerate'] == 48000
+    assert asset['channels'] == 1
     assert asset.essence != None
     
 def test_create_asset_from_mp3():
     mp3_file_path = 'tests/64kbits.mp3'
     with open(mp3_file_path, 'rb') as mp3_file:
         asset = adam.read_mp3(mp3_file)
-    assert asset.mime_type == 'audio/mpeg'
-    assert asset.duration == 0.1
+    assert asset['mime_type'] == 'audio/mpeg'
+    assert asset['duration'] == 0.1
     assert asset.essence != None
 
     # Assert that essence was stripped from metadata

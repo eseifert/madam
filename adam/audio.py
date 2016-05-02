@@ -10,10 +10,10 @@ import wave
 @supports_mime_types('audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav')
 def read_wav(wave_file):
     asset = Asset()
-    asset.mime_type = 'audio/wav'
+    asset['mime_type'] = 'audio/wav'
     with wave.open(wave_file) as wave_data:
-        asset.channels = wave_data.getnchannels()
-        asset.framerate = wave_data.getframerate()
+        asset['channels'] = wave_data.getnchannels()
+        asset['framerate'] = wave_data.getframerate()
         essence_bytes = wave_data.readframes(wave_data.getnframes())
         essence_stream = io.BytesIO()
         essence_stream.write(essence_bytes)
@@ -25,7 +25,7 @@ def read_wav(wave_file):
 @supports_mime_types('audio/mpeg')
 def read_mp3(mp3_file):
     asset = Asset()
-    asset.mime_type = 'audio/mpeg'
+    asset['mime_type'] = 'audio/mpeg'
 
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = mp3_file.name
@@ -34,7 +34,7 @@ def read_mp3(mp3_file):
         shutil.copyfile(file_path, copy_path)
     
         mp3 = mutagen.mp3.MP3(copy_path)
-        asset.duration = mp3.info.length
+        asset['duration'] = mp3.info.length
         mp3.tags.delete()
         
         with open(copy_path, 'rb') as mp3_file_copy:

@@ -29,7 +29,7 @@ def jpeg_asset():
 
 
 def test_read_jpeg_returns_asset_with_jpeg_mime_type(jpeg_asset):
-    assert jpeg_asset.mime_type == 'image/jpeg'
+    assert jpeg_asset['mime_type'] == 'image/jpeg'
 
 
 def test_jpeg_asset_essence_is_filled(jpeg_asset):
