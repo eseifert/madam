@@ -59,3 +59,7 @@ def test_jpeg_asset_essence_does_not_contain_exif_metadata(jpeg_asset):
 
     for ifd, ifd_data in essence_exif.items():
         assert not ifd_data
+
+
+def test_jpeg_asset_contains_artist_information(jpeg_asset):
+    assert jpeg_asset.artist == 'Test artist'
