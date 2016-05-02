@@ -29,3 +29,9 @@ def test_jpeg_asset_essence_is_filled(jpeg_rgb_image):
 
     assert jpeg_asset.essence is not None
 
+
+def test_jpeg_asset_contains_size_information(jpeg_rgb_image):
+    jpeg_asset = adam.image.read_jpeg(jpeg_rgb_image)
+
+    assert jpeg_asset.width == 1
+    assert jpeg_asset.height == 1
