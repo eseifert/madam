@@ -105,3 +105,12 @@ def test_asset_equality():
     
     assert a is not b
     assert a == b
+
+
+def test_asset_getitem_is_identical_to_access_through_adam_metadata():
+    asset = Asset()
+    adam_metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
+    asset.metadata['adam'] = adam_metadata
+
+    for key, value in asset.metadata['adam'].items():
+        assert asset[key] == value

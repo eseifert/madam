@@ -41,6 +41,9 @@ class Asset:
             return other.__dict__ == self.__dict__
         return False
 
+    def __getitem__(self, item):
+        return self.metadata['adam'][item]
+
     @property
     def essence(self):
         essence_file = io.BytesIO()
