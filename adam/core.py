@@ -33,6 +33,7 @@ class AssetStorage:
 class Asset:
     def __init__(self):
         self.essence_data = b''
+        self.metadata = {'adam': {}}
         self.mime_type = None
 
     def __eq__(self, other):

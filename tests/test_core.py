@@ -92,6 +92,11 @@ def test_asset_has_essence():
     assert hasattr(asset, 'essence')
 
 
+def test_asset_has_metadata_dict():
+    asset = Asset()
+    assert asset.metadata == {'adam': {}}
+
+
 def test_asset_equality():
     a = Asset()
     a.some_attr = 42
