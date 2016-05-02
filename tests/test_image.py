@@ -11,7 +11,7 @@ def test_read_jpeg_returns_asset_with_jpeg_mime_type():
     image_data = io.BytesIO()
     jpeg_file = empty_image.save(image_data, 'JPEG')
     # When
-    jpeg_asset = adam.image.readJpeg(image_data)
+    jpeg_asset = adam.image.read_jpeg(image_data)
     # Then
     assert jpeg_asset.mime_type =='image/jpeg'
 
@@ -21,7 +21,7 @@ def test_jpeg_asset_essence_is_filled():
     image_data = io.BytesIO()
     jpeg_file = empty_image.save(image_data, 'JPEG')
     # When
-    jpeg_asset = adam.image.readJpeg(image_data)
+    jpeg_asset = adam.image.read_jpeg(image_data)
     # Then
     assert jpeg_asset.essence != None
 

@@ -7,7 +7,7 @@ import wave
 
 
 @supports_mime_types('audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav')
-def readWav(wave_file):
+def read_wav(wave_file):
     asset = Asset()
     asset.mime_type = 'audio/wav'
     with wave.open(wave_file) as wave_data:
@@ -17,7 +17,7 @@ def readWav(wave_file):
     return asset
 
 @supports_mime_types('audio/mpeg')
-def readMp3(mp3_file):
+def read_mp3(mp3_file):
     asset = Asset()
     asset.mime_type = 'audio/mpeg'
 

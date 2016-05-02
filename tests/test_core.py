@@ -52,12 +52,12 @@ def test_search_asset(storage):
 def test_read_unkown_file():
     wav_path = 'tests/16-bit-mono.wav'
     asset = adam.read(wav_path)
-    assert asset == adam.readWav(wav_path)
+    assert asset == adam.read_wav(wav_path)
 
     mp3_path = 'tests/64kbits.mp3'
     asset = adam.read(mp3_path)
     with open(mp3_path, 'rb') as mp3_file:
-        assert asset == adam.readMp3(mp3_file)
+        assert asset == adam.read_mp3(mp3_file)
     
 def test_reading_file_with_unknown_mime_type_raises_exception():
     with tempfile.NamedTemporaryFile() as tmp:
