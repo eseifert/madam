@@ -44,6 +44,9 @@ class Asset:
     def __getitem__(self, item):
         return self.metadata['adam'][item]
 
+    def __setitem__(self, key, value):
+        self.metadata['adam'][key] = value
+
     @property
     def essence(self):
         essence_file = io.BytesIO()

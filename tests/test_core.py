@@ -114,3 +114,13 @@ def test_asset_getitem_is_identical_to_access_through_adam_metadata():
 
     for key, value in asset.metadata['adam'].items():
         assert asset[key] == value
+
+
+def test_asset_setitem_is_identical_to_access_through_adam_metadata():
+    asset = Asset()
+    metadata_to_be_set = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
+
+    for key, value in metadata_to_be_set.items():
+        asset[key] = value
+
+    assert asset.metadata['adam'] == metadata_to_be_set
