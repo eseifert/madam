@@ -10,6 +10,9 @@ def test_supports_jfif():
     assert 'image/jpeg' in adam.supported_mime_types
 
 
+jpeg_exif = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
+
+
 @pytest.fixture
 def jpeg_asset():
     empty_image = PIL.Image.new('RGB', (1, 1))
@@ -17,8 +20,7 @@ def jpeg_asset():
     empty_image.save(image_data, 'JPEG')
     image_data.seek(0)
 
-    exif_dict = {'0th': {piexif.ImageIFD.Artist: 'Test artist'}}
-    exif_bytes = piexif.dump(exif_dict)
+    exif_bytes = piexif.dump(jpeg_exif)
     image_with_exif_metadata = io.BytesIO()
     piexif.insert(exif_bytes, image_data.read(), image_with_exif_metadata)
 
@@ -66,4 +68,4 @@ def test_jpeg_asset_contains_artist_information(jpeg_asset):
 
 
 def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset):
-    assert jpeg_asset.metadata['exif'] == {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
+    assert jpeg_asset.metadata['exif'] == jpeg_exif
