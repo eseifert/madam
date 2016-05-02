@@ -9,15 +9,15 @@ def read_jpeg(jpeg_file):
     asset = Asset()
     asset.mime_type = 'image/jpeg'
     image = PIL.Image.open(jpeg_file)
-    asset.metadata['adam']['width'] = image.width
-    asset.metadata['adam']['height'] = image.height
+    asset['width'] = image.width
+    asset['height'] = image.height
 
     jpeg_file.seek(0)
     essence_data_with_metadata = jpeg_file.read()
     exif = piexif.load(essence_data_with_metadata)
     exif_stripped_from_empty_entries = {key: value for (key, value) in exif.items() if value}
     asset.metadata['exif'] = exif_stripped_from_empty_entries
-    asset.metadata['adam']['artist'] = exif['0th'][piexif.ImageIFD.Artist].decode('utf-8')
+    asset['artist'] = exif['0th'][piexif.ImageIFD.Artist].decode('utf-8')
     essence_without_metadata_as_stream = io.BytesIO()
     piexif.remove(essence_data_with_metadata, essence_without_metadata_as_stream)
     asset.essence = essence_without_metadata_as_stream
