@@ -7,7 +7,7 @@ setup(
     version='0.1',
     author='Michael Seifert',
     author_email='mseifert@error-reports.org',
-    install_requires=['pillow', 'pytaglib'],
+    install_requires=['piexif', 'pillow', 'pytaglib'],
     setup_requires=['pytest-runner'],
-    tests_require=['pillow', 'pytest'],
+    tests_require=['piexif', 'pillow', 'pytest'],
 )

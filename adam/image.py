@@ -1,4 +1,6 @@
 from adam.core import Asset, supports_mime_types
+import io
+import piexif
 import PIL.Image, PIL.ExifTags
 
 
@@ -9,6 +11,10 @@ def read_jpeg(jpeg_file):
     image = PIL.Image.open(jpeg_file)
     asset.width = image.width
     asset.height = image.height
+
     jpeg_file.seek(0)
-    asset.essence = jpeg_file
+    essence_data_with_metadata = jpeg_file.read()
+    essence_without_metadata_as_stream = io.BytesIO()
+    piexif.remove(essence_data_with_metadata, essence_without_metadata_as_stream)
+    asset.essence = essence_without_metadata_as_stream
     return asset
