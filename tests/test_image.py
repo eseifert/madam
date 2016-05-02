@@ -1,4 +1,4 @@
-import adam
+import adam.image
 import tempfile
 import PIL.Image
 
@@ -11,7 +11,7 @@ def test_read_jpeg_returns_asset_with_jpeg_mime_type():
     with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp:
         jpeg_file = empty_image.save(tmp.name, 'JPEG')
         # When
-        jpeg_asset = adam.read(tmp.name)
+        jpeg_asset = adam.image.readJpeg(tmp.name)
     # Then
     assert jpeg_asset.mime_type =='image/jpeg'
 
@@ -21,7 +21,7 @@ def test_jpeg_asset_essence_is_filled():
     with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp:
         jpeg_file = empty_image.save(tmp.name, 'JPEG')
         # When
-        jpeg_asset = adam.read(tmp.name)
+        jpeg_asset = adam.image.readJpeg(tmp.name)
     # Then
     assert jpeg_asset.essence != None
 
