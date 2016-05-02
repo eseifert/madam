@@ -63,3 +63,7 @@ def test_jpeg_asset_essence_does_not_contain_exif_metadata(jpeg_asset):
 
 def test_jpeg_asset_contains_artist_information(jpeg_asset):
     assert jpeg_asset.artist == 'Test artist'
+
+
+def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset):
+    assert jpeg_asset.metadata['exif'] == {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}

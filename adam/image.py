@@ -15,6 +15,8 @@ def read_jpeg(jpeg_file):
     jpeg_file.seek(0)
     essence_data_with_metadata = jpeg_file.read()
     exif = piexif.load(essence_data_with_metadata)
+    exif_stripped_from_empty_entries = {key: value for (key, value) in exif.items() if value}
+    asset.metadata = {'exif': exif_stripped_from_empty_entries}
     asset.artist = exif['0th'][piexif.ImageIFD.Artist].decode('utf-8')
     essence_without_metadata_as_stream = io.BytesIO()
     piexif.remove(essence_data_with_metadata, essence_without_metadata_as_stream)
