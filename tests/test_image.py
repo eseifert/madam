@@ -35,3 +35,11 @@ def test_jpeg_asset_contains_size_information(jpeg_rgb_image):
 
     assert jpeg_asset.width == 1
     assert jpeg_asset.height == 1
+
+
+def test_jpeg_asset_essence_is_a_jpeg(jpeg_rgb_image):
+    jpeg_asset = adam.image.read_jpeg(jpeg_rgb_image)
+
+    jpeg_image = PIL.Image.open(jpeg_asset.essence)
+
+    assert jpeg_image.format == 'JPEG'
