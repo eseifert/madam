@@ -88,5 +88,11 @@ def supports_mime_types(*mime_types):
 
 
 class Pipeline:
+    def __init__(self):
+        self.operators = []
+
     def process(self, *assets):
         yield from assets
+
+    def add(self, operator):
+        self.operators.append(operator)

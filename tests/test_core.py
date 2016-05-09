@@ -136,3 +136,11 @@ def test_empty_pipeline_does_not_change_assets(asset):
     assert asset in processed_assets
     assert another_asset in processed_assets
 
+
+def test_pipeline_contains_operator_after_it_was_added(asset):
+    pipeline = Pipeline()
+    operator = unittest.mock.MagicMock()
+
+    pipeline.add(operator)
+
+    assert operator in pipeline.operators
