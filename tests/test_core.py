@@ -80,7 +80,7 @@ def test_supported_mime_types():
     assert len(adam.supported_mime_types) > 0
 
 
-def test_deleting_unkown_key_raises_exception(storage):
+def test_deleting_unknown_key_raises_exception(storage):
     with pytest.raises(KeyError):
         del storage['key']
 
