@@ -43,15 +43,18 @@ def test_asset_is_deleted(storage):
     assert 'key' not in storage
 
 
-def test_search_asset(storage):
-    assets_with_1s_duration = storage.get(duration=1)
+def test_get_returns_empty_list_when_storage_is_empty(storage):
+    assets_with_1s_duration = storage.get()
     assert not assets_with_1s_duration
     
+
+def test_get_returns_assets_with_specified_adam_metadata(storage):
     a = Asset()
     a['duration'] = 1
     storage['key'] = a
 
     assets_with_1s_duration = storage.get(duration=1)
+
     assert len(assets_with_1s_duration) == 1
     assert assets_with_1s_duration[0] == a
 
