@@ -92,7 +92,11 @@ class Pipeline:
         self.operators = []
 
     def process(self, *assets):
-        yield from assets
+        for asset in assets:
+            processed_asset = asset
+            for operator in self.operators:
+                processed_asset = operator.apply(processed_asset)
+            yield processed_asset
 
     def add(self, operator):
         self.operators.append(operator)
