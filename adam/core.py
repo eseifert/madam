@@ -2,34 +2,36 @@ import collections
 import io
 import mimetypes
 
+
 class AssetStorage:
     def __init__(self):
         self.assets = collections.defaultdict(list)
         
-    def __setitem__(self, id, asset):
-        self.assets[id].append(asset)
+    def __setitem__(self, asset_id, asset):
+        self.assets[asset_id].append(asset)
         
-    def __getitem__(self, id):
-        return self.assets[id][-1]
+    def __getitem__(self, asset_id):
+        return self.assets[asset_id][-1]
     
-    def __contains__(self, id):
-        return id in self.assets
+    def __contains__(self, asset_id):
+        return asset_id in self.assets
     
     def __delitem__(self, key):
         del self.assets[key]
     
-    def versions_of(self, id):
-        return self.assets[id]
+    def versions_of(self, asset_id):
+        return self.assets[asset_id]
     
     def get(self, **kwargs):
         matches = []
         for asset_versions in self.assets.values():
             for asset in asset_versions:
                 adam_metadata = asset.metadata['adam']
-                for key,value in kwargs.items():
+                for key, value in kwargs.items():
                     if adam_metadata.get(key, None) == value:
                         matches.append(asset)
         return matches
+
 
 class Asset:
     def __init__(self):
@@ -59,24 +61,27 @@ class Asset:
     def essence(self, value):
         self.essence_data = value.read()
 
-read_method_by_mime_type = {}
 
 class UnknownMimeTypeError(ValueError):
     pass
 
 mimetypes.init()
+read_method_by_mime_type = {}
+
+
 def read(file_path):
-    format,encoding = mimetypes.guess_type(file_path)
-    if format not in read_method_by_mime_type:
+    file_format, encoding = mimetypes.guess_type(file_path)
+    if file_format not in read_method_by_mime_type:
         raise UnknownMimeTypeError('Unable to determine MIME type for file "%s"' % file_path)
-    read_method = read_method_by_mime_type[format]
+    read_method = read_method_by_mime_type[file_format]
     with open(file_path, 'rb') as file:
         asset = read_method(file)
     return asset
 
-def supports_mime_types(*types):
+
+def supports_mime_types(*mime_types):
     def wrap(f):
-        for type in types:
-            read_method_by_mime_type[type] = f
+        for mime_type in mime_types:
+            read_method_by_mime_type[mime_type] = f
         return f
     return wrap
