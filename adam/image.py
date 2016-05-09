@@ -31,3 +31,20 @@ def _separate_exif_from_image(image_file):
     essence_without_metadata_as_stream = io.BytesIO()
     piexif.remove(essence_data_with_metadata, essence_without_metadata_as_stream)
     return exif_stripped_from_empty_entries, essence_without_metadata_as_stream
+
+
+class Fit:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    def apply(self, asset):
+        image = PIL.Image.open(asset.essence)
+        resize_factor = self.width/image.width
+        resized_width = round(resize_factor*image.width)
+        resized_height = round(resize_factor*image.height)
+        resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)
+        resized_image_buffer = io.BytesIO()
+        resized_image.save(resized_image_buffer, 'JPEG')
+        resized_asset = read_jpeg(resized_image_buffer)
+        return resized_asset

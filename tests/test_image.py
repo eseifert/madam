@@ -92,3 +92,12 @@ def test_jpeg_asset_contains_artist_information_when_exif_metadata_is_available(
 def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset):
     if jpeg_asset.metadata['exif']:
         assert jpeg_asset.metadata['exif'] == jpeg_exif
+
+
+def test_fit_preserves_aspect_ratio(jpeg_asset):
+    fit_operator = adam.image.Fit(9, 10)
+
+    fitted_asset = fit_operator.apply(jpeg_asset)
+
+    assert fitted_asset['width'] == 9
+    assert fitted_asset['height'] == 7
