@@ -25,8 +25,9 @@ class AssetStorage:
         matches = []
         for asset_versions in self.assets.values():
             for asset in asset_versions:
+                adam_metadata = asset.metadata['adam']
                 for key,value in kwargs.items():
-                    if hasattr(asset, key) and getattr(asset, key) == value:
+                    if adam_metadata.get(key, None) == value:
                         matches.append(asset)
         return matches
 

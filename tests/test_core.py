@@ -48,7 +48,7 @@ def test_search_asset(storage):
     assert not assets_with_1s_duration
     
     a = Asset()
-    a.duration = 1
+    a['duration'] = 1
     storage['key'] = a
 
     assets_with_1s_duration = storage.get(duration=1)
