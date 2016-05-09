@@ -127,9 +127,13 @@ def test_supported_mime_types():
     assert len(adam.supported_mime_types) > 0
 
 
-def test_empty_pipeline_does_not_change_assets(asset):
+@pytest.fixture
+def pipeline():
+    return Pipeline()
+
+
+def test_empty_pipeline_does_not_change_assets(pipeline, asset):
     another_asset = Asset()
-    pipeline = Pipeline()
 
     processed_assets = pipeline.process(asset, another_asset)
 
@@ -137,8 +141,7 @@ def test_empty_pipeline_does_not_change_assets(asset):
     assert another_asset in processed_assets
 
 
-def test_pipeline_contains_operator_after_it_was_added(asset):
-    pipeline = Pipeline()
+def test_pipeline_contains_operator_after_it_was_added(pipeline, asset):
     operator = unittest.mock.MagicMock()
 
     pipeline.add(operator)
