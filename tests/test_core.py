@@ -1,5 +1,6 @@
 import pytest
 import tempfile
+import unittest.mock
 
 import adam
 from adam.core import AssetStorage
@@ -59,11 +60,19 @@ def test_get_returns_assets_with_specified_adam_metadata(storage):
     assert assets_with_1s_duration[0] == a
 
 
-def test_read_unkown_file():
-    wav_path = 'tests/16-bit-mono.wav'
-    asset = adam.read(wav_path)
-    assert asset == adam.read_wav(wav_path)
+def test_read_calls_read_wav_when_reading_wave_file():
+    file_path = 'tests/16-bit-mono.wav'
+    mocked_read_method = unittest.mock.MagicMock()
+    for mime_type, read_method in adam.read_method_by_mime_type.items():
+        if read_method == adam.read_wav:
+            adam.read_method_by_mime_type[mime_type] = mocked_read_method
 
+    adam.read(file_path)
+
+    assert mocked_read_method.called
+
+
+def test_read_returns_same_result_as_read_mp3_when_reading_mp3():
     mp3_path = 'tests/64kbits.mp3'
     asset = adam.read(mp3_path)
     with open(mp3_path, 'rb') as mp3_file:
