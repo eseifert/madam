@@ -6,6 +6,7 @@ import adam
 from adam.core import AssetStorage
 from adam.core import Asset
 from adam.core import UnknownMimeTypeError
+from adam.core import Pipeline
 
 
 @pytest.fixture
@@ -124,3 +125,14 @@ def test_reading_file_with_unknown_mime_type_raises_exception():
 
 def test_supported_mime_types():
     assert len(adam.supported_mime_types) > 0
+
+
+def test_empty_pipeline_does_not_change_assets(asset):
+    another_asset = Asset()
+    pipeline = Pipeline()
+
+    processed_assets = pipeline.process(asset, another_asset)
+
+    assert asset in processed_assets
+    assert another_asset in processed_assets
+

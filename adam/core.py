@@ -85,3 +85,8 @@ def supports_mime_types(*mime_types):
             read_method_by_mime_type[mime_type] = f
         return f
     return wrap
+
+
+class Pipeline:
+    def process(self, *assets):
+        yield from assets
