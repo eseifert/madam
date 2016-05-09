@@ -132,18 +132,19 @@ def pipeline():
     return Pipeline()
 
 
-def test_empty_pipeline_does_not_change_assets(pipeline, asset):
-    another_asset = Asset()
+@pytest.mark.usefixtures('asset', 'pipeline')
+class TestPipeline:
+    def test_empty_pipeline_does_not_change_assets(self, pipeline, asset):
+        another_asset = Asset()
 
-    processed_assets = pipeline.process(asset, another_asset)
+        processed_assets = pipeline.process(asset, another_asset)
 
-    assert asset in processed_assets
-    assert another_asset in processed_assets
+        assert asset in processed_assets
+        assert another_asset in processed_assets
 
+    def test_pipeline_contains_operator_after_it_was_added(self, pipeline):
+        operator = unittest.mock.MagicMock()
 
-def test_pipeline_contains_operator_after_it_was_added(pipeline, asset):
-    operator = unittest.mock.MagicMock()
+        pipeline.add(operator)
 
-    pipeline.add(operator)
-
-    assert operator in pipeline.operators
+        assert operator in pipeline.operators
