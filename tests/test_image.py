@@ -13,6 +13,7 @@ def test_supports_jfif():
 jpeg_exif = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
 
 
+@pytest.fixture
 def jpeg_rgb_with_metadata(width=4, height=3):
     empty_image = PIL.Image.new('RGB', (width, height))
     image_data = io.BytesIO()
@@ -26,21 +27,19 @@ def jpeg_rgb_with_metadata(width=4, height=3):
 
 
 @pytest.fixture
-def jpeg_asset():
-    image_data = jpeg_rgb_with_metadata()
-    jpeg_asset = adam.image.read_jpeg(image_data)
+def jpeg_asset(jpeg_rgb_with_metadata):
+    jpeg_asset = adam.image.read_jpeg(jpeg_rgb_with_metadata)
     return jpeg_asset
 
 
-def test_read_jpeg_does_not_alter_the_original_file():
-    original_image_file = jpeg_rgb_with_metadata()
-    original_image_data = original_image_file.read()
-    original_image_file.seek(0)
+def test_read_jpeg_does_not_alter_the_original_file(jpeg_rgb_with_metadata):
+    original_image_data = jpeg_rgb_with_metadata.read()
+    jpeg_rgb_with_metadata.seek(0)
 
-    adam.image.read_jpeg(original_image_file)
+    adam.image.read_jpeg(jpeg_rgb_with_metadata)
 
-    original_image_file.seek(0)
-    image_data_after_reading = original_image_file.read()
+    jpeg_rgb_with_metadata.seek(0)
+    image_data_after_reading = jpeg_rgb_with_metadata.read()
     assert original_image_data == image_data_after_reading
 
 
