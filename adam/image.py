@@ -16,7 +16,11 @@ def read_jpeg(jpeg_file):
     jpeg_file.seek(0)
     asset.metadata['exif'], asset.essence = _separate_exif_from_image(jpeg_file)
 
-    asset['artist'] = asset.metadata['exif']['0th'][piexif.ImageIFD.Artist].decode('utf-8')
+    exif_0th = asset.metadata['exif'].get('0th')
+    if exif_0th:
+        artist = exif_0th.get(piexif.ImageIFD.Artist)
+        if artist:
+            asset['artist'] = artist.decode('utf-8')
     return asset
 
 
