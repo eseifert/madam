@@ -13,8 +13,8 @@ def test_supports_jfif():
 jpeg_exif = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
 
 
-def jpeg_rgb_with_metadata():
-    empty_image = PIL.Image.new('RGB', (1, 1))
+def jpeg_rgb_with_metadata(width=4, height=3):
+    empty_image = PIL.Image.new('RGB', (width, height))
     image_data = io.BytesIO()
     empty_image.save(image_data, 'JPEG')
     image_data.seek(0)
@@ -53,8 +53,8 @@ def test_jpeg_asset_essence_is_filled(jpeg_asset):
 
 
 def test_jpeg_asset_contains_size_information(jpeg_asset):
-    assert jpeg_asset.metadata['adam']['width'] == 1
-    assert jpeg_asset.metadata['adam']['height'] == 1
+    assert jpeg_asset.metadata['adam']['width'] == 4
+    assert jpeg_asset.metadata['adam']['height'] == 3
 
 
 def test_jpeg_asset_essence_is_a_jpeg(jpeg_asset):
