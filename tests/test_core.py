@@ -13,51 +13,92 @@ def storage():
     return AssetStorage()
 
 
-def test_contains_asset(storage):
-    a = Asset()
-    storage['key'] = a
-    assert storage['key'] == a
-    
+@pytest.mark.usefixtures('storage')
+class TestAssetStorage:
+    def test_contains_asset(self, storage):
+        a = Asset()
+        storage['key'] = a
+        assert storage['key'] == a
 
-def test_contains_key(storage):
-    a = Asset()
-    assert 'key' not in storage
-    storage['key'] = a
-    assert 'key' in storage
-    
+    def test_contains_key(self, storage):
+        a = Asset()
+        assert 'key' not in storage
+        storage['key'] = a
+        assert 'key' in storage
 
-def test_asset_is_versioned(storage):
-    a = Asset()
-    updated_a = Asset()
-    storage['key'] = a
-    storage['key'] = updated_a
-    versions = storage.versions_of('key')
-    assert len(versions) == 2
-    assert versions[0] == a
-    assert versions[1] == updated_a
+    def test_asset_is_versioned(self, storage):
+        a = Asset()
+        updated_a = Asset()
+        storage['key'] = a
+        storage['key'] = updated_a
+        versions = storage.versions_of('key')
+        assert len(versions) == 2
+        assert versions[0] == a
+        assert versions[1] == updated_a
+
+    def test_asset_is_deleted(self, storage):
+        a = Asset()
+        storage['key'] = a
+        del storage['key']
+        assert 'key' not in storage
+
+    def test_deleting_unknown_key_raises_exception(self, storage):
+        with pytest.raises(KeyError):
+            del storage['key']
+
+    def test_get_returns_empty_list_when_storage_is_empty(self, storage):
+        assets_with_1s_duration = storage.get()
+        assert not assets_with_1s_duration
+
+    def test_get_returns_assets_with_specified_adam_metadata(self, storage):
+        a = Asset()
+        a['duration'] = 1
+        storage['key'] = a
+
+        assets_with_1s_duration = storage.get(duration=1)
+
+        assert len(assets_with_1s_duration) == 1
+        assert assets_with_1s_duration[0] == a
 
 
-def test_asset_is_deleted(storage):
-    a = Asset()
-    storage['key'] = a
-    del storage['key']
-    assert 'key' not in storage
+@pytest.fixture
+def asset():
+    return Asset()
 
 
-def test_get_returns_empty_list_when_storage_is_empty(storage):
-    assets_with_1s_duration = storage.get()
-    assert not assets_with_1s_duration
-    
+@pytest.mark.usefixtures('asset')
+class TestAsset:
+    def test_asset_has_mime_type(self, asset):
+        assert hasattr(asset, 'mime_type')
 
-def test_get_returns_assets_with_specified_adam_metadata(storage):
-    a = Asset()
-    a['duration'] = 1
-    storage['key'] = a
+    def test_asset_has_essence(self, asset):
+        assert hasattr(asset, 'essence')
 
-    assets_with_1s_duration = storage.get(duration=1)
+    def test_asset_has_metadata_dict(self, asset):
+        assert asset.metadata == {'adam': {}}
 
-    assert len(assets_with_1s_duration) == 1
-    assert assets_with_1s_duration[0] == a
+    def test_asset_equality(self, asset):
+        asset.some_attr = 42
+        another_asset = Asset()
+        another_asset.some_attr = 42
+
+        assert asset is not another_asset
+        assert asset == another_asset
+
+    def test_asset_getitem_is_identical_to_access_through_adam_metadata(self, asset):
+        adam_metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
+        asset.metadata['adam'] = adam_metadata
+
+        for key, value in asset.metadata['adam'].items():
+            assert asset[key] == value
+
+    def test_asset_setitem_is_identical_to_access_through_adam_metadata(self, asset):
+        metadata_to_be_set = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
+
+        for key, value in metadata_to_be_set.items():
+            asset[key] = value
+
+        assert asset.metadata['adam'] == metadata_to_be_set
 
 
 @pytest.mark.parametrize('file_path,read_method_to_be_mocked', [
@@ -83,52 +124,3 @@ def test_reading_file_with_unknown_mime_type_raises_exception():
 
 def test_supported_mime_types():
     assert len(adam.supported_mime_types) > 0
-
-
-def test_deleting_unknown_key_raises_exception(storage):
-    with pytest.raises(KeyError):
-        del storage['key']
-
-
-def test_asset_has_mime_type():
-    a = Asset()
-    assert hasattr(a, 'mime_type')
-
-
-def test_asset_has_essence():
-    asset = Asset()
-    assert hasattr(asset, 'essence')
-
-
-def test_asset_has_metadata_dict():
-    asset = Asset()
-    assert asset.metadata == {'adam': {}}
-
-
-def test_asset_equality():
-    a = Asset()
-    a.some_attr = 42
-    b = Asset()
-    b.some_attr = 42
-    
-    assert a is not b
-    assert a == b
-
-
-def test_asset_getitem_is_identical_to_access_through_adam_metadata():
-    asset = Asset()
-    adam_metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
-    asset.metadata['adam'] = adam_metadata
-
-    for key, value in asset.metadata['adam'].items():
-        assert asset[key] == value
-
-
-def test_asset_setitem_is_identical_to_access_through_adam_metadata():
-    asset = Asset()
-    metadata_to_be_set = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
-
-    for key, value in metadata_to_be_set.items():
-        asset[key] = value
-
-    assert asset.metadata['adam'] == metadata_to_be_set
