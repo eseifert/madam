@@ -13,15 +13,13 @@ def test_supports_jfif():
 jpeg_exif = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
 
 
-@pytest.fixture(params=[jpeg_exif, {}], ids=['with metadata', 'without metadata'])
-def jpeg_rgb(request, width=4, height=3):
+def jpeg_rgb(exif={}, width=4, height=3):
     empty_image = PIL.Image.new('RGB', (width, height))
     image_data = io.BytesIO()
     empty_image.save(image_data, 'JPEG')
     image_data.seek(0)
 
-    exif = request.param
-    image_with_exif_metadata = add_exif_to_jpeg(exif, image_data) if request.param else image_data
+    image_with_exif_metadata = add_exif_to_jpeg(exif, image_data) if exif else image_data
     return image_with_exif_metadata
 
 
@@ -33,19 +31,27 @@ def add_exif_to_jpeg(exif, image_data):
 
 
 @pytest.fixture
-def jpeg_asset(jpeg_rgb):
-    jpeg_asset = adam.image.read_jpeg(jpeg_rgb)
+def jpeg_asset():
+    jpeg_asset = adam.image.read_jpeg(jpeg_rgb())
     return jpeg_asset
 
 
-def test_read_jpeg_does_not_alter_the_original_file(jpeg_rgb):
-    original_image_data = jpeg_rgb.read()
-    jpeg_rgb.seek(0)
+@pytest.fixture
+def jpeg_asset_with_exif():
+    jpeg_data = jpeg_rgb(exif=jpeg_exif)
+    jpeg_asset = adam.image.read_jpeg(jpeg_data)
+    return jpeg_asset
 
-    adam.image.read_jpeg(jpeg_rgb)
 
-    jpeg_rgb.seek(0)
-    image_data_after_reading = jpeg_rgb.read()
+def test_read_jpeg_does_not_alter_the_original_file():
+    jpeg_data = jpeg_rgb()
+    original_image_data = jpeg_data.read()
+    jpeg_data.seek(0)
+
+    adam.image.read_jpeg(jpeg_data)
+
+    jpeg_data.seek(0)
+    image_data_after_reading = jpeg_data.read()
     assert original_image_data == image_data_after_reading
 
 
@@ -75,8 +81,8 @@ def test_jpeg_asset_essence_can_be_read_multiple_times(jpeg_asset):
     assert essence_contents == same_essence_contents
 
 
-def test_jpeg_asset_essence_does_not_contain_exif_metadata(jpeg_asset):
-    essence_bytes = jpeg_asset.essence.read()
+def test_jpeg_asset_essence_does_not_contain_exif_metadata(jpeg_asset_with_exif):
+    essence_bytes = jpeg_asset_with_exif.essence.read()
 
     essence_exif = piexif.load(essence_bytes)
 
@@ -84,14 +90,12 @@ def test_jpeg_asset_essence_does_not_contain_exif_metadata(jpeg_asset):
         assert not ifd_data
 
 
-def test_jpeg_asset_contains_artist_information_when_exif_metadata_is_available(jpeg_asset):
-    if jpeg_asset.metadata['exif']:
-        assert jpeg_asset.metadata['adam']['artist'] == 'Test artist'
+def test_jpeg_asset_contains_artist_information_when_exif_metadata_is_available(jpeg_asset_with_exif):
+    assert jpeg_asset_with_exif.metadata['adam']['artist'] == 'Test artist'
 
 
-def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset):
-    if jpeg_asset.metadata['exif']:
-        assert jpeg_asset.metadata['exif'] == jpeg_exif
+def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset_with_exif):
+    assert jpeg_asset_with_exif.metadata['exif'] == jpeg_exif
 
 
 def test_fit_preserves_aspect_ratio(jpeg_asset):
