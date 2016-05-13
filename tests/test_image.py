@@ -98,8 +98,9 @@ def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset_with_exif):
     assert jpeg_asset_with_exif.metadata['exif'] == jpeg_exif
 
 
-def test_fit_preserves_aspect_ratio_for_landscape_image():
-    jpeg_asset_landscape = jpeg_asset(width=4, height=3)
+@pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
+def test_fit_preserves_aspect_ratio_for_landscape_image(width, height):
+    jpeg_asset_landscape = jpeg_asset(width=width, height=height)
     fit_operator = adam.image.Fit(9, 10)
 
     fitted_asset = fit_operator.apply(jpeg_asset_landscape)
@@ -108,8 +109,9 @@ def test_fit_preserves_aspect_ratio_for_landscape_image():
     assert fitted_asset['height'] == 7
 
 
-def test_fit_preserves_aspect_ratio_for_portrait_image():
-    jpeg_asset_portrait = jpeg_asset(width=3, height=5)
+@pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
+def test_fit_preserves_aspect_ratio_for_portrait_image(width, height):
+    jpeg_asset_portrait = jpeg_asset(width=width, height=height)
     fit_operator = adam.image.Fit(9, 10)
 
     fitted_asset = fit_operator.apply(jpeg_asset_portrait)
