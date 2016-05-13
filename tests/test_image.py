@@ -32,14 +32,14 @@ def add_exif_to_jpeg(exif, image_data):
 
 @pytest.fixture
 def jpeg_asset(width=4, height=3):
-    jpeg_asset = adam.image.read_jpeg(jpeg_rgb(width=width, height=height))
+    jpeg_asset = adam.read(jpeg_rgb(width=width, height=height), 'image/jpeg')
     return jpeg_asset
 
 
 @pytest.fixture
 def jpeg_asset_with_exif():
     jpeg_data = jpeg_rgb(exif=jpeg_exif)
-    jpeg_asset = adam.image.read_jpeg(jpeg_data)
+    jpeg_asset = adam.read(jpeg_data, 'image/jpeg')
     return jpeg_asset
 
 
@@ -48,7 +48,7 @@ def test_read_jpeg_does_not_alter_the_original_file():
     original_image_data = jpeg_data.read()
     jpeg_data.seek(0)
 
-    adam.image.read_jpeg(jpeg_data)
+    adam.read(jpeg_data, 'image/jpeg')
 
     jpeg_data.seek(0)
     image_data_after_reading = jpeg_data.read()
