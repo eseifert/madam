@@ -13,6 +13,12 @@ def test_supports_jfif():
 jpeg_exif = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
 
 
+@pytest.fixture(scope='module', autouse=True)
+def pillow_processor():
+    processor = adam.image.PillowProcessor()
+    return processor
+
+
 def jpeg_rgb(exif={}, width=4, height=3):
     empty_image = PIL.Image.new('RGB', (width, height))
     image_data = io.BytesIO()
@@ -99,11 +105,6 @@ def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset_with_exif):
 
 
 class TestPillowProcessor:
-    @pytest.fixture
-    def pillow_processor(self):
-        processor = adam.image.PillowProcessor()
-        return processor
-
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
         jpeg_asset_landscape = jpeg_asset(width=width, height=height)

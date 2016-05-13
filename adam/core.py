@@ -1,3 +1,4 @@
+import abc
 import collections
 import functools
 import io
@@ -89,12 +90,6 @@ def _read_path(path, mime_type=None):
         return read(file, mime_type)
 
 
-def processor(processor_class):
-    for mime_type in processor_class.can_read():
-        reading_processor_by_mime_type[mime_type] = processor_class
-    return processor_class
-
-
 class Pipeline:
     def __init__(self):
         self.operators = []
@@ -108,3 +103,18 @@ class Pipeline:
 
     def add(self, operator):
         self.operators.append(operator)
+
+
+class Processor(metaclass=abc.ABCMeta):
+    def __init__(self):
+        for mime_type in self.can_read():
+            reading_processor_by_mime_type[mime_type] = self.__class__
+
+    @abc.abstractmethod
+    def read(self):
+        pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def can_read():
+        pass

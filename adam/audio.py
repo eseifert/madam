@@ -1,4 +1,4 @@
-from adam.core import Asset, processor
+from adam.core import Asset, Processor
 import io
 import mutagen.mp3
 import os
@@ -7,8 +7,7 @@ import tempfile
 import wave
 
 
-@processor
-class WaveProcessor:
+class WaveProcessor(Processor):
     @staticmethod
     def read(wave_file):
         asset = Asset()
@@ -28,8 +27,7 @@ class WaveProcessor:
         return ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
 
 
-@processor
-class MutagenProcessor:
+class MutagenProcessor(Processor):
     @staticmethod
     def read(mp3_file):
         asset = Asset()
