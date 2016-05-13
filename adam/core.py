@@ -90,12 +90,10 @@ def _read_path(path, mime_type=None):
         return read(file, mime_type)
 
 
-def processor():
-    def wrap(f):
-        for mime_type in f.can_read():
-            reading_processor_by_mime_type[mime_type] = f
-        return f
-    return wrap
+def processor(processor_class):
+    for mime_type in processor_class.can_read():
+        reading_processor_by_mime_type[mime_type] = processor_class
+    return processor_class
 
 
 class Pipeline:
