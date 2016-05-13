@@ -151,9 +151,8 @@ class TestPipeline:
 
     def test_operator_is_applied_to_assets_when_process_is_called(self, pipeline, asset):
         operator = unittest.mock.MagicMock()
-        operator.apply = unittest.mock.MagicMock(return_value=asset)
         pipeline.add(operator)
 
         [processed_asset for processed_asset in pipeline.process(asset)]
 
-        operator.apply.assert_called_once_with(asset)
+        operator.assert_called_once_with(asset)
