@@ -127,3 +127,23 @@ def test_write_jpeg_creates_file_containing_asset_essence(jpeg_asset):
 
     file_data.seek(0)
     assert file_data.read() == jpeg_asset.essence.read()
+
+
+def test_fill_preserves_aspect_ratio_for_landscape_image():
+    jpeg_asset_landscape = jpeg_asset()
+    fill_operator = adam.image.Fill(9, 10)
+
+    filling_asset = fill_operator.apply(jpeg_asset_landscape)
+
+    assert filling_asset['width'] == 13
+    assert filling_asset['height'] == 10
+
+
+def test_fill_preserves_aspect_ratio_for_portrait_image():
+    jpeg_asset_portrait = jpeg_asset(width=3, height=5)
+    fill_operator = adam.image.Fill(9, 10)
+
+    filling_asset = fill_operator.apply(jpeg_asset_portrait)
+
+    assert filling_asset['width'] == 9
+    assert filling_asset['height'] == 15

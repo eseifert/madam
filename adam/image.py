@@ -59,3 +59,25 @@ class Fit:
         resized_image.save(resized_image_buffer, 'JPEG')
         resized_asset = read_jpeg(resized_image_buffer)
         return resized_asset
+
+
+class Fill:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    def apply(self, asset):
+        image = PIL.Image.open(asset.essence)
+        width_delta = self.width - image.width
+        height_delta = self.height - image.height
+        if width_delta > height_delta:
+            resize_factor = self.width/image.width
+        else:
+            resize_factor = self.height/image.height
+        resized_width = round(resize_factor*image.width)
+        resized_height = round(resize_factor*image.height)
+        resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)
+        resized_image_buffer = io.BytesIO()
+        resized_image.save(resized_image_buffer, 'JPEG')
+        resized_asset = read_jpeg(resized_image_buffer)
+        return resized_asset
