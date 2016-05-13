@@ -1,6 +1,7 @@
 import collections
 import functools
 import io
+import inspect
 import mimetypes
 
 
@@ -91,8 +92,12 @@ def _read_path(path, mime_type=None):
 
 def supports_mime_types(*mime_types):
     def wrap(f):
-        for mime_type in mime_types:
-            read_method_by_mime_type[mime_type] = f
+        if inspect.isclass(f):
+            for mime_type in f.can_read():
+                read_method_by_mime_type[mime_type] = f.read
+        else:
+            for mime_type in mime_types:
+                read_method_by_mime_type[mime_type] = f
         return f
     return wrap
 

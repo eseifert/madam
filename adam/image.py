@@ -9,25 +9,6 @@ import PIL.Image
 from adam.core import Asset, supports_mime_types
 
 
-@supports_mime_types('image/jpeg')
-def read_jpeg(jpeg_file):
-    asset = Asset()
-    asset['mime_type'] = 'image/jpeg'
-    image = PIL.Image.open(jpeg_file)
-    asset['width'] = image.width
-    asset['height'] = image.height
-
-    jpeg_file.seek(0)
-    asset.metadata['exif'], asset.essence = _separate_exif_from_image(jpeg_file)
-
-    exif_0th = asset.metadata['exif'].get('0th')
-    if exif_0th:
-        artist = exif_0th.get(piexif.ImageIFD.Artist)
-        if artist:
-            asset['artist'] = artist.decode('utf-8')
-    return asset
-
-
 def _separate_exif_from_image(image_file):
     essence_data_with_metadata = image_file.read()
     exif = piexif.load(essence_data_with_metadata)
@@ -57,7 +38,26 @@ def operator(function):
     return wrapper
 
 
+@supports_mime_types()
 class PillowProcessor:
+    @staticmethod
+    def read(jpeg_file):
+        asset = Asset()
+        asset['mime_type'] = 'image/jpeg'
+        image = PIL.Image.open(jpeg_file)
+        asset['width'] = image.width
+        asset['height'] = image.height
+
+        jpeg_file.seek(0)
+        asset.metadata['exif'], asset.essence = _separate_exif_from_image(jpeg_file)
+
+        exif_0th = asset.metadata['exif'].get('0th')
+        if exif_0th:
+            artist = exif_0th.get(piexif.ImageIFD.Artist)
+            if artist:
+                asset['artist'] = artist.decode('utf-8')
+        return asset
+
     @operator
     def resize(self, asset, width, height, mode=ResizeMode.EXACT):
         image = PIL.Image.open(asset.essence)
@@ -76,5 +76,9 @@ class PillowProcessor:
         resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)
         resized_image_buffer = io.BytesIO()
         resized_image.save(resized_image_buffer, 'JPEG')
-        resized_asset = read_jpeg(resized_image_buffer)
+        resized_asset = self.read(resized_image_buffer)
         return resized_asset
+
+    @staticmethod
+    def can_read():
+        return ['image/jpeg']
