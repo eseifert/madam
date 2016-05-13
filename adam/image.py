@@ -39,8 +39,9 @@ def operator(function):
 
 
 class PillowProcessor(Processor):
-    @staticmethod
-    def read(jpeg_file):
+    supported_read_types = ['image/jpeg']
+
+    def read(self, jpeg_file):
         asset = Asset()
         asset['mime_type'] = 'image/jpeg'
         image = PIL.Image.open(jpeg_file)
@@ -78,6 +79,5 @@ class PillowProcessor(Processor):
         resized_asset = self.read(resized_image_buffer)
         return resized_asset
 
-    @staticmethod
-    def can_read():
+    def can_read(self):
         return ['image/jpeg']

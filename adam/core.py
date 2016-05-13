@@ -75,7 +75,7 @@ reading_processor_by_mime_type = {}
 def read(file, mime_type=None):
     if not mime_type:
         raise UnknownMimeTypeError('Unable to determine MIME type for open file')
-    processor = reading_processor_by_mime_type[mime_type]()
+    processor = reading_processor_by_mime_type[mime_type]
     asset = processor.read(file)
     return asset
 
@@ -106,15 +106,16 @@ class Pipeline:
 
 
 class Processor(metaclass=abc.ABCMeta):
+    supported_read_types = []
+
     def __init__(self):
-        for mime_type in self.can_read():
-            reading_processor_by_mime_type[mime_type] = self.__class__
+        for mime_type in self.__class__.supported_read_types:
+            reading_processor_by_mime_type[mime_type] = self
 
     @abc.abstractmethod
     def read(self):
         pass
 
-    @staticmethod
     @abc.abstractmethod
-    def can_read():
+    def can_read(self):
         pass
