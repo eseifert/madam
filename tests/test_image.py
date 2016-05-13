@@ -120,8 +120,9 @@ def test_resize_in_fit_mode_preserves_aspect_ratio_for_portrait_image(width, hei
     assert fitted_asset['height'] == 10
 
 
-def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image():
-    jpeg_asset_landscape = jpeg_asset()
+@pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
+def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image(width, height):
+    jpeg_asset_landscape = jpeg_asset(width=width, height=height)
     resize_fill = adam.image.Resize(9, 10, mode=adam.image.Resize.Mode.FILL)
 
     filling_asset = resize_fill.apply(jpeg_asset_landscape)
@@ -130,8 +131,9 @@ def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image():
     assert filling_asset['height'] == 10
 
 
-def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image():
-    jpeg_asset_portrait = jpeg_asset(width=3, height=5)
+@pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
+def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image(width, height):
+    jpeg_asset_portrait = jpeg_asset(width=width, height=height)
     resize_fill = adam.image.Resize(9, 10, mode=adam.image.Resize.Mode.FILL)
 
     filling_asset = resize_fill.apply(jpeg_asset_portrait)
