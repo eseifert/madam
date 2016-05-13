@@ -116,6 +116,5 @@ class Processor(metaclass=abc.ABCMeta):
     def read(self):
         pass
 
-    @abc.abstractmethod
-    def can_read(self):
-        pass
+    def can_read(self, mime_type):
+        return mime_type in self.__class__.supported_read_types

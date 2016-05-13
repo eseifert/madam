@@ -78,6 +78,3 @@ class PillowProcessor(Processor):
         resized_image.save(resized_image_buffer, 'JPEG')
         resized_asset = self.read(resized_image_buffer)
         return resized_asset
-
-    def can_read(self):
-        return ['image/jpeg']
