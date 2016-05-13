@@ -1,3 +1,4 @@
+import io
 import pytest
 import tempfile
 import unittest.mock
@@ -117,10 +118,16 @@ def test_read_calls_read_method_for_respective_file_type(file_path, read_method_
     assert mocked_read_method.called
 
 
-def test_reading_file_with_unknown_mime_type_raises_exception():
+def test_reading_path_without_extension_mime_type_raises_exception():
     with tempfile.NamedTemporaryFile() as tmp:
         with pytest.raises(UnknownMimeTypeError):
             adam.read(tmp.name)
+
+
+def test_reading_file_without_mime_type_raises_exception():
+    file = io.BytesIO()
+    with pytest.raises(UnknownMimeTypeError):
+        adam.read(file)
 
 
 def test_supported_mime_types():
