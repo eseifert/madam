@@ -1,3 +1,4 @@
+import functools
 import io
 from enum import Enum
 
@@ -48,7 +49,16 @@ class ResizeMode(Enum):
     FILL = 2
 
 
+def operation(function):
+    @functools.wraps(function)
+    def wrapper(self, **kwargs):
+        configured_operator = functools.partial(function, self, **kwargs)
+        return configured_operator
+    return wrapper
+
+
 class PillowProcessor:
+    @operation
     def resize(self, asset, width, height, mode=ResizeMode.EXACT):
         image = PIL.Image.open(asset.essence)
         width_delta = width - image.width
