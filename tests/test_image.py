@@ -142,6 +142,16 @@ def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image(width, he
     assert filling_asset['height'] == 15
 
 
+def test_resize_scales_image_to_exact_dimensions_by_default():
+    jpeg = jpeg_asset()
+    resize_fill = adam.image.Resize(9, 10)
+
+    filling_asset = resize_fill.apply(jpeg)
+
+    assert filling_asset['width'] == 9
+    assert filling_asset['height'] == 10
+
+
 def test_write_jpeg_creates_file_containing_asset_essence(jpeg_asset):
     file_data = io.BytesIO()
 

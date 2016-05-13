@@ -57,18 +57,16 @@ class Resize:
         image = PIL.Image.open(asset.essence)
         width_delta = self.width - image.width
         height_delta = self.height - image.height
-        if self.mode == self.Mode.FIT:
-            if width_delta < height_delta:
+        resized_width = self.width
+        resized_height = self.height
+        if self.mode in (self.Mode.FIT, self.Mode.FILL):
+            if self.mode == self.Mode.FIT and width_delta < height_delta or \
+               self.mode == self.Mode.FILL and width_delta > height_delta:
                 resize_factor = self.width/image.width
             else:
                 resize_factor = self.height/image.height
-        else:
-            if width_delta > height_delta:
-                resize_factor = self.width/image.width
-            else:
-                resize_factor = self.height/image.height
-        resized_width = round(resize_factor*image.width)
-        resized_height = round(resize_factor*image.height)
+            resized_width = round(resize_factor*image.width)
+            resized_height = round(resize_factor*image.height)
         resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)
         resized_image_buffer = io.BytesIO()
         resized_image.save(resized_image_buffer, 'JPEG')
