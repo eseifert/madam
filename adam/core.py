@@ -69,17 +69,27 @@ mimetypes.init()
 read_method_by_mime_type = {}
 
 
-def read(file_or_path):
+def read(file_or_path, mime_type=None):
     if isinstance(file_or_path, str):
-        file_format, encoding = mimetypes.guess_type(file_or_path)
-        if file_format not in read_method_by_mime_type:
-            raise UnknownMimeTypeError('Unable to determine MIME type for file at "%s"' % file_or_path)
-    else:
+        return _read_path(file_or_path, mime_type=mime_type)
+    return _read_file(file_or_path, mime_type)
+
+
+def _read_file(file, mime_type):
+    if not mime_type:
         raise UnknownMimeTypeError('Unable to determine MIME type for open file')
-    read_method = read_method_by_mime_type[file_format]
-    with open(file_or_path, 'rb') as file:
-        asset = read_method(file)
+    read_method = read_method_by_mime_type[mime_type]
+    asset = read_method(file)
     return asset
+
+
+def _read_path(path, mime_type=None):
+    if not mime_type:
+        mime_type, encoding = mimetypes.guess_type(path)
+    if not mime_type:
+        raise UnknownMimeTypeError('Unable to determine MIME type for file at "%s"' % path)
+    with open(path, 'rb') as file:
+        return _read_file(file, mime_type)
 
 
 def supports_mime_types(*mime_types):

@@ -103,18 +103,25 @@ class TestAsset:
         assert asset.metadata['adam'] == metadata_to_be_set
 
 
-@pytest.mark.parametrize('file_path,read_method_to_be_mocked', [
-    ('tests/16-bit-mono.wav', adam.read_wav),
-    ('tests/64kbits.mp3', adam.read_mp3)
+def bytesio_from_path(path):
+    with open(path, 'rb') as file:
+        bytesio = io.BytesIO(file.read())
+    return bytesio
+
+
+@pytest.mark.parametrize('file_or_path, mime_type, mime_type_to_be_mocked', [
+    ('tests/16-bit-mono.wav', None, 'audio/x-wav'),
+    ('tests/64kbits.mp3', None, 'audio/mpeg'),
+    (bytesio_from_path('tests/16-bit-mono.wav'), 'audio/x-wav', 'audio/x-wav'),
+    (bytesio_from_path('tests/64kbits.mp3'), 'audio/mpeg', 'audio/mpeg')
 ])
-def test_read_calls_read_method_for_respective_file_type(file_path, read_method_to_be_mocked):
+def test_read_calls_read_method_for_respective_file_type(file_or_path, mime_type, mime_type_to_be_mocked):
+    # When
     mocked_read_method = unittest.mock.MagicMock()
-    for mime_type, read_method in adam.read_method_by_mime_type.items():
-        if read_method == read_method_to_be_mocked:
-            adam.read_method_by_mime_type[mime_type] = mocked_read_method
-
-    adam.read(file_path)
-
+    with unittest.mock.patch.dict(adam.read_method_by_mime_type, {mime_type_to_be_mocked: mocked_read_method}):
+        # Then
+        adam.read(file_or_path, mime_type=mime_type)
+    # Assert
     assert mocked_read_method.called
 
 
