@@ -42,29 +42,25 @@ def write_jpeg(jpeg_asset, jpeg_file):
     image.save(jpeg_file, 'JPEG')
 
 
-class Resize:
-    class Mode(Enum):
-        EXACT = 0
-        FIT = 1
-        FILL = 2
+class ResizeMode(Enum):
+    EXACT = 0
+    FIT = 1
+    FILL = 2
 
-    def __init__(self, width, height, mode=Mode.EXACT):
-        self.width = width
-        self.height = height
-        self.mode = mode
 
-    def apply(self, asset):
+class PillowProcessor:
+    def resize(self, asset, width, height, mode=ResizeMode.EXACT):
         image = PIL.Image.open(asset.essence)
-        width_delta = self.width - image.width
-        height_delta = self.height - image.height
-        resized_width = self.width
-        resized_height = self.height
-        if self.mode in (self.Mode.FIT, self.Mode.FILL):
-            if self.mode == self.Mode.FIT and width_delta < height_delta or \
-               self.mode == self.Mode.FILL and width_delta > height_delta:
-                resize_factor = self.width/image.width
+        width_delta = width - image.width
+        height_delta = height - image.height
+        resized_width = width
+        resized_height = height
+        if mode in (ResizeMode.FIT, ResizeMode.FILL):
+            if mode == ResizeMode.FIT and width_delta < height_delta or \
+               mode == ResizeMode.FILL and width_delta > height_delta:
+                resize_factor = width/image.width
             else:
-                resize_factor = self.height/image.height
+                resize_factor = height/image.height
             resized_width = round(resize_factor*image.width)
             resized_height = round(resize_factor*image.height)
         resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)
