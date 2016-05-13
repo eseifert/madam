@@ -49,7 +49,7 @@ class ResizeMode(Enum):
     FILL = 2
 
 
-def operation(function):
+def operator(function):
     @functools.wraps(function)
     def wrapper(self, **kwargs):
         configured_operator = functools.partial(function, self, **kwargs)
@@ -58,7 +58,7 @@ def operation(function):
 
 
 class PillowProcessor:
-    @operation
+    @operator
     def resize(self, asset, width, height, mode=ResizeMode.EXACT):
         image = PIL.Image.open(asset.essence)
         width_delta = width - image.width
