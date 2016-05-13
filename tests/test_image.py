@@ -118,3 +118,12 @@ def test_fit_preserves_aspect_ratio_for_portrait_image(width, height):
 
     assert fitted_asset['width'] == 6
     assert fitted_asset['height'] == 10
+
+
+def test_write_jpeg_creates_file_containing_asset_essence(jpeg_asset):
+    file_data = io.BytesIO()
+
+    adam.image.write_jpeg(jpeg_asset, file_data)
+
+    file_data.seek(0)
+    assert file_data.read() == jpeg_asset.essence.read()
