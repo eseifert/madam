@@ -31,8 +31,8 @@ def add_exif_to_jpeg(exif, image_data):
 
 
 @pytest.fixture
-def jpeg_asset():
-    jpeg_asset = adam.image.read_jpeg(jpeg_rgb())
+def jpeg_asset(width=4, height=3):
+    jpeg_asset = adam.image.read_jpeg(jpeg_rgb(width=width, height=height))
     return jpeg_asset
 
 
@@ -98,10 +98,21 @@ def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset_with_exif):
     assert jpeg_asset_with_exif.metadata['exif'] == jpeg_exif
 
 
-def test_fit_preserves_aspect_ratio(jpeg_asset):
+def test_fit_preserves_aspect_ratio_for_landscape_image():
+    jpeg_asset_landscape = jpeg_asset(width=4, height=3)
     fit_operator = adam.image.Fit(9, 10)
 
-    fitted_asset = fit_operator.apply(jpeg_asset)
+    fitted_asset = fit_operator.apply(jpeg_asset_landscape)
 
     assert fitted_asset['width'] == 9
     assert fitted_asset['height'] == 7
+
+
+def test_fit_preserves_aspect_ratio_for_portrait_image():
+    jpeg_asset_portrait = jpeg_asset(width=3, height=5)
+    fit_operator = adam.image.Fit(9, 10)
+
+    fitted_asset = fit_operator.apply(jpeg_asset_portrait)
+
+    assert fitted_asset['width'] == 6
+    assert fitted_asset['height'] == 10

@@ -40,7 +40,12 @@ class Fit:
 
     def apply(self, asset):
         image = PIL.Image.open(asset.essence)
-        resize_factor = self.width/image.width
+        width_delta = self.width - image.width
+        height_delta = self.height - image.height
+        if width_delta < height_delta:
+            resize_factor = self.width/image.width
+        else:
+            resize_factor = self.height/image.height
         resized_width = round(resize_factor*image.width)
         resized_height = round(resize_factor*image.height)
         resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)
