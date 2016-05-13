@@ -98,59 +98,55 @@ def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset_with_exif):
     assert jpeg_asset_with_exif.metadata['exif'] == jpeg_exif
 
 
-@pytest.fixture
-def pillow_processor():
-    processor = adam.image.PillowProcessor()
-    return processor
+class TestPillowProcessor:
+    @pytest.fixture
+    def pillow_processor(self):
+        processor = adam.image.PillowProcessor()
+        return processor
 
+    @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
+    def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
+        jpeg_asset_landscape = jpeg_asset(width=width, height=height)
 
-@pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
-def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(pillow_processor, width, height):
-    jpeg_asset_landscape = jpeg_asset(width=width, height=height)
+        fitted_asset = pillow_processor.resize(jpeg_asset_landscape, 9, 10, mode=adam.image.ResizeMode.FIT)
 
-    fitted_asset = pillow_processor.resize(jpeg_asset_landscape, 9, 10, mode=adam.image.ResizeMode.FIT)
+        assert fitted_asset['width'] == 9
+        assert fitted_asset['height'] == 7
 
-    assert fitted_asset['width'] == 9
-    assert fitted_asset['height'] == 7
+    @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
+    def test_resize_in_fit_mode_preserves_aspect_ratio_for_portrait_image(self, pillow_processor, width, height):
+        jpeg_asset_portrait = jpeg_asset(width=width, height=height)
 
+        fitted_asset = pillow_processor.resize(jpeg_asset_portrait, 9, 10, mode=adam.image.ResizeMode.FIT)
 
-@pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
-def test_resize_in_fit_mode_preserves_aspect_ratio_for_portrait_image(pillow_processor, width, height):
-    jpeg_asset_portrait = jpeg_asset(width=width, height=height)
+        assert fitted_asset['width'] == 6
+        assert fitted_asset['height'] == 10
 
-    fitted_asset = pillow_processor.resize(jpeg_asset_portrait, 9, 10, mode=adam.image.ResizeMode.FIT)
+    @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
+    def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
+        jpeg_asset_landscape = jpeg_asset(width=width, height=height)
 
-    assert fitted_asset['width'] == 6
-    assert fitted_asset['height'] == 10
+        filling_asset = pillow_processor.resize(jpeg_asset_landscape, 9, 10, mode=adam.image.ResizeMode.FILL)
 
+        assert filling_asset['width'] == 13
+        assert filling_asset['height'] == 10
 
-@pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
-def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image(pillow_processor, width, height):
-    jpeg_asset_landscape = jpeg_asset(width=width, height=height)
+    @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
+    def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image(self, pillow_processor, width, height):
+        jpeg_asset_portrait = jpeg_asset(width=width, height=height)
 
-    filling_asset = pillow_processor.resize(jpeg_asset_landscape, 9, 10, mode=adam.image.ResizeMode.FILL)
+        filling_asset = pillow_processor.resize(jpeg_asset_portrait, 9, 10, mode=adam.image.ResizeMode.FILL)
 
-    assert filling_asset['width'] == 13
-    assert filling_asset['height'] == 10
+        assert filling_asset['width'] == 9
+        assert filling_asset['height'] == 15
 
+    def test_resize_scales_image_to_exact_dimensions_by_default(self, pillow_processor):
+        jpeg = jpeg_asset()
 
-@pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
-def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image(pillow_processor, width, height):
-    jpeg_asset_portrait = jpeg_asset(width=width, height=height)
+        filling_asset = pillow_processor.resize(jpeg, 9, 10)
 
-    filling_asset = pillow_processor.resize(jpeg_asset_portrait, 9, 10, mode=adam.image.ResizeMode.FILL)
-
-    assert filling_asset['width'] == 9
-    assert filling_asset['height'] == 15
-
-
-def test_resize_scales_image_to_exact_dimensions_by_default(pillow_processor):
-    jpeg = jpeg_asset()
-
-    filling_asset = pillow_processor.resize(jpeg, 9, 10)
-
-    assert filling_asset['width'] == 9
-    assert filling_asset['height'] == 10
+        assert filling_asset['width'] == 9
+        assert filling_asset['height'] == 10
 
 
 def test_write_jpeg_creates_file_containing_asset_essence(jpeg_asset):
