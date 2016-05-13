@@ -118,7 +118,7 @@ def bytesio_from_path(path):
 def test_read_calls_read_method_for_respective_file_type(file_or_path, mime_type, mime_type_to_be_mocked):
     # When
     mocked_read_method = unittest.mock.MagicMock()
-    with unittest.mock.patch.dict(adam.read_method_by_mime_type, {mime_type_to_be_mocked: mocked_read_method}):
+    with unittest.mock.patch.dict(adam.reading_processor_by_mime_type, {mime_type_to_be_mocked: mocked_read_method}):
         # Then
         adam.read(file_or_path, mime_type=mime_type)
     # Assert

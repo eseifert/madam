@@ -68,15 +68,15 @@ class UnknownMimeTypeError(ValueError):
     pass
 
 mimetypes.init()
-read_method_by_mime_type = {}
+reading_processor_by_mime_type = {}
 
 
 @functools.singledispatch
 def read(file, mime_type=None):
     if not mime_type:
         raise UnknownMimeTypeError('Unable to determine MIME type for open file')
-    read_method = read_method_by_mime_type[mime_type]
-    asset = read_method(file)
+    processor = reading_processor_by_mime_type[mime_type]()
+    asset = processor.read(file)
     return asset
 
 
@@ -90,14 +90,10 @@ def _read_path(path, mime_type=None):
         return read(file, mime_type)
 
 
-def supports_mime_types(*mime_types):
+def processor():
     def wrap(f):
-        if inspect.isclass(f):
-            for mime_type in f.can_read():
-                read_method_by_mime_type[mime_type] = f.read
-        else:
-            for mime_type in mime_types:
-                read_method_by_mime_type[mime_type] = f
+        for mime_type in f.can_read():
+            reading_processor_by_mime_type[mime_type] = f
         return f
     return wrap
 

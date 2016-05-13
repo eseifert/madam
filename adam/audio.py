@@ -1,4 +1,4 @@
-from adam.core import Asset, supports_mime_types
+from adam.core import Asset, processor
 import io
 import mutagen.mp3
 import os
@@ -7,7 +7,7 @@ import tempfile
 import wave
 
 
-@supports_mime_types()
+@processor
 class WaveProcessor:
     @staticmethod
     def read(wave_file):
@@ -28,7 +28,7 @@ class WaveProcessor:
         return ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
 
 
-@supports_mime_types()
+@processor
 class MutagenProcessor:
     @staticmethod
     def read(mp3_file):

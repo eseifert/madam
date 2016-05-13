@@ -6,7 +6,7 @@ import piexif
 import PIL.ExifTags
 import PIL.Image
 
-from adam.core import Asset, supports_mime_types
+from adam.core import Asset, processor
 
 
 def _separate_exif_from_image(image_file):
@@ -38,7 +38,7 @@ def operator(function):
     return wrapper
 
 
-@supports_mime_types()
+@processor
 class PillowProcessor:
     @staticmethod
     def read(jpeg_file):
