@@ -1,7 +1,6 @@
 import collections
 import functools
 import io
-import inspect
 import mimetypes
 
 
