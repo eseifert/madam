@@ -1,8 +1,11 @@
-from adam.core import Asset, supports_mime_types
 import io
+from enum import Enum
+
 import piexif
 import PIL.ExifTags
 import PIL.Image
+
+from adam.core import Asset, supports_mime_types
 
 
 @supports_mime_types('image/jpeg')
@@ -39,41 +42,31 @@ def write_jpeg(jpeg_asset, jpeg_file):
     image.save(jpeg_file, 'JPEG')
 
 
-class Fit:
-    def __init__(self, width, height):
+class Resize:
+    class Mode(Enum):
+        EXACT = 0
+        FIT = 1
+        FILL = 2
+
+    def __init__(self, width, height, mode=Mode.EXACT):
         self.width = width
         self.height = height
+        self.mode = mode
 
     def apply(self, asset):
         image = PIL.Image.open(asset.essence)
         width_delta = self.width - image.width
         height_delta = self.height - image.height
-        if width_delta < height_delta:
-            resize_factor = self.width/image.width
+        if self.mode == self.Mode.FIT:
+            if width_delta < height_delta:
+                resize_factor = self.width/image.width
+            else:
+                resize_factor = self.height/image.height
         else:
-            resize_factor = self.height/image.height
-        resized_width = round(resize_factor*image.width)
-        resized_height = round(resize_factor*image.height)
-        resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)
-        resized_image_buffer = io.BytesIO()
-        resized_image.save(resized_image_buffer, 'JPEG')
-        resized_asset = read_jpeg(resized_image_buffer)
-        return resized_asset
-
-
-class Fill:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-
-    def apply(self, asset):
-        image = PIL.Image.open(asset.essence)
-        width_delta = self.width - image.width
-        height_delta = self.height - image.height
-        if width_delta > height_delta:
-            resize_factor = self.width/image.width
-        else:
-            resize_factor = self.height/image.height
+            if width_delta > height_delta:
+                resize_factor = self.width/image.width
+            else:
+                resize_factor = self.height/image.height
         resized_width = round(resize_factor*image.width)
         resized_height = round(resize_factor*image.height)
         resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)

@@ -99,25 +99,45 @@ def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset_with_exif):
 
 
 @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
-def test_fit_preserves_aspect_ratio_for_landscape_image(width, height):
+def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(width, height):
     jpeg_asset_landscape = jpeg_asset(width=width, height=height)
-    fit_operator = adam.image.Fit(9, 10)
+    resize_fit = adam.image.Resize(9, 10, mode=adam.image.Resize.Mode.FIT)
 
-    fitted_asset = fit_operator.apply(jpeg_asset_landscape)
+    fitted_asset = resize_fit.apply(jpeg_asset_landscape)
 
     assert fitted_asset['width'] == 9
     assert fitted_asset['height'] == 7
 
 
 @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
-def test_fit_preserves_aspect_ratio_for_portrait_image(width, height):
+def test_resize_in_fit_mode_preserves_aspect_ratio_for_portrait_image(width, height):
     jpeg_asset_portrait = jpeg_asset(width=width, height=height)
-    fit_operator = adam.image.Fit(9, 10)
+    resize_fit = adam.image.Resize(9, 10, mode=adam.image.Resize.Mode.FIT)
 
-    fitted_asset = fit_operator.apply(jpeg_asset_portrait)
+    fitted_asset = resize_fit.apply(jpeg_asset_portrait)
 
     assert fitted_asset['width'] == 6
     assert fitted_asset['height'] == 10
+
+
+def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image():
+    jpeg_asset_landscape = jpeg_asset()
+    resize_fill = adam.image.Resize(9, 10, mode=adam.image.Resize.Mode.FILL)
+
+    filling_asset = resize_fill.apply(jpeg_asset_landscape)
+
+    assert filling_asset['width'] == 13
+    assert filling_asset['height'] == 10
+
+
+def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image():
+    jpeg_asset_portrait = jpeg_asset(width=3, height=5)
+    resize_fill = adam.image.Resize(9, 10, mode=adam.image.Resize.Mode.FILL)
+
+    filling_asset = resize_fill.apply(jpeg_asset_portrait)
+
+    assert filling_asset['width'] == 9
+    assert filling_asset['height'] == 15
 
 
 def test_write_jpeg_creates_file_containing_asset_essence(jpeg_asset):
@@ -127,23 +147,3 @@ def test_write_jpeg_creates_file_containing_asset_essence(jpeg_asset):
 
     file_data.seek(0)
     assert file_data.read() == jpeg_asset.essence.read()
-
-
-def test_fill_preserves_aspect_ratio_for_landscape_image():
-    jpeg_asset_landscape = jpeg_asset()
-    fill_operator = adam.image.Fill(9, 10)
-
-    filling_asset = fill_operator.apply(jpeg_asset_landscape)
-
-    assert filling_asset['width'] == 13
-    assert filling_asset['height'] == 10
-
-
-def test_fill_preserves_aspect_ratio_for_portrait_image():
-    jpeg_asset_portrait = jpeg_asset(width=3, height=5)
-    fill_operator = adam.image.Fill(9, 10)
-
-    filling_asset = fill_operator.apply(jpeg_asset_portrait)
-
-    assert filling_asset['width'] == 9
-    assert filling_asset['height'] == 15
