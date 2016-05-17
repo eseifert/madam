@@ -83,20 +83,19 @@ class PillowProcessor(Processor):
         resized_asset = self.read(resized_image_buffer)
         return resized_asset
 
-    @operator
-    def transpose(self, asset):
+    def _rotate_lossless(self, asset, rotation):
         image = PIL.Image.open(asset.essence)
-        transposed_image = image.transpose(PIL.Image.TRANSPOSE)
+        transposed_image = image.transpose(rotation)
         transposed_image_buffer = io.BytesIO()
         transposed_image.save(transposed_image_buffer, 'JPEG')
         transposed_asset = self.read(transposed_image_buffer)
         return transposed_asset
 
     @operator
+    def transpose(self, asset):
+        return self._rotate_lossless(asset, PIL.Image.TRANSPOSE)
+
+    @operator
     def flip(self, asset, orientation):
-        image = PIL.Image.open(asset.essence)
-        flipped_image = image.transpose(PIL.Image.FLIP_LEFT_RIGHT)
-        flipped_image_buffer = io.BytesIO()
-        flipped_image.save(flipped_image_buffer, 'JPEG')
-        flipped_asset = self.read(flipped_image_buffer)
-        return flipped_asset
+        flip_orientation = PIL.Image.FLIP_LEFT_RIGHT if orientation == FlipOrientation.HORIZONTAL else PIL.Image.FLIP_TOP_BOTTOM
+        return self._rotate_lossless(asset, flip_orientation)
