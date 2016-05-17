@@ -161,3 +161,17 @@ class TestPillowProcessor:
 
         file_data.seek(0)
         assert file_data.read() == jpeg_asset.essence.read()
+
+    def test_transpose_flips_dimensions(self, pillow_processor, jpeg_asset):
+        transpose_operator = pillow_processor.transpose()
+
+        transposed_asset = transpose_operator(jpeg_asset)
+
+        assert jpeg_asset['width'] == transposed_asset['height'] and jpeg_asset['height'] == transposed_asset['width']
+
+    def test_transpose_is_reversible(self, pillow_processor, jpeg_asset):
+        transpose_operator = pillow_processor.transpose()
+
+        transposed_asset = transpose_operator(transpose_operator(jpeg_asset))
+
+        assert transposed_asset.essence.read() == jpeg_asset.essence.read()

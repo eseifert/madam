@@ -77,3 +77,12 @@ class PillowProcessor(Processor):
         resized_image.save(resized_image_buffer, 'JPEG')
         resized_asset = self.read(resized_image_buffer)
         return resized_asset
+
+    @operator
+    def transpose(self, asset):
+        image = PIL.Image.open(asset.essence)
+        transposed_image = image.transpose(PIL.Image.TRANSPOSE)
+        transposed_image_buffer = io.BytesIO()
+        transposed_image.save(transposed_image_buffer, 'JPEG')
+        transposed_asset = self.read(transposed_image_buffer)
+        return transposed_asset
