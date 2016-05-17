@@ -117,7 +117,7 @@ def bytesio_from_path(path):
 ])
 def test_read_calls_read_method_for_respective_file_type(file_or_path, mime_type, mime_type_to_be_mocked):
     # When
-    processor = adam.reading_processor_by_mime_type[mime_type_to_be_mocked]
+    processor = next((processor for processor in adam.core.processors if processor.can_read(mime_type_to_be_mocked)))
     with unittest.mock.patch.object(processor, 'read') as read_method:
         # Then
         adam.read(file_or_path, mime_type=mime_type)
@@ -135,10 +135,6 @@ def test_reading_file_without_mime_type_raises_exception():
     file = io.BytesIO()
     with pytest.raises(UnknownMimeTypeError):
         adam.read(file)
-
-
-def test_supported_mime_types():
-    assert len(adam.supported_mime_types) > 0
 
 
 @pytest.fixture

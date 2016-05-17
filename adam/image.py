@@ -51,8 +51,6 @@ def operator(function):
 
 
 class PillowProcessor(Processor):
-    supported_read_types = ['image/jpeg']
-
     def read(self, jpeg_file):
         asset = Asset()
         asset['mime_type'] = 'image/jpeg'
@@ -69,6 +67,9 @@ class PillowProcessor(Processor):
             if artist:
                 asset['artist'] = artist.decode('utf-8')
         return asset
+
+    def can_read(self, mime_type):
+        return mime_type in ['image/jpeg']
 
     def write(self, jpeg_asset, jpeg_file):
         jpeg_data = jpeg_asset.essence

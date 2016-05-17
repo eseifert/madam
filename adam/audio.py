@@ -8,8 +8,6 @@ import wave
 
 
 class WaveProcessor(Processor):
-    supported_read_types = ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
-
     def read(self, wave_file):
         asset = Asset()
         asset['mime_type'] = 'audio/wav'
@@ -23,10 +21,11 @@ class WaveProcessor(Processor):
             asset.essence = essence_stream
         return asset
 
+    def can_read(self, mime_type):
+        return mime_type in ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
+
 
 class MutagenProcessor(Processor):
-    supported_read_types = ['audio/mpeg']
-
     def read(self, mp3_file):
         asset = Asset()
         asset['mime_type'] = 'audio/mpeg'
@@ -44,3 +43,6 @@ class MutagenProcessor(Processor):
             with open(copy_path, 'rb') as mp3_file_copy:
                 asset.essence = mp3_file_copy
         return asset
+
+    def can_read(self, mime_type):
+        return mime_type in ['audio/mpeg']

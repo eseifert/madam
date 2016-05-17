@@ -68,14 +68,15 @@ class UnknownMimeTypeError(ValueError):
     pass
 
 mimetypes.init()
-reading_processor_by_mime_type = {}
+processors = []
 
 
 @functools.singledispatch
 def read(file, mime_type=None):
     if not mime_type:
         raise UnknownMimeTypeError('Unable to determine MIME type for open file')
-    processor = reading_processor_by_mime_type[mime_type]
+    processors_supporting_type = (processor for processor in processors if processor.can_read(mime_type))
+    processor = next(processors_supporting_type)
     asset = processor.read(file)
     return asset
 
@@ -106,15 +107,13 @@ class Pipeline:
 
 
 class Processor(metaclass=abc.ABCMeta):
-    supported_read_types = []
-
     def __init__(self):
-        for mime_type in self.__class__.supported_read_types:
-            reading_processor_by_mime_type[mime_type] = self
+        processors.append(self)
 
     @abc.abstractmethod
     def read(self):
         pass
 
+    @abc.abstractmethod
     def can_read(self, mime_type):
-        return mime_type in self.__class__.supported_read_types
+        pass
