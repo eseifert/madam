@@ -18,6 +18,19 @@ def _separate_exif_from_image(image_file):
     return exif_stripped_from_empty_entries, essence_without_metadata_as_stream
 
 
+class ExifProcessor:
+    def extract(self, file):
+        data = file.read()
+        # Extract Exif
+        exif = piexif.load(data)
+        exif_stripped_from_empty_entries = {key: value for (key, value) in exif.items() if value}
+
+        # Remove Exif from essence
+        essence_without_metadata_as_stream = io.BytesIO()
+        piexif.remove(data, essence_without_metadata_as_stream)
+        return exif_stripped_from_empty_entries, essence_without_metadata_as_stream
+
+
 class ResizeMode(Enum):
     EXACT = 0
     FIT = 1
