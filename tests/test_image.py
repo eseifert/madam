@@ -175,3 +175,11 @@ class TestPillowProcessor:
         transposed_asset = transpose_operator(transpose_operator(jpeg_asset))
 
         assert transposed_asset.essence.read() == jpeg_asset.essence.read()
+
+    @pytest.mark.parametrize('orientation', [adam.image.FlipOrientation.HORIZONTAL, adam.image.FlipOrientation.VERTICAL])
+    def test_flip_is_reversible(self, pillow_processor, jpeg_asset, orientation):
+        flip_operator = pillow_processor.flip(orientation=orientation)
+
+        flipped_asset = flip_operator(flip_operator(jpeg_asset))
+
+        assert flipped_asset.essence.read() == jpeg_asset.essence.read()

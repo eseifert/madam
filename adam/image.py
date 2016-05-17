@@ -24,6 +24,11 @@ class ResizeMode(Enum):
     FILL = 2
 
 
+class FlipOrientation(Enum):
+    HORIZONTAL = 0
+    VERTICAL = 1
+
+
 def operator(function):
     @functools.wraps(function)
     def wrapper(self, **kwargs):
@@ -86,3 +91,12 @@ class PillowProcessor(Processor):
         transposed_image.save(transposed_image_buffer, 'JPEG')
         transposed_asset = self.read(transposed_image_buffer)
         return transposed_asset
+
+    @operator
+    def flip(self, asset, orientation):
+        image = PIL.Image.open(asset.essence)
+        flipped_image = image.transpose(PIL.Image.FLIP_LEFT_RIGHT)
+        flipped_image_buffer = io.BytesIO()
+        flipped_image.save(flipped_image_buffer, 'JPEG')
+        flipped_asset = self.read(flipped_image_buffer)
+        return flipped_asset
