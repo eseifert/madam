@@ -9,15 +9,6 @@ import PIL.Image
 from adam.core import Asset, Processor, MetadataProcessor
 
 
-def _separate_exif_from_image(image_file):
-    essence_data_with_metadata = image_file.read()
-    exif = piexif.load(essence_data_with_metadata)
-    exif_stripped_from_empty_entries = {key: value for (key, value) in exif.items() if value}
-    essence_without_metadata_as_stream = io.BytesIO()
-    piexif.remove(essence_data_with_metadata, essence_without_metadata_as_stream)
-    return exif_stripped_from_empty_entries, essence_without_metadata_as_stream
-
-
 class ExifProcessor(MetadataProcessor):
     def read(self, file):
         data = file.read()
@@ -52,6 +43,10 @@ def operator(function):
 
 
 class PillowProcessor(Processor):
+    def __init__(self, exif_processor):
+        super().__init__()
+        self.exif_processor = exif_processor
+
     def read(self, jpeg_file):
         asset = Asset()
         asset['mime_type'] = 'image/jpeg'
@@ -60,7 +55,9 @@ class PillowProcessor(Processor):
         asset['height'] = image.height
 
         jpeg_file.seek(0)
-        asset.metadata['exif'], asset.essence = _separate_exif_from_image(jpeg_file)
+        asset.metadata['exif'] = self.exif_processor.read(jpeg_file)
+        jpeg_file.seek(0)
+        asset.essence = self.exif_processor.remove(jpeg_file)
 
         exif_0th = asset.metadata['exif'].get('0th')
         if exif_0th:

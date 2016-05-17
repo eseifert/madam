@@ -11,7 +11,8 @@ jpeg_exif = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
 
 @pytest.fixture(scope='module', autouse=True)
 def pillow_processor():
-    processor = adam.image.PillowProcessor()
+    exif_processor = adam.image.ExifProcessor()
+    processor = adam.image.PillowProcessor(exif_processor)
     return processor
 
 
