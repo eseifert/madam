@@ -125,5 +125,9 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         metadata_processors.append(self)
 
     @abc.abstractmethod
-    def extract(self, file):
+    def read(self, file):
+        pass
+
+    @abc.abstractmethod
+    def remove(self, file):
         pass

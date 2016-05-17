@@ -189,23 +189,23 @@ class TestExifProcessor:
     def exif_processor(self):
         return adam.image.ExifProcessor()
 
-    def test_extract_returns_empty_dict_when_jpeg_contains_no_exif(self, exif_processor):
+    def test_read_returns_empty_dict_when_jpeg_contains_no_exif(self, exif_processor):
         jpeg_data = jpeg_rgb()
 
-        exif, _ = exif_processor.extract(jpeg_data)
+        exif = exif_processor.read(jpeg_data)
 
         assert not exif
 
-    def test_extract_returns_exif_dict_when_jpeg_contains_exif(self, exif_processor):
+    def test_read_returns_exif_dict_when_jpeg_contains_exif(self, exif_processor):
         jpeg_data = jpeg_rgb(exif=jpeg_exif)
 
-        exif, _ = exif_processor.extract(jpeg_data)
+        exif = exif_processor.read(jpeg_data)
 
         assert exif
 
-    def test_extract_returns_essence_without_metadata(self, exif_processor):
+    def test_remove_returns_essence_without_metadata(self, exif_processor):
         jpeg_data = jpeg_rgb(exif=jpeg_exif)
-        _, essence = exif_processor.extract(jpeg_data)
+        essence = exif_processor.remove(jpeg_data)
 
         essence_exif = piexif.load(essence.read())
         essence_exif_stripped_from_empty_entries = {key: value for (key, value) in essence_exif.items() if value}
