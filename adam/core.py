@@ -69,7 +69,7 @@ class UnknownMimeTypeError(ValueError):
 
 mimetypes.init()
 processors = []
-metadata_processors = []
+metadata_processors_by_format = {}
 
 
 @functools.singledispatch
@@ -79,6 +79,9 @@ def read(file, mime_type=None):
     processors_supporting_type = (processor for processor in processors if processor.can_read(mime_type))
     processor = next(processors_supporting_type)
     asset = processor.read(file)
+    for metadata_format, metadata_processor in metadata_processors_by_format.items():
+        file.seek(0)
+        asset.metadata[metadata_format] = metadata_processor.read(file)
     return asset
 
 
@@ -122,7 +125,12 @@ class Processor(metaclass=abc.ABCMeta):
 
 class MetadataProcessor(metaclass=abc.ABCMeta):
     def __init__(self):
-        metadata_processors.append(self)
+        metadata_processors_by_format[self.format] = self
+
+    @property
+    @abc.abstractmethod
+    def format(self):
+        pass
 
     @abc.abstractmethod
     def read(self, file):

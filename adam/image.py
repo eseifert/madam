@@ -10,6 +10,10 @@ from adam.core import Asset, Processor, MetadataProcessor
 
 
 class ExifProcessor(MetadataProcessor):
+    @property
+    def format(self):
+        return 'exif'
+
     def read(self, file):
         data = file.read()
         exif = piexif.load(data)
