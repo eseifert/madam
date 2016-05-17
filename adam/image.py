@@ -78,17 +78,19 @@ class PillowProcessor(Processor):
             resized_width = round(resize_factor*image.width)
             resized_height = round(resize_factor*image.height)
         resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)
-        resized_image_buffer = io.BytesIO()
-        resized_image.save(resized_image_buffer, 'JPEG')
-        resized_asset = self.read(resized_image_buffer)
+        resized_asset = self._image_to_asset(resized_image)
         return resized_asset
+
+    def _image_to_asset(self, image):
+        image_buffer = io.BytesIO()
+        image.save(image_buffer, 'JPEG')
+        asset = self.read(image_buffer)
+        return asset
 
     def _rotate_lossless(self, asset, rotation):
         image = PIL.Image.open(asset.essence)
         transposed_image = image.transpose(rotation)
-        transposed_image_buffer = io.BytesIO()
-        transposed_image.save(transposed_image_buffer, 'JPEG')
-        transposed_asset = self.read(transposed_image_buffer)
+        transposed_asset = self._image_to_asset(transposed_image)
         return transposed_asset
 
     @operator
