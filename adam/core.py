@@ -112,7 +112,7 @@ class Processor(metaclass=abc.ABCMeta):
         processors.append(self)
 
     @abc.abstractmethod
-    def read(self):
+    def read(self, file):
         pass
 
     @abc.abstractmethod
