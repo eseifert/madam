@@ -69,6 +69,7 @@ class UnknownMimeTypeError(ValueError):
 
 mimetypes.init()
 processors = []
+metadata_processors = []
 
 
 @functools.singledispatch
@@ -116,4 +117,13 @@ class Processor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def can_read(self, mime_type):
+        pass
+
+
+class MetadataProcessor(metaclass=abc.ABCMeta):
+    def __init__(self):
+        metadata_processors.append(self)
+
+    @abc.abstractmethod
+    def extract(self, file):
         pass

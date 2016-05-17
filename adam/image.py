@@ -6,7 +6,7 @@ import piexif
 import PIL.ExifTags
 import PIL.Image
 
-from adam.core import Asset, Processor
+from adam.core import Asset, Processor, MetadataProcessor
 
 
 def _separate_exif_from_image(image_file):
@@ -18,7 +18,7 @@ def _separate_exif_from_image(image_file):
     return exif_stripped_from_empty_entries, essence_without_metadata_as_stream
 
 
-class ExifProcessor:
+class ExifProcessor(MetadataProcessor):
     def extract(self, file):
         data = file.read()
         # Extract Exif
