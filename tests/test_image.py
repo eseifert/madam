@@ -154,11 +154,10 @@ class TestPillowProcessor:
         assert filling_asset['width'] == 9
         assert filling_asset['height'] == 10
 
+    def test_write_jpeg_creates_file_containing_asset_essence(self, pillow_processor, jpeg_asset):
+        file_data = io.BytesIO()
 
-def test_write_jpeg_creates_file_containing_asset_essence(jpeg_asset):
-    file_data = io.BytesIO()
+        pillow_processor.write(jpeg_asset, file_data)
 
-    adam.image.write_jpeg(jpeg_asset, file_data)
-
-    file_data.seek(0)
-    assert file_data.read() == jpeg_asset.essence.read()
+        file_data.seek(0)
+        assert file_data.read() == jpeg_asset.essence.read()

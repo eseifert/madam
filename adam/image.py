@@ -18,12 +18,6 @@ def _separate_exif_from_image(image_file):
     return exif_stripped_from_empty_entries, essence_without_metadata_as_stream
 
 
-def write_jpeg(jpeg_asset, jpeg_file):
-    jpeg_data = jpeg_asset.essence
-    image = PIL.Image.open(jpeg_data)
-    image.save(jpeg_file, 'JPEG')
-
-
 class ResizeMode(Enum):
     EXACT = 0
     FIT = 1
@@ -57,6 +51,11 @@ class PillowProcessor(Processor):
             if artist:
                 asset['artist'] = artist.decode('utf-8')
         return asset
+
+    def write(self, jpeg_asset, jpeg_file):
+        jpeg_data = jpeg_asset.essence
+        image = PIL.Image.open(jpeg_data)
+        image.save(jpeg_file, 'JPEG')
 
     @operator
     def resize(self, asset, width, height, mode=ResizeMode.EXACT):
