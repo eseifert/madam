@@ -54,10 +54,7 @@ class Asset:
 
     @property
     def essence(self):
-        essence_file = io.BytesIO()
-        essence_file.write(self.essence_data)
-        essence_file.seek(0)
-        return essence_file
+        return io.BytesIO(self.essence_data)
 
     @essence.setter
     def essence(self, value):
