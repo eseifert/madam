@@ -34,8 +34,10 @@ def add_exif_to_jpeg(exif, image_data):
 
 
 def jpeg_asset(width=4, height=3, exif={}):
-    jpeg_data = jpeg_rgb(width=width, height=height, exif=exif)
-    asset = adam.read(jpeg_data, 'image/jpeg')
+    asset = adam.core.Asset()
+    asset.essence = jpeg_rgb(width=width, height=height, exif=exif)
+    asset.metadata['exif'] = exif
+    asset.metadata['adam'] = {'width': width, 'height': height}
     return asset
 
 
@@ -52,17 +54,26 @@ def test_read_jpeg_does_not_alter_the_original_file():
 
 
 def test_read_jpeg_returns_asset_with_jpeg_mime_type():
-    asset = jpeg_asset()
+    jpeg_data = jpeg_rgb()
+
+    asset = adam.read(jpeg_data, 'image/jpeg')
+
     assert asset['mime_type'] == 'image/jpeg'
 
 
 def test_jpeg_asset_essence_is_filled():
-    asset = jpeg_asset()
+    jpeg_data = jpeg_rgb()
+
+    asset = adam.read(jpeg_data, 'image/jpeg')
+
     assert asset.essence is not None
 
 
 def test_jpeg_asset_contains_size_information():
-    asset = jpeg_asset()
+    jpeg_data = jpeg_rgb()
+
+    asset = adam.read(jpeg_data, 'image/jpeg')
+
     assert asset.metadata['adam']['width'] == 4
     assert asset.metadata['adam']['height'] == 3
 
@@ -83,19 +94,14 @@ def test_jpeg_asset_essence_can_be_read_multiple_times():
 
 
 def test_jpeg_asset_essence_does_not_contain_exif_metadata():
-    asset = jpeg_asset(exif=jpeg_exif)
+    jpeg_data = jpeg_rgb(exif=jpeg_exif)
+    asset = adam.read(jpeg_data, 'image/jpeg')
     essence_bytes = asset.essence.read()
 
     essence_exif = piexif.load(essence_bytes)
 
     for ifd, ifd_data in essence_exif.items():
         assert not ifd_data
-
-
-def test_jpeg_asset_contains_artist_information_when_exif_metadata_is_available():
-    asset = jpeg_asset(exif=jpeg_exif)
-
-    assert asset.metadata['adam']['artist'] == 'Test artist'
 
 
 def test_jpeg_asset_contains_raw_exif_metadata():
