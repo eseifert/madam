@@ -35,7 +35,7 @@ def add_exif_to_jpeg(exif, image_data):
 
 def jpeg_asset(width=4, height=3, exif={}):
     asset = adam.core.Asset()
-    asset.essence = jpeg_rgb(width=width, height=height, exif=exif)
+    asset.essence = jpeg_rgb(width=width, height=height)
     asset.metadata['exif'] = exif
     asset.metadata['adam'] = {'width': width, 'height': height}
     return asset
