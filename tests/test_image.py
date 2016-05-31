@@ -17,9 +17,16 @@ def pillow_processor():
 
 
 def jpeg_rgb(exif={}, width=4, height=3):
-    empty_image = PIL.Image.new('RGB', (width, height))
+    image = PIL.Image.new('RGB', (width, height))
+    # Fill the image with a shape which is (probably) not invariant towards
+    # rotations or flips as long as the image has a size of (2, 2) or greater
+    for y in range(0, height):
+        for x in range(0, width):
+            color = (1, 1, 1) if y == 0 or x == 0 else (0, 0, 0)
+            image.putpixel((x, y), color)
+
     image_data = io.BytesIO()
-    empty_image.save(image_data, 'JPEG')
+    image.save(image_data, 'JPEG')
     image_data.seek(0)
 
     image_with_exif_metadata = add_exif_to_jpeg(exif, image_data) if exif else image_data
