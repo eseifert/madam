@@ -117,3 +117,9 @@ class PillowProcessor(Processor):
     def flip(self, asset, orientation):
         flip_orientation = PIL.Image.FLIP_LEFT_RIGHT if orientation == FlipOrientation.HORIZONTAL else PIL.Image.FLIP_TOP_BOTTOM
         return self._rotate_lossless(asset, flip_orientation)
+
+    @operator
+    def auto_orient(self, asset):
+        oriented_asset = Asset()
+        oriented_asset.essence = asset.essence
+        return oriented_asset

@@ -196,6 +196,15 @@ class TestPillowProcessor:
 
         assert flipped_asset.essence.read() == asset.essence.read()
 
+    def test_auto_orient(self, pillow_processor):
+        reference_asset = jpeg_asset()
+        misoriented_asset = jpeg_asset(exif={'0th': {piexif.ImageIFD.Orientation: 1}})
+        auto_orient_operator = pillow_processor.auto_orient()
+
+        oriented_asset = auto_orient_operator(misoriented_asset)
+
+        assert oriented_asset.essence.read() == reference_asset.essence.read()
+
 
 class TestExifProcessor:
     @pytest.fixture
