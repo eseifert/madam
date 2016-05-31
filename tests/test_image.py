@@ -33,17 +33,10 @@ def add_exif_to_jpeg(exif, image_data):
     return image_with_exif_metadata
 
 
-@pytest.fixture
-def jpeg_asset(width=4, height=3):
-    jpeg_asset = adam.read(jpeg_rgb(width=width, height=height), 'image/jpeg')
-    return jpeg_asset
-
-
-@pytest.fixture
-def jpeg_asset_with_exif():
-    jpeg_data = jpeg_rgb(exif=jpeg_exif)
-    jpeg_asset = adam.read(jpeg_data, 'image/jpeg')
-    return jpeg_asset
+def jpeg_asset(width=4, height=3, exif={}):
+    jpeg_data = jpeg_rgb(width=width, height=height, exif=exif)
+    asset = adam.read(jpeg_data, 'image/jpeg')
+    return asset
 
 
 def test_read_jpeg_does_not_alter_the_original_file():
@@ -58,34 +51,40 @@ def test_read_jpeg_does_not_alter_the_original_file():
     assert original_image_data == image_data_after_reading
 
 
-def test_read_jpeg_returns_asset_with_jpeg_mime_type(jpeg_asset):
-    assert jpeg_asset['mime_type'] == 'image/jpeg'
+def test_read_jpeg_returns_asset_with_jpeg_mime_type():
+    asset = jpeg_asset()
+    assert asset['mime_type'] == 'image/jpeg'
 
 
-def test_jpeg_asset_essence_is_filled(jpeg_asset):
-    assert jpeg_asset.essence is not None
+def test_jpeg_asset_essence_is_filled():
+    asset = jpeg_asset()
+    assert asset.essence is not None
 
 
-def test_jpeg_asset_contains_size_information(jpeg_asset):
-    assert jpeg_asset.metadata['adam']['width'] == 4
-    assert jpeg_asset.metadata['adam']['height'] == 3
+def test_jpeg_asset_contains_size_information():
+    asset = jpeg_asset()
+    assert asset.metadata['adam']['width'] == 4
+    assert asset.metadata['adam']['height'] == 3
 
 
-def test_jpeg_asset_essence_is_a_jpeg(jpeg_asset):
-    jpeg_image = PIL.Image.open(jpeg_asset.essence)
+def test_jpeg_asset_essence_is_a_jpeg():
+    asset = jpeg_asset()
+    jpeg_image = PIL.Image.open(asset.essence)
 
     assert jpeg_image.format == 'JPEG'
 
 
-def test_jpeg_asset_essence_can_be_read_multiple_times(jpeg_asset):
-    essence_contents = jpeg_asset.essence.read()
-    same_essence_contents = jpeg_asset.essence.read()
+def test_jpeg_asset_essence_can_be_read_multiple_times():
+    asset = jpeg_asset()
+    essence_contents = asset.essence.read()
+    same_essence_contents = asset.essence.read()
 
     assert essence_contents == same_essence_contents
 
 
-def test_jpeg_asset_essence_does_not_contain_exif_metadata(jpeg_asset_with_exif):
-    essence_bytes = jpeg_asset_with_exif.essence.read()
+def test_jpeg_asset_essence_does_not_contain_exif_metadata():
+    asset = jpeg_asset(exif=jpeg_exif)
+    essence_bytes = asset.essence.read()
 
     essence_exif = piexif.load(essence_bytes)
 
@@ -93,12 +92,15 @@ def test_jpeg_asset_essence_does_not_contain_exif_metadata(jpeg_asset_with_exif)
         assert not ifd_data
 
 
-def test_jpeg_asset_contains_artist_information_when_exif_metadata_is_available(jpeg_asset_with_exif):
-    assert jpeg_asset_with_exif.metadata['adam']['artist'] == 'Test artist'
+def test_jpeg_asset_contains_artist_information_when_exif_metadata_is_available():
+    asset = jpeg_asset(exif=jpeg_exif)
+
+    assert asset.metadata['adam']['artist'] == 'Test artist'
 
 
-def test_jpeg_asset_contains_raw_exif_metadata(jpeg_asset_with_exif):
-    assert jpeg_asset_with_exif.metadata['exif'] == jpeg_exif
+def test_jpeg_asset_contains_raw_exif_metadata():
+    asset = jpeg_asset(exif=jpeg_exif)
+    assert asset.metadata['exif'] == jpeg_exif
 
 
 class TestPillowProcessor:
@@ -154,35 +156,39 @@ class TestPillowProcessor:
         assert filling_asset['width'] == 9
         assert filling_asset['height'] == 10
 
-    def test_write_jpeg_creates_file_containing_asset_essence(self, pillow_processor, jpeg_asset):
+    def test_write_jpeg_creates_file_containing_asset_essence(self, pillow_processor):
+        asset = jpeg_asset()
         file_data = io.BytesIO()
 
-        pillow_processor.write(jpeg_asset, file_data)
+        pillow_processor.write(asset, file_data)
 
         file_data.seek(0)
-        assert file_data.read() == jpeg_asset.essence.read()
+        assert file_data.read() == asset.essence.read()
 
-    def test_transpose_flips_dimensions(self, pillow_processor, jpeg_asset):
+    def test_transpose_flips_dimensions(self, pillow_processor):
+        asset = jpeg_asset()
         transpose_operator = pillow_processor.transpose()
 
-        transposed_asset = transpose_operator(jpeg_asset)
+        transposed_asset = transpose_operator(asset)
 
-        assert jpeg_asset['width'] == transposed_asset['height'] and jpeg_asset['height'] == transposed_asset['width']
+        assert asset['width'] == transposed_asset['height'] and asset['height'] == transposed_asset['width']
 
-    def test_transpose_is_reversible(self, pillow_processor, jpeg_asset):
+    def test_transpose_is_reversible(self, pillow_processor):
+        asset = jpeg_asset()
         transpose_operator = pillow_processor.transpose()
 
-        transposed_asset = transpose_operator(transpose_operator(jpeg_asset))
+        transposed_asset = transpose_operator(transpose_operator(asset))
 
-        assert transposed_asset.essence.read() == jpeg_asset.essence.read()
+        assert transposed_asset.essence.read() == asset.essence.read()
 
     @pytest.mark.parametrize('orientation', [adam.image.FlipOrientation.HORIZONTAL, adam.image.FlipOrientation.VERTICAL])
-    def test_flip_is_reversible(self, pillow_processor, jpeg_asset, orientation):
+    def test_flip_is_reversible(self, pillow_processor, orientation):
+        asset = jpeg_asset()
         flip_operator = pillow_processor.flip(orientation=orientation)
 
-        flipped_asset = flip_operator(flip_operator(jpeg_asset))
+        flipped_asset = flip_operator(flip_operator(asset))
 
-        assert flipped_asset.essence.read() == jpeg_asset.essence.read()
+        assert flipped_asset.essence.read() == asset.essence.read()
 
 
 class TestExifProcessor:
