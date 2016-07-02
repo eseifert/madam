@@ -3,6 +3,7 @@ import pytest
 import adam.image
 import io
 import PIL.Image
+import PIL.ImageChops
 import piexif
 
 
@@ -16,17 +17,23 @@ def pillow_processor():
     return processor
 
 
-def jpeg_rgb(exif={}, width=4, height=3):
+def image_rgb(width=4, height=3, transpositions=[]):
     image = PIL.Image.new('RGB', (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
     # rotations or flips as long as the image has a size of (2, 2) or greater
     for y in range(0, height):
         for x in range(0, width):
-            color = (1, 1, 1) if y == 0 or x == 0 else (0, 0, 0)
+            color = (255, 255, 255) if y == 0 or x == 0 else (0, 0, 0)
             image.putpixel((x, y), color)
+    for transposition in transpositions:
+        image = image.transpose(transposition)
+    return image
 
+
+def jpeg_rgb(exif={}, width=4, height=3, transpositions=[]):
+    image = image_rgb(width=width, height=height, transpositions=transpositions)
     image_data = io.BytesIO()
-    image.save(image_data, 'JPEG')
+    image.save(image_data, 'JPEG', quality=100)
     image_data.seek(0)
 
     image_with_exif_metadata = add_exif_to_jpeg(exif, image_data) if exif else image_data
@@ -40,12 +47,19 @@ def add_exif_to_jpeg(exif, image_data):
     return image_with_exif_metadata
 
 
-def jpeg_asset(width=4, height=3, exif={}):
+def jpeg_asset(width=4, height=3, exif={}, transpositions=[]):
     asset = adam.core.Asset()
-    asset.essence = jpeg_rgb(width=width, height=height)
+    asset.essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
     asset.metadata['exif'] = exif
     asset.metadata['adam'] = {'width': width, 'height': height}
     return asset
+
+
+
+def is_equal_in_black_white_space(result_image, expected_image):
+    result_image_bw = result_image.convert('L').point(lambda value : 0 if value < 128 else 255, '1')
+    expected_image_bw = expected_image.convert('L').point(lambda value : 0 if value < 128 else 255, '1')
+    return PIL.ImageChops.difference(result_image_bw, expected_image_bw).getbbox() is None
 
 
 def test_read_jpeg_does_not_alter_the_original_file():
@@ -176,7 +190,7 @@ class TestPillowProcessor:
         pillow_processor.write(asset, file_data)
 
         file_data.seek(0)
-        assert file_data.read() == asset.essence.read()
+        assert is_equal_in_black_white_space(PIL.Image.open(file_data), PIL.Image.open(asset.essence))
 
     def test_transpose_flips_dimensions(self, pillow_processor):
         asset = jpeg_asset()
@@ -192,7 +206,7 @@ class TestPillowProcessor:
 
         transposed_asset = transpose_operator(transpose_operator(asset))
 
-        assert transposed_asset.essence.read() == asset.essence.read()
+        assert is_equal_in_black_white_space(PIL.Image.open(transposed_asset.essence), PIL.Image.open(asset.essence))
 
     @pytest.mark.parametrize('orientation', [adam.image.FlipOrientation.HORIZONTAL, adam.image.FlipOrientation.VERTICAL])
     def test_flip_is_reversible(self, pillow_processor, orientation):
@@ -201,17 +215,26 @@ class TestPillowProcessor:
 
         flipped_asset = flip_operator(flip_operator(asset))
 
-        assert flipped_asset.essence.read() == asset.essence.read()
+        assert is_equal_in_black_white_space(PIL.Image.open(flipped_asset.essence), PIL.Image.open(asset.essence))
 
-    def test_auto_orient(self, pillow_processor):
+    @pytest.mark.parametrize('exif_orientation, image_transpositions', [
+        (1, []),
+        (2, [PIL.Image.FLIP_LEFT_RIGHT]),
+        (3, [PIL.Image.ROTATE_180]),
+        (4, [PIL.Image.FLIP_TOP_BOTTOM]),
+        (5, [PIL.Image.ROTATE_90, PIL.Image.FLIP_TOP_BOTTOM]),
+        (6, [PIL.Image.ROTATE_90]),
+        (7, [PIL.Image.ROTATE_90, PIL.Image.FLIP_LEFT_RIGHT]),
+        (8, [PIL.Image.ROTATE_270])
+    ])
+    def test_auto_orient(self, pillow_processor, exif_orientation, image_transpositions):
         reference_asset = jpeg_asset()
-        misoriented_asset = jpeg_asset(exif={'0th': {piexif.ImageIFD.Orientation: 1}})
+        misoriented_asset = jpeg_asset(exif={'0th': {piexif.ImageIFD.Orientation: exif_orientation}}, transpositions=image_transpositions)
         auto_orient_operator = pillow_processor.auto_orient()
 
         oriented_asset = auto_orient_operator(misoriented_asset)
 
-        assert oriented_asset.essence.read() == reference_asset.essence.read()
-
+        assert is_equal_in_black_white_space(PIL.Image.open(reference_asset.essence), PIL.Image.open(oriented_asset.essence))
 
 class TestExifProcessor:
     @pytest.fixture

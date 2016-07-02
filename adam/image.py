@@ -120,6 +120,25 @@ class PillowProcessor(Processor):
 
     @operator
     def auto_orient(self, asset):
-        oriented_asset = Asset()
-        oriented_asset.essence = asset.essence
+        orientation = asset.metadata['exif']['0th'][piexif.ImageIFD.Orientation]
+        if orientation == 1:
+            oriented_asset = Asset()
+            oriented_asset.essence = asset.essence
+        elif orientation == 2:
+            oriented_asset = self.flip(orientation=FlipOrientation.HORIZONTAL)(asset)
+        elif orientation == 3:
+            oriented_asset = self._rotate_lossless(asset, PIL.Image.ROTATE_180)
+        elif orientation == 4:
+            oriented_asset = self.flip(orientation=FlipOrientation.VERTICAL)(asset)
+        elif orientation == 5:
+            oriented_asset = self.flip(orientation=FlipOrientation.VERTICAL)(self._rotate_lossless(asset, PIL.Image.ROTATE_90))
+        elif orientation == 6:
+            oriented_asset = self._rotate_lossless(asset, PIL.Image.ROTATE_270)
+        elif orientation == 7:
+            oriented_asset = self.flip(orientation=FlipOrientation.HORIZONTAL)(self._rotate_lossless(asset, PIL.Image.ROTATE_90))
+        elif orientation == 8:
+            oriented_asset = self._rotate_lossless(asset, PIL.Image.ROTATE_90)
+        else:
+            raise ValueError('Unable to correct image orientation with value %s' % orientation)
+
         return oriented_asset
