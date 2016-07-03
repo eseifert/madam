@@ -36,6 +36,12 @@ class AssetStorage:
 
 
 class Asset:
+    """
+    Represents a digital asset.
+
+    Assets should not be instantiated directly. Instead, use :func:`~madam.core.read` to retrieve an Asset
+    representing your content.
+    """
     def __init__(self):
         self.essence_data = b''
         self.metadata = {'madam': {}}
@@ -54,6 +60,12 @@ class Asset:
 
     @property
     def essence(self):
+        """
+        Represents the actual content of the asset.
+
+        The essence of an MP3 file, for example, is only comprised of the actual audio data,
+        whereas metadata such as ID3 tags are stored separately as metadata.
+        """
         return io.BytesIO(self.essence_data)
 
     @essence.setter
@@ -62,6 +74,9 @@ class Asset:
 
 
 class UnknownMimeTypeError(ValueError):
+    """
+    Represents an error that is raised whenever file content with unknown or unsupported MIME type is encountered.
+    """
     pass
 
 mimetypes.init()
