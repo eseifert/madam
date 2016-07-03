@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(
-    name='ADAM',
+    name='MADAM',
     version='0.1',
     author='Michael Seifert',
     author_email='mseifert@error-reports.org',

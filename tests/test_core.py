@@ -3,11 +3,11 @@ import pytest
 import tempfile
 import unittest.mock
 
-import adam
-from adam.core import AssetStorage
-from adam.core import Asset
-from adam.core import UnknownMimeTypeError
-from adam.core import Pipeline
+import madam
+from madam.core import AssetStorage
+from madam.core import Asset
+from madam.core import UnknownMimeTypeError
+from madam.core import Pipeline
 
 
 @pytest.fixture
@@ -52,7 +52,7 @@ class TestAssetStorage:
         assets_with_1s_duration = storage.get()
         assert not assets_with_1s_duration
 
-    def test_get_returns_assets_with_specified_adam_metadata(self, storage):
+    def test_get_returns_assets_with_specified_madam_metadata(self, storage):
         a = Asset()
         a['duration'] = 1
         storage['key'] = a
@@ -77,7 +77,7 @@ class TestAsset:
         assert hasattr(asset, 'essence')
 
     def test_asset_has_metadata_dict(self, asset):
-        assert asset.metadata == {'adam': {}}
+        assert asset.metadata == {'madam': {}}
 
     def test_asset_equality(self, asset):
         asset.some_attr = 42
@@ -87,20 +87,20 @@ class TestAsset:
         assert asset is not another_asset
         assert asset == another_asset
 
-    def test_asset_getitem_is_identical_to_access_through_adam_metadata(self, asset):
-        adam_metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
-        asset.metadata['adam'] = adam_metadata
+    def test_asset_getitem_is_identical_to_access_through_madam_metadata(self, asset):
+        madam_metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
+        asset.metadata['madam'] = madam_metadata
 
-        for key, value in asset.metadata['adam'].items():
+        for key, value in asset.metadata['madam'].items():
             assert asset[key] == value
 
-    def test_asset_setitem_is_identical_to_access_through_adam_metadata(self, asset):
+    def test_asset_setitem_is_identical_to_access_through_madam_metadata(self, asset):
         metadata_to_be_set = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
 
         for key, value in metadata_to_be_set.items():
             asset[key] = value
 
-        assert asset.metadata['adam'] == metadata_to_be_set
+        assert asset.metadata['madam'] == metadata_to_be_set
 
 
 def bytesio_from_path(path):
@@ -117,10 +117,10 @@ def bytesio_from_path(path):
 ])
 def test_read_calls_read_method_for_respective_file_type(file_or_path, mime_type, mime_type_to_be_mocked):
     # When
-    processor = next((processor for processor in adam.core.processors if processor.can_read(mime_type_to_be_mocked)))
+    processor = next((processor for processor in madam.core.processors if processor.can_read(mime_type_to_be_mocked)))
     with unittest.mock.patch.object(processor, 'read') as read_method:
         # Then
-        adam.read(file_or_path, mime_type=mime_type)
+        madam.read(file_or_path, mime_type=mime_type)
     # Assert
     assert read_method.called
 
@@ -128,13 +128,13 @@ def test_read_calls_read_method_for_respective_file_type(file_or_path, mime_type
 def test_reading_path_without_extension_mime_type_raises_exception():
     with tempfile.NamedTemporaryFile() as tmp:
         with pytest.raises(UnknownMimeTypeError):
-            adam.read(tmp.name)
+            madam.read(tmp.name)
 
 
 def test_reading_file_without_mime_type_raises_exception():
     file = io.BytesIO()
     with pytest.raises(UnknownMimeTypeError):
-        adam.read(file)
+        madam.read(file)
 
 
 @pytest.fixture

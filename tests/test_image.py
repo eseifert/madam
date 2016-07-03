@@ -1,6 +1,6 @@
 import pytest
 
-import adam.image
+import madam.image
 import io
 import PIL.Image
 import PIL.ImageChops
@@ -12,8 +12,8 @@ jpeg_exif = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
 
 @pytest.fixture(scope='module', autouse=True)
 def pillow_processor():
-    exif_processor = adam.image.ExifProcessor()
-    processor = adam.image.PillowProcessor(exif_processor)
+    exif_processor = madam.image.ExifProcessor()
+    processor = madam.image.PillowProcessor(exif_processor)
     return processor
 
 
@@ -48,10 +48,10 @@ def add_exif_to_jpeg(exif, image_data):
 
 
 def jpeg_asset(width=4, height=3, exif={}, transpositions=[]):
-    asset = adam.core.Asset()
+    asset = madam.core.Asset()
     asset.essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
     asset.metadata['exif'] = exif
-    asset.metadata['adam'] = {'width': width, 'height': height}
+    asset.metadata['madam'] = {'width': width, 'height': height}
     return asset
 
 
@@ -67,7 +67,7 @@ def test_read_jpeg_does_not_alter_the_original_file():
     original_image_data = jpeg_data.read()
     jpeg_data.seek(0)
 
-    adam.read(jpeg_data, 'image/jpeg')
+    madam.read(jpeg_data, 'image/jpeg')
 
     jpeg_data.seek(0)
     image_data_after_reading = jpeg_data.read()
@@ -77,7 +77,7 @@ def test_read_jpeg_does_not_alter_the_original_file():
 def test_read_jpeg_returns_asset_with_jpeg_mime_type():
     jpeg_data = jpeg_rgb()
 
-    asset = adam.read(jpeg_data, 'image/jpeg')
+    asset = madam.read(jpeg_data, 'image/jpeg')
 
     assert asset['mime_type'] == 'image/jpeg'
 
@@ -85,7 +85,7 @@ def test_read_jpeg_returns_asset_with_jpeg_mime_type():
 def test_jpeg_asset_essence_is_filled():
     jpeg_data = jpeg_rgb()
 
-    asset = adam.read(jpeg_data, 'image/jpeg')
+    asset = madam.read(jpeg_data, 'image/jpeg')
 
     assert asset.essence is not None
 
@@ -93,10 +93,10 @@ def test_jpeg_asset_essence_is_filled():
 def test_jpeg_asset_contains_size_information():
     jpeg_data = jpeg_rgb()
 
-    asset = adam.read(jpeg_data, 'image/jpeg')
+    asset = madam.read(jpeg_data, 'image/jpeg')
 
-    assert asset.metadata['adam']['width'] == 4
-    assert asset.metadata['adam']['height'] == 3
+    assert asset.metadata['madam']['width'] == 4
+    assert asset.metadata['madam']['height'] == 3
 
 
 def test_jpeg_asset_essence_is_a_jpeg():
@@ -116,7 +116,7 @@ def test_jpeg_asset_essence_can_be_read_multiple_times():
 
 def test_jpeg_asset_essence_does_not_contain_exif_metadata():
     jpeg_data = jpeg_rgb(exif=jpeg_exif)
-    asset = adam.read(jpeg_data, 'image/jpeg')
+    asset = madam.read(jpeg_data, 'image/jpeg')
     essence_bytes = asset.essence.read()
 
     essence_exif = piexif.load(essence_bytes)
@@ -137,7 +137,7 @@ class TestPillowProcessor:
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
         jpeg_asset_landscape = jpeg_asset(width=width, height=height)
-        fit_asset_operator = pillow_processor.resize(width=9, height=10, mode=adam.image.ResizeMode.FIT)
+        fit_asset_operator = pillow_processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FIT)
 
         fitted_asset = fit_asset_operator(jpeg_asset_landscape)
 
@@ -147,7 +147,7 @@ class TestPillowProcessor:
     @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_portrait_image(self, pillow_processor, width, height):
         jpeg_asset_portrait = jpeg_asset(width=width, height=height)
-        fit_asset_operator = pillow_processor.resize(width=9, height=10, mode=adam.image.ResizeMode.FIT)
+        fit_asset_operator = pillow_processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FIT)
 
         fitted_asset = fit_asset_operator(jpeg_asset_portrait)
 
@@ -157,7 +157,7 @@ class TestPillowProcessor:
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
         jpeg_asset_landscape = jpeg_asset(width=width, height=height)
-        fill_asset_operator = pillow_processor.resize(width=9, height=10, mode=adam.image.ResizeMode.FILL)
+        fill_asset_operator = pillow_processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FILL)
 
         filling_asset = fill_asset_operator(jpeg_asset_landscape)
 
@@ -167,7 +167,7 @@ class TestPillowProcessor:
     @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
     def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image(self, pillow_processor, width, height):
         jpeg_asset_portrait = jpeg_asset(width=width, height=height)
-        fill_asset_operator = pillow_processor.resize(width=9, height=10, mode=adam.image.ResizeMode.FILL)
+        fill_asset_operator = pillow_processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FILL)
 
         filling_asset = fill_asset_operator(jpeg_asset_portrait)
 
@@ -208,7 +208,7 @@ class TestPillowProcessor:
 
         assert is_equal_in_black_white_space(PIL.Image.open(transposed_asset.essence), PIL.Image.open(asset.essence))
 
-    @pytest.mark.parametrize('orientation', [adam.image.FlipOrientation.HORIZONTAL, adam.image.FlipOrientation.VERTICAL])
+    @pytest.mark.parametrize('orientation', [madam.image.FlipOrientation.HORIZONTAL, madam.image.FlipOrientation.VERTICAL])
     def test_flip_is_reversible(self, pillow_processor, orientation):
         asset = jpeg_asset()
         flip_operator = pillow_processor.flip(orientation=orientation)
@@ -239,7 +239,7 @@ class TestPillowProcessor:
 class TestExifProcessor:
     @pytest.fixture
     def exif_processor(self):
-        return adam.image.ExifProcessor()
+        return madam.image.ExifProcessor()
 
     def test_read_returns_empty_dict_when_jpeg_contains_no_exif(self, exif_processor):
         jpeg_data = jpeg_rgb()

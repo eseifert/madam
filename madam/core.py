@@ -28,9 +28,9 @@ class AssetStorage:
         matches = []
         for asset_versions in self.assets.values():
             for asset in asset_versions:
-                adam_metadata = asset.metadata['adam']
+                madam_metadata = asset.metadata['madam']
                 for key, value in kwargs.items():
-                    if adam_metadata.get(key, None) == value:
+                    if madam_metadata.get(key, None) == value:
                         matches.append(asset)
         return matches
 
@@ -38,7 +38,7 @@ class AssetStorage:
 class Asset:
     def __init__(self):
         self.essence_data = b''
-        self.metadata = {'adam': {}}
+        self.metadata = {'madam': {}}
         self.mime_type = None
 
     def __eq__(self, other):
@@ -47,10 +47,10 @@ class Asset:
         return False
 
     def __getitem__(self, item):
-        return self.metadata['adam'][item]
+        return self.metadata['madam'][item]
 
     def __setitem__(self, key, value):
-        self.metadata['adam'][key] = value
+        self.metadata['madam'][key] = value
 
     @property
     def essence(self):

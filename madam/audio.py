@@ -1,4 +1,4 @@
-from adam.core import Asset, Processor
+from madam.core import Asset, Processor
 import io
 import mutagen.mp3
 import os

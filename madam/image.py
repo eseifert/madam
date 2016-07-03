@@ -6,7 +6,7 @@ import piexif
 import PIL.ExifTags
 import PIL.Image
 
-from adam.core import Asset, Processor, MetadataProcessor
+from madam.core import Asset, Processor, MetadataProcessor
 
 
 class ExifProcessor(MetadataProcessor):
