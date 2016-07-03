@@ -71,6 +71,20 @@ metadata_processors_by_format = {}
 
 @functools.singledispatch
 def read(file, mime_type=None):
+    """
+    Reads the specified file and returns its contents as an Asset object.
+
+    :param file: file-like object or file path to be parsed
+    :param mime_type: MIME type of the specified file
+    :type mime_type: str
+    :returns: Asset representing the specified file
+    :raises UnknownMimeTypeError: if the file format cannot be recognized or is not supported
+
+    :Example:
+
+    >>> import madam
+    >>> madam.read('path/to/file.jpg')
+    """
     if not mime_type:
         raise UnknownMimeTypeError('Unable to determine MIME type for open file')
     processors_supporting_type = (processor for processor in processors if processor.can_read(mime_type))
