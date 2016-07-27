@@ -100,9 +100,7 @@ def read(file, mime_type=None):
     >>> import madam
     >>> madam.read('path/to/file.jpg')
     """
-    if not mime_type:
-        raise UnknownMimeTypeError('Unable to determine MIME type for open file')
-    processors_supporting_type = (processor for processor in processors if processor.can_read(mime_type))
+    processors_supporting_type = (processor for processor in processors if processor.can_read(file))
     processor = next(processors_supporting_type)
     asset = processor.read(file)
     for metadata_format, metadata_processor in metadata_processors_by_format.items():

@@ -21,8 +21,12 @@ class WaveProcessor(Processor):
             asset.essence = essence_stream
         return asset
 
-    def can_read(self, mime_type):
-        return mime_type in ['audio/vnd.wave', 'audio/wav', 'audio/wave', 'audio/x-wav']
+    def can_read(self, file):
+        try:
+            wave.open(file, 'rb')
+            return True
+        except:
+            return False
 
 
 class MutagenProcessor(Processor):
@@ -44,5 +48,9 @@ class MutagenProcessor(Processor):
                 asset.essence = mp3_file_copy
         return asset
 
-    def can_read(self, mime_type):
-        return mime_type in ['audio/mpeg']
+    def can_read(self, file):
+        with tempfile.NamedTemporaryFile() as temp_file:
+            temp_file.write(file.read())
+            if mutagen.File(temp_file.name):
+                return True
+        return False

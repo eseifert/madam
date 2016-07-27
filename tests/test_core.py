@@ -109,18 +109,19 @@ def bytesio_from_path(path):
     return bytesio
 
 
-@pytest.mark.parametrize('file_or_path, mime_type, mime_type_to_be_mocked', [
+@pytest.mark.parametrize('path, mime_type', [
     ('tests/16-bit-mono.wav', None, 'audio/x-wav'),
     ('tests/64kbits.mp3', None, 'audio/mpeg'),
-    (bytesio_from_path('tests/16-bit-mono.wav'), 'audio/x-wav', 'audio/x-wav'),
-    (bytesio_from_path('tests/64kbits.mp3'), 'audio/mpeg', 'audio/mpeg')
+    (bytesio_from_path('tests/16-bit-mono.wav'), 'audio/x-wav'),
+    (bytesio_from_path('tests/64kbits.mp3'), 'audio/mpeg')
 ])
-def test_read_calls_read_method_for_respective_file_type(file_or_path, mime_type, mime_type_to_be_mocked):
+def test_read_calls_read_method_for_respective_file_type(path, mime_type):
     # When
-    processor = next((processor for processor in madam.core.processors if processor.can_read(mime_type_to_be_mocked)))
-    with unittest.mock.patch.object(processor, 'read') as read_method:
-        # Then
-        madam.read(file_or_path, mime_type=mime_type)
+    with open(path, 'r') as file:
+        processor = next((processor for processor in madam.core.processors if processor.can_read(file)))
+        with unittest.mock.patch.object(processor, 'read') as read_method:
+            # Then
+            madam.read(file, mime_type=mime_type)
     # Assert
     assert read_method.called
 
