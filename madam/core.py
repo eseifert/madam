@@ -106,7 +106,10 @@ def read(file, mime_type=None):
     asset = processor.read(file)
     for metadata_format, metadata_processor in metadata_processors_by_format.items():
         file.seek(0)
-        asset.metadata[metadata_format] = metadata_processor.read(file)
+        try:
+            asset.metadata[metadata_format] = metadata_processor.read(file)
+        except:
+            pass
     return asset
 
 
