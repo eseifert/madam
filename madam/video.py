@@ -2,7 +2,7 @@ import io
 import json
 import subprocess
 
-from madam.core import Processor
+from madam.core import Asset, Processor
 
 
 class FFmpegProcessor(Processor):
@@ -14,4 +14,4 @@ class FFmpegProcessor(Processor):
         return json_obj is not None
 
     def read(self, file):
-        pass
+        return Asset()
