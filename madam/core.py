@@ -84,7 +84,6 @@ processors = []
 metadata_processors_by_format = {}
 
 
-@functools.singledispatch
 def read(file, mime_type=None):
     """
     Reads the specified file and returns its contents as an Asset object.
@@ -107,16 +106,6 @@ def read(file, mime_type=None):
         file.seek(0)
         asset.metadata[metadata_format] = metadata_processor.read(file)
     return asset
-
-
-@read.register(str)
-def _read_path(path, mime_type=None):
-    if not mime_type:
-        mime_type, encoding = mimetypes.guess_type(path)
-    if not mime_type:
-        raise UnknownMimeTypeError('Unable to determine MIME type for file at "%s"' % path)
-    with open(path, 'rb') as file:
-        return read(file, mime_type)
 
 
 class Pipeline:

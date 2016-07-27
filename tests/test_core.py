@@ -103,39 +103,22 @@ class TestAsset:
         assert asset.metadata['madam'] == metadata_to_be_set
 
 
-def bytesio_from_path(path):
-    with open(path, 'rb') as file:
-        bytesio = io.BytesIO(file.read())
-    return bytesio
-
-
 @pytest.mark.parametrize('path, mime_type', [
-    ('tests/16-bit-mono.wav', None, 'audio/x-wav'),
-    ('tests/64kbits.mp3', None, 'audio/mpeg'),
-    (bytesio_from_path('tests/16-bit-mono.wav'), 'audio/x-wav'),
-    (bytesio_from_path('tests/64kbits.mp3'), 'audio/mpeg')
+    ('tests/16-bit-mono.wav', None),
+    ('tests/64kbits.mp3', None),
 ])
 def test_read_calls_read_method_for_respective_file_type(path, mime_type):
     # When
-    with open(path, 'r') as file:
-        processor = next((processor for processor in madam.core.processors if processor.can_read(file)))
-        with unittest.mock.patch.object(processor, 'read') as read_method:
-            # Then
-            madam.read(file, mime_type=mime_type)
-    # Assert
-    assert read_method.called
-
-
-def test_reading_path_without_extension_mime_type_raises_exception():
-    with tempfile.NamedTemporaryFile() as tmp:
-        with pytest.raises(UnknownMimeTypeError):
-            madam.read(tmp.name)
-
-
-def test_reading_file_without_mime_type_raises_exception():
-    file = io.BytesIO()
-    with pytest.raises(UnknownMimeTypeError):
-        madam.read(file)
+    with open(path, 'rb') as file:
+        data = file.read()
+    for processor in madam.core.processors:
+        if processor.can_read(io.BytesIO(data)):
+            with unittest.mock.patch.object(processor, 'read') as read_method:
+                # Then
+                madam.read(io.BytesIO(data), mime_type=mime_type)
+            # Assert
+            assert read_method.called
+            break
 
 
 @pytest.fixture
