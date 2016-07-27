@@ -131,9 +131,6 @@ def test_jpeg_asset_contains_raw_exif_metadata():
 
 
 class TestPillowProcessor:
-    def test_supports_jfif(self, pillow_processor):
-        assert pillow_processor.can_read('image/jpeg')
-
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
         jpeg_asset_landscape = jpeg_asset(width=width, height=height)
