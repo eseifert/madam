@@ -73,9 +73,9 @@ class Asset:
         self.essence_data = value.read()
 
 
-class UnknownMimeTypeError(ValueError):
+class UnsupportedFormatError(ValueError):
     """
-    Represents an error that is raised whenever file content with unknown or unsupported MIME type is encountered.
+    Represents an error that is raised whenever file content with unknown type is encountered.
     """
     pass
 
@@ -92,7 +92,7 @@ def read(file, mime_type=None):
     :param mime_type: MIME type of the specified file
     :type mime_type: str
     :returns: Asset representing the specified file
-    :raises UnknownMimeTypeError: if the file format cannot be recognized or is not supported
+    :raises UnsupportedFormatError: if the file format cannot be recognized or is not supported
 
     :Example:
 
@@ -100,7 +100,9 @@ def read(file, mime_type=None):
     >>> madam.read('path/to/file.jpg')
     """
     processors_supporting_type = (processor for processor in processors if processor.can_read(file))
-    processor = next(processors_supporting_type)
+    processor = next(processors_supporting_type, None)
+    if not processor:
+        raise UnsupportedFormatError()
     asset = processor.read(file)
     for metadata_format, metadata_processor in metadata_processors_by_format.items():
         file.seek(0)

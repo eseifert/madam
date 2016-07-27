@@ -6,7 +6,7 @@ import unittest.mock
 import madam
 from madam.core import AssetStorage
 from madam.core import Asset
-from madam.core import UnknownMimeTypeError
+from madam.core import UnsupportedFormatError
 from madam.core import Pipeline
 
 
@@ -119,6 +119,12 @@ def test_read_calls_read_method_for_respective_file_type(path, mime_type):
             # Assert
             assert read_method.called
             break
+
+
+def test_read_empty_file_raises_error():
+    file_data = io.BytesIO()
+    with pytest.raises(UnsupportedFormatError):
+        madam.read(file_data)
 
 
 @pytest.fixture
