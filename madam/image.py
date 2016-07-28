@@ -53,8 +53,12 @@ class PillowProcessor(Processor):
 
     def read(self, jpeg_file):
         asset = Asset()
-        asset['mime_type'] = 'image/jpeg'
+        pil_type_to_mime_type = {
+            'JPEG': 'image/jpeg',
+            'PNG': 'image/png'
+        }
         image = PIL.Image.open(jpeg_file)
+        asset['mime_type'] = pil_type_to_mime_type[image.format]
         asset['width'] = image.width
         asset['height'] = image.height
 
