@@ -108,6 +108,14 @@ class PillowProcessor(Processor):
         return asset
 
     def _rotate(self, asset, rotation):
+        """
+        Creates a new image asset from specified asset whose essence is rotated by the specified rotation.
+
+        :param asset: Image asset to be rotated
+        :param rotation: One of ``PIL.Image.FLIP_LEFT_RIGHT``, ``PIL.Image.FLIP_TOP_BOTTOM``, ``PIL.Image.ROTATE_90``, \
+        ``PIL.Image.ROTATE_180``, ``PIL.Image.ROTATE_270``, or ``PIL.Image.TRANSPOSE``
+        :return: New image asset with rotated essence
+        """
         image = PIL.Image.open(asset.essence)
         transposed_image = image.transpose(rotation)
         transposed_asset = self._image_to_asset(transposed_image)
