@@ -40,6 +40,14 @@ def jpeg_rgb(exif={}, width=4, height=3, transpositions=[]):
     return image_with_exif_metadata
 
 
+def png_rgb():
+    image = image_rgb()
+    image_data = io.BytesIO()
+    image.save(image_data, 'PNG')
+    image_data.seek(0)
+    return image_data
+
+
 def add_exif_to_jpeg(exif, image_data):
     exif_bytes = piexif.dump(exif)
     image_with_exif_metadata = io.BytesIO()
@@ -52,6 +60,12 @@ def jpeg_asset(width=4, height=3, exif={}, transpositions=[]):
     asset.essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
     asset.metadata['exif'] = exif
     asset.metadata['madam'] = {'width': width, 'height': height}
+    return asset
+
+
+def png_asset():
+    asset = madam.core.Asset()
+    asset.essence = png_rgb()
     return asset
 
 
@@ -198,10 +212,9 @@ class TestPillowProcessor:
         image_data_after_reading = jpeg_data.read()
         assert original_image_data == image_data_after_reading
 
-    def test_jpeg_asset_essence_is_filled(self, pillow_processor):
-        jpeg_data = jpeg_rgb()
-
-        asset = pillow_processor.read(jpeg_data)
+    @pytest.mark.parametrize('image_data', [jpeg_rgb(), png_rgb()])
+    def test_image_asset_essence_is_filled(self, image_data, pillow_processor):
+        asset = pillow_processor.read(image_data)
 
         assert asset.essence is not None
 

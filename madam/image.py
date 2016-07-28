@@ -58,16 +58,17 @@ class PillowProcessor(Processor):
         asset['width'] = image.width
         asset['height'] = image.height
 
-        jpeg_file.seek(0)
-        asset.metadata['exif'] = self.exif_processor.read(jpeg_file)
-        jpeg_file.seek(0)
-        asset.essence = self.exif_processor.remove(jpeg_file)
+        if image.format == 'JPEG':
+            jpeg_file.seek(0)
+            asset.metadata['exif'] = self.exif_processor.read(jpeg_file)
+            jpeg_file.seek(0)
+            asset.essence = self.exif_processor.remove(jpeg_file)
 
-        exif_0th = asset.metadata['exif'].get('0th')
-        if exif_0th:
-            artist = exif_0th.get(piexif.ImageIFD.Artist)
-            if artist:
-                asset['artist'] = artist.decode('utf-8')
+            exif_0th = asset.metadata['exif'].get('0th')
+            if exif_0th:
+                artist = exif_0th.get(piexif.ImageIFD.Artist)
+                if artist:
+                    asset['artist'] = artist.decode('utf-8')
         return asset
 
     def can_read(self, file):
