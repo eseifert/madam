@@ -13,4 +13,5 @@ setup(
     install_requires=['bidict', 'piexif', 'pillow'],
     setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['piexif', 'pillow', 'pytest'],
+    packages=['madam']
 )
