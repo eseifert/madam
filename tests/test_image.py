@@ -198,7 +198,7 @@ class TestPillowProcessor:
         (jpeg_rgb(), 'image/jpeg'),
         (png_rgb(), 'image/png')
     ])
-    def test_read_jpeg_returns_asset_with_jpeg_mime_type(self, pillow_processor, image_data, mime_type):
+    def test_read_image_returns_asset_with_image_mime_type(self, pillow_processor, image_data, mime_type):
         asset = pillow_processor.read(image_data)
 
         assert asset['mime_type'] == mime_type
