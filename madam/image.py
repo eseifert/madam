@@ -2,6 +2,7 @@ import functools
 import io
 from enum import Enum
 
+from bidict import bidict
 import piexif
 import PIL.ExifTags
 import PIL.Image
@@ -50,15 +51,15 @@ class PillowProcessor(Processor):
     def __init__(self, exif_processor):
         super().__init__()
         self.exif_processor = exif_processor
+        self.__mime_type_to_pillow_type = bidict({
+            'image/jpeg': 'JPEG',
+            'image/png': 'PNG'
+        })
 
     def read(self, jpeg_file):
         asset = Asset()
-        pil_type_to_mime_type = {
-            'JPEG': 'image/jpeg',
-            'PNG': 'image/png'
-        }
         image = PIL.Image.open(jpeg_file)
-        asset['mime_type'] = pil_type_to_mime_type[image.format]
+        asset['mime_type'] = self.__mime_type_to_pillow_type.inv[image.format]
         asset['width'] = image.width
         asset['height'] = image.height
 
@@ -169,13 +170,9 @@ class PillowProcessor(Processor):
         :param mime_type: Target MIME type
         :return: New asset with converted essence
         """
-        mime_type_to_format = {
-            'image/png': 'PNG'
-        }
-
         image = PIL.Image.open(asset.essence)
         converted_essence_data = io.BytesIO()
-        pil_format = mime_type_to_format[mime_type]
+        pil_format = self.__mime_type_to_pillow_type[mime_type]
         image.save(converted_essence_data, pil_format)
         converted_essence_data.seek(0)
 
