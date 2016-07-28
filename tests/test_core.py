@@ -102,6 +102,13 @@ class TestAsset:
 
         assert asset.metadata['madam'] == metadata_to_be_set
 
+    def test_asset_essence_can_be_read_multiple_times(self, asset):
+        asset.essence_data = b'42'
+        essence_contents = asset.essence.read()
+        same_essence_contents = asset.essence.read()
+
+        assert essence_contents == same_essence_contents
+
 
 @pytest.mark.parametrize('path, mime_type', [
     ('tests/16-bit-mono.wav', None),

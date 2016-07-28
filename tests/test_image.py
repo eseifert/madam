@@ -69,14 +69,6 @@ def test_jpeg_asset_essence_is_a_jpeg():
     assert jpeg_image.format == 'JPEG'
 
 
-def test_jpeg_asset_essence_can_be_read_multiple_times():
-    asset = jpeg_asset()
-    essence_contents = asset.essence.read()
-    same_essence_contents = asset.essence.read()
-
-    assert essence_contents == same_essence_contents
-
-
 def test_jpeg_asset_contains_raw_exif_metadata():
     asset = jpeg_asset(exif=jpeg_exif)
     assert asset.metadata['exif'] == jpeg_exif
