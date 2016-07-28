@@ -155,3 +155,15 @@ class PillowProcessor(Processor):
             raise ValueError('Unable to correct image orientation with value %s' % orientation)
 
         return oriented_asset
+
+    @operator
+    def convert(self, asset, mime_type):
+        """
+        Creates a new asset of the specified MIME type from the essence of the specified asset.
+        :param asset: Asset whose contents will be converted
+        :param mime_type: Target MIME type
+        :return: New asset with converted essence
+        """
+        converted_asset = Asset()
+        converted_asset.mime_type = mime_type
+        return converted_asset
