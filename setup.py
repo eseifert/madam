@@ -13,5 +13,13 @@ setup(
     install_requires=['bidict', 'piexif', 'pillow'],
     setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['piexif', 'pillow', 'pytest'],
-    packages=['madam']
+    packages=['madam'],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Operating System :: POSIX',
+        'Programming Language :: Python',
+        'Topic :: Multimedia :: Graphics :: Graphics Conversion'
+    ]
 )
