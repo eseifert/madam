@@ -62,43 +62,6 @@ def is_equal_in_black_white_space(result_image, expected_image):
     return PIL.ImageChops.difference(result_image_bw, expected_image_bw).getbbox() is None
 
 
-def test_read_jpeg_does_not_alter_the_original_file():
-    jpeg_data = jpeg_rgb()
-    original_image_data = jpeg_data.read()
-    jpeg_data.seek(0)
-
-    madam.read(jpeg_data, 'image/jpeg')
-
-    jpeg_data.seek(0)
-    image_data_after_reading = jpeg_data.read()
-    assert original_image_data == image_data_after_reading
-
-
-def test_read_jpeg_returns_asset_with_jpeg_mime_type():
-    jpeg_data = jpeg_rgb()
-
-    asset = madam.read(jpeg_data, 'image/jpeg')
-
-    assert asset['mime_type'] == 'image/jpeg'
-
-
-def test_jpeg_asset_essence_is_filled():
-    jpeg_data = jpeg_rgb()
-
-    asset = madam.read(jpeg_data, 'image/jpeg')
-
-    assert asset.essence is not None
-
-
-def test_jpeg_asset_contains_size_information():
-    jpeg_data = jpeg_rgb()
-
-    asset = madam.read(jpeg_data, 'image/jpeg')
-
-    assert asset.metadata['madam']['width'] == 4
-    assert asset.metadata['madam']['height'] == 3
-
-
 def test_jpeg_asset_essence_is_a_jpeg():
     asset = jpeg_asset()
     jpeg_image = PIL.Image.open(asset.essence)
@@ -112,17 +75,6 @@ def test_jpeg_asset_essence_can_be_read_multiple_times():
     same_essence_contents = asset.essence.read()
 
     assert essence_contents == same_essence_contents
-
-
-def test_jpeg_asset_essence_does_not_contain_exif_metadata():
-    jpeg_data = jpeg_rgb(exif=jpeg_exif)
-    asset = madam.read(jpeg_data, 'image/jpeg')
-    essence_bytes = asset.essence.read()
-
-    essence_exif = piexif.load(essence_bytes)
-
-    for ifd, ifd_data in essence_exif.items():
-        assert not ifd_data
 
 
 def test_jpeg_asset_contains_raw_exif_metadata():
@@ -248,6 +200,49 @@ class TestPillowProcessor:
 
         image = PIL.Image.open(converted_asset.essence)
         assert image.format == 'PNG'
+
+    def test_read_jpeg_returns_asset_with_jpeg_mime_type(self, pillow_processor):
+        jpeg_data = jpeg_rgb()
+
+        asset = pillow_processor.read(jpeg_data)
+
+        assert asset['mime_type'] == 'image/jpeg'
+
+    def test_read_jpeg_does_not_alter_the_original_file(self, pillow_processor):
+        jpeg_data = jpeg_rgb()
+        original_image_data = jpeg_data.read()
+        jpeg_data.seek(0)
+
+        pillow_processor.read(jpeg_data)
+
+        jpeg_data.seek(0)
+        image_data_after_reading = jpeg_data.read()
+        assert original_image_data == image_data_after_reading
+
+    def test_jpeg_asset_essence_is_filled(self, pillow_processor):
+        jpeg_data = jpeg_rgb()
+
+        asset = pillow_processor.read(jpeg_data)
+
+        assert asset.essence is not None
+
+    def test_jpeg_asset_contains_size_information(self, pillow_processor):
+        jpeg_data = jpeg_rgb()
+
+        asset = pillow_processor.read(jpeg_data)
+
+        assert asset.metadata['madam']['width'] == 4
+        assert asset.metadata['madam']['height'] == 3
+
+    def test_jpeg_asset_essence_does_not_contain_exif_metadata(self, pillow_processor):
+        jpeg_data = jpeg_rgb(exif=jpeg_exif)
+        asset = pillow_processor.read(jpeg_data)
+        essence_bytes = asset.essence.read()
+
+        essence_exif = piexif.load(essence_bytes)
+
+        for ifd, ifd_data in essence_exif.items():
+            assert not ifd_data
 
 
 class TestExifProcessor:
