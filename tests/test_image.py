@@ -61,18 +61,6 @@ def is_equal_in_black_white_space(result_image, expected_image):
     return PIL.ImageChops.difference(result_image_bw, expected_image_bw).getbbox() is None
 
 
-def test_jpeg_asset_essence_is_a_jpeg():
-    asset = jpeg_asset()
-    jpeg_image = PIL.Image.open(asset.essence)
-
-    assert jpeg_image.format == 'JPEG'
-
-
-def test_jpeg_asset_contains_raw_exif_metadata():
-    asset = jpeg_asset(exif=jpeg_exif)
-    assert asset.metadata['exif'] == jpeg_exif
-
-
 class TestPillowProcessor:
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
