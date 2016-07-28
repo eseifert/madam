@@ -77,11 +77,6 @@ class PillowProcessor(Processor):
         except IOError:
             return False
 
-    def write(self, jpeg_asset, jpeg_file, format):
-        jpeg_data = jpeg_asset.essence
-        image = PIL.Image.open(jpeg_data)
-        image.save(jpeg_file, format)
-
     @operator
     def resize(self, asset, width, height, mode=ResizeMode.EXACT):
         image = PIL.Image.open(asset.essence)

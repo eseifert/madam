@@ -180,15 +180,6 @@ class TestPillowProcessor:
         assert filling_asset['width'] == 9
         assert filling_asset['height'] == 10
 
-    def test_write_jpeg_creates_file_containing_asset_essence(self, pillow_processor):
-        asset = jpeg_asset()
-        file_data = io.BytesIO()
-
-        pillow_processor.write(asset, file_data, 'JPEG')
-
-        file_data.seek(0)
-        assert is_equal_in_black_white_space(PIL.Image.open(file_data), PIL.Image.open(asset.essence))
-
     def test_transpose_flips_dimensions(self, pillow_processor):
         asset = jpeg_asset()
         transpose_operator = pillow_processor.transpose()
