@@ -184,7 +184,7 @@ class TestPillowProcessor:
         asset = jpeg_asset()
         file_data = io.BytesIO()
 
-        pillow_processor.write(asset, file_data)
+        pillow_processor.write(asset, file_data, 'JPEG')
 
         file_data.seek(0)
         assert is_equal_in_black_white_space(PIL.Image.open(file_data), PIL.Image.open(asset.essence))
