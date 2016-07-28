@@ -55,10 +55,9 @@ def jpeg_asset(width=4, height=3, exif={}, transpositions=[]):
     return asset
 
 
-
 def is_equal_in_black_white_space(result_image, expected_image):
-    result_image_bw = result_image.convert('L').point(lambda value : 0 if value < 128 else 255, '1')
-    expected_image_bw = expected_image.convert('L').point(lambda value : 0 if value < 128 else 255, '1')
+    result_image_bw = result_image.convert('L').point(lambda value: 0 if value < 128 else 255, '1')
+    expected_image_bw = expected_image.convert('L').point(lambda value: 0 if value < 128 else 255, '1')
     return PIL.ImageChops.difference(result_image_bw, expected_image_bw).getbbox() is None
 
 
