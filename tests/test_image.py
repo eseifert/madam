@@ -232,6 +232,14 @@ class TestPillowProcessor:
 
         assert converted_asset.mime_type == 'image/png'
 
+    def test_convert_creates_new_asset(self, pillow_processor):
+        asset = jpeg_asset()
+        conversion_operator = pillow_processor.convert(mime_type='image/png')
+
+        converted_asset = conversion_operator(asset)
+
+        assert converted_asset is not asset
+
 
 class TestExifProcessor:
     @pytest.fixture
