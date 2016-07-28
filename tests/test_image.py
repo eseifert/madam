@@ -240,6 +240,15 @@ class TestPillowProcessor:
 
         assert converted_asset is not asset
 
+    def test_converted_essence_is_of_specified_type(self, pillow_processor):
+        asset = jpeg_asset()
+        conversion_operator = pillow_processor.convert(mime_type='image/png')
+
+        converted_asset = conversion_operator(asset)
+
+        image = PIL.Image.open(converted_asset.essence)
+        assert image.format == 'PNG'
+
 
 class TestExifProcessor:
     @pytest.fixture

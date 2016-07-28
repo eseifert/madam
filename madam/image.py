@@ -164,6 +164,17 @@ class PillowProcessor(Processor):
         :param mime_type: Target MIME type
         :return: New asset with converted essence
         """
+        mime_type_to_format = {
+            'image/png': 'PNG'
+        }
+
+        image = PIL.Image.open(asset.essence)
+        converted_essence_data = io.BytesIO()
+        pil_format = mime_type_to_format[mime_type]
+        image.save(converted_essence_data, pil_format)
+        converted_essence_data.seek(0)
+
         converted_asset = Asset()
+        converted_asset.essence = converted_essence_data
         converted_asset.mime_type = mime_type
         return converted_asset
