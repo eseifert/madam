@@ -10,13 +10,6 @@ import piexif
 jpeg_exif = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
 
 
-@pytest.fixture(scope='module', autouse=True)
-def pillow_processor():
-    exif_processor = madam.image.ExifProcessor()
-    processor = madam.image.PillowProcessor(exif_processor)
-    return processor
-
-
 def image_rgb(width=4, height=3, transpositions=[]):
     image = PIL.Image.new('RGB', (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
@@ -76,6 +69,12 @@ def is_equal_in_black_white_space(result_image, expected_image):
 
 
 class TestPillowProcessor:
+    @pytest.fixture
+    def pillow_processor(self):
+        exif_processor = madam.image.ExifProcessor()
+        processor = madam.image.PillowProcessor(exif_processor)
+        return processor
+
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
         jpeg_asset_landscape = jpeg_asset(width=width, height=height)
