@@ -123,6 +123,12 @@ class PillowProcessor(Processor):
 
     @operator
     def transpose(self, asset):
+        """
+        Creates a new image asset whose essence is the transpose of the specified asset's essence.
+
+        :param asset: Image asset whose essence is to be transposed
+        :return: New image asset with transposed essence
+        """
         return self._rotate(asset, PIL.Image.TRANSPOSE)
 
     @operator
