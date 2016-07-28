@@ -2,12 +2,15 @@
 
 from setuptools import setup
 
+import versioneer
+
 setup(
     name='MADAM',
-    version='0.1',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     author='Michael Seifert',
     author_email='mseifert@error-reports.org',
     install_requires=['bidict', 'piexif', 'pillow'],
-    setup_requires=['pytest-runner'],
+    setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['piexif', 'pillow', 'pytest'],
 )
