@@ -220,10 +220,9 @@ class TestPillowProcessor:
 
         assert asset.essence is not None
 
-    def test_jpeg_asset_contains_size_information(self, pillow_processor):
-        jpeg_data = jpeg_rgb()
-
-        asset = pillow_processor.read(jpeg_data)
+    @pytest.mark.parametrize('image_data', [jpeg_rgb(), png_rgb()])
+    def test_jpeg_asset_contains_size_information(self, pillow_processor, image_data):
+        asset = pillow_processor.read(image_data)
 
         assert asset.metadata['madam']['width'] == 4
         assert asset.metadata['madam']['height'] == 3
