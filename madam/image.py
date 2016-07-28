@@ -107,7 +107,7 @@ class PillowProcessor(Processor):
         asset = self.read(image_buffer)
         return asset
 
-    def _rotate_lossless(self, asset, rotation):
+    def _rotate(self, asset, rotation):
         image = PIL.Image.open(asset.essence)
         transposed_image = image.transpose(rotation)
         transposed_asset = self._image_to_asset(transposed_image)
@@ -115,12 +115,12 @@ class PillowProcessor(Processor):
 
     @operator
     def transpose(self, asset):
-        return self._rotate_lossless(asset, PIL.Image.TRANSPOSE)
+        return self._rotate(asset, PIL.Image.TRANSPOSE)
 
     @operator
     def flip(self, asset, orientation):
         flip_orientation = PIL.Image.FLIP_LEFT_RIGHT if orientation == FlipOrientation.HORIZONTAL else PIL.Image.FLIP_TOP_BOTTOM
-        return self._rotate_lossless(asset, flip_orientation)
+        return self._rotate(asset, flip_orientation)
 
     @operator
     def auto_orient(self, asset):
@@ -131,17 +131,17 @@ class PillowProcessor(Processor):
         elif orientation == 2:
             oriented_asset = self.flip(orientation=FlipOrientation.HORIZONTAL)(asset)
         elif orientation == 3:
-            oriented_asset = self._rotate_lossless(asset, PIL.Image.ROTATE_180)
+            oriented_asset = self._rotate(asset, PIL.Image.ROTATE_180)
         elif orientation == 4:
             oriented_asset = self.flip(orientation=FlipOrientation.VERTICAL)(asset)
         elif orientation == 5:
-            oriented_asset = self.flip(orientation=FlipOrientation.VERTICAL)(self._rotate_lossless(asset, PIL.Image.ROTATE_90))
+            oriented_asset = self.flip(orientation=FlipOrientation.VERTICAL)(self._rotate(asset, PIL.Image.ROTATE_90))
         elif orientation == 6:
-            oriented_asset = self._rotate_lossless(asset, PIL.Image.ROTATE_270)
+            oriented_asset = self._rotate(asset, PIL.Image.ROTATE_270)
         elif orientation == 7:
-            oriented_asset = self.flip(orientation=FlipOrientation.HORIZONTAL)(self._rotate_lossless(asset, PIL.Image.ROTATE_90))
+            oriented_asset = self.flip(orientation=FlipOrientation.HORIZONTAL)(self._rotate(asset, PIL.Image.ROTATE_90))
         elif orientation == 8:
-            oriented_asset = self._rotate_lossless(asset, PIL.Image.ROTATE_90)
+            oriented_asset = self._rotate(asset, PIL.Image.ROTATE_90)
         else:
             raise ValueError('Unable to correct image orientation with value %s' % orientation)
 
