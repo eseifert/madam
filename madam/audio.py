@@ -42,7 +42,7 @@ class MutagenProcessor(Processor):
 
             mp3 = mutagen.mp3.MP3(copy_path)
             asset['duration'] = mp3.info.length
-            mp3.tags.delete()
+            mp3.tags.delete(copy_path)
 
             with open(copy_path, 'rb') as mp3_file_copy:
                 asset.essence = mp3_file_copy
