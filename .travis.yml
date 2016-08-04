@@ -9,8 +9,8 @@ language: python
 python:
   - 3.5
 install:
-  - pip install tox --use-mirrors
-  - pip install coveralls
+  - pip install -q tox
+  - pip install -q coveralls
 script:
   - tox
 env:
