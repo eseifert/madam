@@ -10,7 +10,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     author='Michael Seifert',
     author_email='mseifert@error-reports.org',
-    install_requires=['bidict', 'piexif', 'pillow'],
+    install_requires=['bidict', 'mutagen', 'piexif', 'pillow'],
     setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['piexif', 'pillow', 'pytest'],
     packages=['madam'],
