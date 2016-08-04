@@ -17,4 +17,5 @@ env:
   - TOXENV=py35
   - TOXENV=coverage
 after_success:
-  coveralls
+  - test $TOXENV = "coverage"
+    && coveralls
