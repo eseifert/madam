@@ -1,5 +1,7 @@
-MADAM – Multimedia Advanced Digital Asset Management
-####################################################
+MADAM
+#####
+
+Multimedia Advanced Digital Asset Management
 
 |travis-badge|_ |coveralls-badge|_
 
