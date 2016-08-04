@@ -1,0 +1,5 @@
+[run]
+source = madam
+
+[report]
+omit = */_version.py
