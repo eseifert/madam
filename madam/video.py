@@ -7,9 +7,15 @@ from madam.core import Asset, Processor
 
 class FFmpegProcessor(Processor):
     def can_read(self, file):
-        ffprobe_call = subprocess.run(['ffprobe', '-print_format', 'json', '-show_format', '-loglevel', 'quiet', '-'],
-                                      input=file.read(), stdout=subprocess.PIPE)
-        string_result = ffprobe_call.stdout.decode('utf-8')
+        with subprocess.Popen(['ffprobe', '-print_format', 'json', '-show_format', '-loglevel', 'quiet', '-'],
+                              stdout=subprocess.PIPE) as process:
+            try:
+                stdout, stderr = process.communicate(input)
+            except:
+                process.kill()
+                process.wait()
+                raise
+        string_result = stdout.decode('utf-8')
         json_obj = json.loads(string_result)
         return json_obj is not None
 
