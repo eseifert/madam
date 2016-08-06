@@ -1,4 +1,3 @@
-import io
 import json
 import subprocess
 
@@ -14,7 +13,7 @@ class FFmpegProcessor(Processor):
             except:
                 process.kill()
                 process.wait()
-                raise
+                raise ValueError('Error when reading file-like object: %r' % file)
             retcode = process.wait()
             if retcode:
                 return False
