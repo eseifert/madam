@@ -15,6 +15,9 @@ class FFmpegProcessor(Processor):
                 process.kill()
                 process.wait()
                 raise
+            retcode = process.wait()
+            if retcode:
+                return False
         string_result = stdout.decode('utf-8')
         json_obj = json.loads(string_result)
         return bool(json_obj)
