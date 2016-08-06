@@ -27,6 +27,13 @@ def test_cannot_read_unknown_file(ffmpeg_processor):
     assert not supported
 
 
+def test_fails_with_invalid_file_object(ffmpeg_processor):
+    invalid_file = None
+
+    with pytest.raises(ValueError):
+        ffmpeg_processor.can_read(invalid_file)
+
+
 def test_read_returns_asset_when_called_with_video_file(ffmpeg_processor):
     video_path = 'tests/bus_qcif_15fps.y4m'
 
