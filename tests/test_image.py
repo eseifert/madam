@@ -75,6 +75,22 @@ class TestPillowProcessor:
         processor = madam.image.PillowProcessor(exif_processor)
         return processor
 
+    @pytest.mark.parametrize('image_file', [jpeg_rgb(), png_rgb()])
+    def test_can_read_image_files(self, pillow_processor, image_file):
+        supports = pillow_processor.can_read(image_file)
+        assert supports
+
+    def test_cannot_read_unknown_file(self, pillow_processor):
+        random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
+        unknown_file = io.BytesIO(random_data)
+        supports = pillow_processor.can_read(unknown_file)
+        assert not supports
+
+    def test_test_fails_with_invalid_file_object(self, pillow_processor):
+        invalid_file = None
+        with pytest.raises(ValueError):
+            pillow_processor.can_read(invalid_file)
+
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
         jpeg_asset_landscape = jpeg_asset(width=width, height=height)
