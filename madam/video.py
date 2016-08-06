@@ -10,7 +10,7 @@ class FFmpegProcessor(Processor):
         with subprocess.Popen(['ffprobe', '-print_format', 'json', '-show_format', '-loglevel', 'quiet', '-'],
                               stdout=subprocess.PIPE) as process:
             try:
-                stdout, stderr = process.communicate(input)
+                stdout, stderr = process.communicate(file.read())
             except:
                 process.kill()
                 process.wait()
