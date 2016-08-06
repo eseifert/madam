@@ -10,13 +10,11 @@ from madam.core import UnsupportedFormatError
 from madam.core import Pipeline
 
 
-@pytest.fixture
-def storage():
-    return AssetStorage()
-
-
-@pytest.mark.usefixtures('storage')
 class TestAssetStorage:
+    @pytest.fixture
+    def storage(self):
+        return AssetStorage()
+
     def test_contains_asset(self, storage):
         a = Asset()
         storage['key'] = a
