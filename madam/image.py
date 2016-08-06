@@ -82,6 +82,8 @@ class PillowProcessor(Processor):
             return True
         except IOError:
             return False
+        except:
+            raise ValueError('Error when reading file-like object: %r' % file)
 
     @operator
     def resize(self, asset, width, height, mode=ResizeMode.EXACT):
