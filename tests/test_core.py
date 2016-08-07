@@ -20,6 +20,14 @@ def test_file_storage_creates_storage_directory():
         assert os.path.isdir(storagePath)
 
 
+def test_file_storage_uses_directory_when_directory_already_exists():
+    with tempfile.TemporaryDirectory() as tempdir:
+        storagePath = os.path.join(tempdir, 'storageDir')
+        os.mkdir(storagePath)
+
+        storage = FileStorage(storagePath)
+
+
 class TestAssetStorage:
     @pytest.fixture
     def storage(self):

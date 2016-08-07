@@ -38,7 +38,8 @@ class AssetStorage:
 
 class FileStorage:
     def __init__(self, path):
-        os.mkdir(path)
+        if not os.path.exists(path):
+            os.mkdir(path)
 
 
 class Asset:
