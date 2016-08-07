@@ -13,8 +13,8 @@ from madam.core import Pipeline
 
 class TestFileStorage:
     @pytest.fixture
-    def storage(self, tmpdir_factory):
-        storage_path = str(tmpdir_factory.getbasetemp().join('storageDir'))
+    def storage(self, tmpdir):
+        storage_path = str(tmpdir.join('storageDir'))
         return FileStorage(storage_path)
 
     def test_creates_storage_directory(self, storage):
