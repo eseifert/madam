@@ -54,6 +54,12 @@ class TestFileStorage:
         storage_path_file_count = len(os.listdir(storage.path))
         assert storage_path_file_count >= 1
 
+    def test_remove_raises_value_error_when_deleting_unknown_asset(self, storage):
+        asset = Asset()
+
+        with pytest.raises(ValueError):
+            storage.remove(asset)
+
 
 class TestInMemoryStorage:
     @pytest.fixture

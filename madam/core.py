@@ -75,6 +75,9 @@ class FileStorage:
             asset_id = next(self._asset_id_sequence)
             assets[str(asset_id)] = asset
 
+    def remove(self, asset):
+        raise ValueError('Unable to remove unknown asset %s', asset)
+
 
 class Asset:
     """
