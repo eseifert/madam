@@ -3,6 +3,7 @@ import collections
 import functools
 import io
 import mimetypes
+import os
 
 
 class AssetStorage:
@@ -33,6 +34,11 @@ class AssetStorage:
                     if madam_metadata.get(key, None) == value:
                         matches.append(asset)
         return matches
+
+
+class FileStorage:
+    def __init__(self, path):
+        os.mkdir(path)
 
 
 class Asset:

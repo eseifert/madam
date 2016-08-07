@@ -1,13 +1,23 @@
 import io
+import os
 import pytest
 import tempfile
 import unittest.mock
 
 import madam
-from madam.core import AssetStorage
+from madam.core import AssetStorage, FileStorage
 from madam.core import Asset
 from madam.core import UnsupportedFormatError
 from madam.core import Pipeline
+
+
+def test_file_storage_creates_storage_directory():
+    with tempfile.TemporaryDirectory() as tempdir:
+        storagePath = os.path.join(tempdir, 'storageDir')
+
+        storage = FileStorage(storagePath)
+
+        assert os.path.isdir(storagePath)
 
 
 class TestAssetStorage:
