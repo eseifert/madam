@@ -43,7 +43,7 @@ class InMemoryStorage(AssetStorage):
         return matches
 
 
-class FileStorage:
+class FileStorage(AssetStorage):
     """
     Represents a persistent storage backend for assets.
 
