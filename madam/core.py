@@ -5,7 +5,7 @@ import mimetypes
 import os
 
 
-class AssetStorage:
+class InMemoryStorage:
     def __init__(self):
         self.assets = {}
         

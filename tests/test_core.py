@@ -5,7 +5,7 @@ import tempfile
 import unittest.mock
 
 import madam
-from madam.core import AssetStorage, FileStorage
+from madam.core import InMemoryStorage, FileStorage
 from madam.core import Asset
 from madam.core import UnsupportedFormatError
 from madam.core import Pipeline
@@ -33,10 +33,10 @@ class TestFileStorage:
                 FileStorage(file.name)
 
 
-class TestAssetStorage:
+class TestInMemoryStorage:
     @pytest.fixture
     def storage(self):
-        return AssetStorage()
+        return InMemoryStorage()
 
     def test_contains_asset(self, storage):
         a = Asset()
