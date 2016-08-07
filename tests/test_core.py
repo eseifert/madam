@@ -39,6 +39,13 @@ class TestFileStorage:
 
         assert not contains
 
+    def test_contains_is_true_when_asset_was_added(self, storage):
+        asset = Asset()
+
+        storage.add(asset)
+
+        assert asset in storage
+
     def test_add_writes_data_to_storage_path(self, storage):
         asset = Asset()
 
