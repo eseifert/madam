@@ -76,6 +76,11 @@ class FileStorage:
             assets[str(asset_id)] = asset
 
     def remove(self, asset):
+        with shelve.open(self._shelf_path) as assets:
+            for key, value in assets.items():
+                if value == asset:
+                    del assets[key]
+                    return
         raise ValueError('Unable to remove unknown asset %s', asset)
 
 

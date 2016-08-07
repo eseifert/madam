@@ -60,6 +60,14 @@ class TestFileStorage:
         with pytest.raises(ValueError):
             storage.remove(asset)
 
+    def test_remove_deletes_asset_from_storage(self, storage):
+        asset = Asset()
+        storage.add(asset)
+
+        storage.remove(asset)
+
+        assert not asset in storage
+
 
 class TestInMemoryStorage:
     @pytest.fixture
