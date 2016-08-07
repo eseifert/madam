@@ -1,5 +1,4 @@
 import abc
-import collections
 import functools
 import io
 import mimetypes
@@ -8,13 +7,13 @@ import os
 
 class AssetStorage:
     def __init__(self):
-        self.assets = collections.defaultdict(list)
+        self.assets = {}
         
     def __setitem__(self, asset_id, asset):
-        self.assets[asset_id].append(asset)
+        self.assets[asset_id] = asset
         
     def __getitem__(self, asset_id):
-        return self.assets[asset_id][-1]
+        return self.assets[asset_id]
     
     def __contains__(self, asset_id):
         return asset_id in self.assets
@@ -24,12 +23,11 @@ class AssetStorage:
     
     def get(self, **kwargs):
         matches = []
-        for asset_versions in self.assets.values():
-            for asset in asset_versions:
-                madam_metadata = asset.metadata['madam']
-                for key, value in kwargs.items():
-                    if madam_metadata.get(key, None) == value:
-                        matches.append(asset)
+        for asset in self.assets.values():
+            madam_metadata = asset.metadata['madam']
+            for key, value in kwargs.items():
+                if madam_metadata.get(key, None) == value:
+                    matches.append(asset)
         return matches
 
 
