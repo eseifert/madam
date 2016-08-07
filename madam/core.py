@@ -37,7 +37,17 @@ class AssetStorage:
 
 
 class FileStorage:
+    """
+    Represents a persistent storage backend for assets.
+
+    FileStorage uses a directory on the file system to serialize Assets.
+    """
     def __init__(self, path):
+        """
+        Initializes a new FileStorage with the specified path.
+
+        :param path: File system path where the data should go
+        """
         if os.path.isfile(path):
             raise FileExistsError('The storage path "%s" is a file not a directory.' % path)
         if not os.path.isdir(path):
