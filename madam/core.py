@@ -60,6 +60,9 @@ class FileStorage:
             os.mkdir(path)
         self.path = path
 
+    def __contains__(self, asset):
+        return False
+
 
 class Asset:
     """

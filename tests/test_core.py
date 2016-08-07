@@ -32,6 +32,13 @@ class TestFileStorage:
             with pytest.raises(FileExistsError):
                 FileStorage(file.name)
 
+    def test_contains_is_false_when_storage_is_empty(self, storage):
+        asset = Asset()
+
+        contains = asset in storage
+
+        assert not contains
+
 
 class TestInMemoryStorage:
     @pytest.fixture
