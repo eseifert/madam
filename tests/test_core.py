@@ -12,13 +12,13 @@ from madam.core import Pipeline
 
 
 class TestFileStorage:
-    def test_creates_storage_directory(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            storage_path = os.path.join(tempdir, 'storageDir')
+    @pytest.fixture
+    def storage(self, tmpdir_factory):
+        storage_path = str(tmpdir_factory.getbasetemp().join('storageDir'))
+        return FileStorage(storage_path)
 
-            FileStorage(storage_path)
-
-            assert os.path.isdir(storage_path)
+    def test_creates_storage_directory(self, storage):
+        assert os.path.isdir(storage.path)
 
     def test_uses_directory_when_directory_already_exists(self):
         with tempfile.TemporaryDirectory() as tempdir:
