@@ -12,7 +12,7 @@ setup(
     author_email='mseifert@error-reports.org, dev@erichseifert.de',
     install_requires=['bidict', 'mutagen', 'piexif', 'pillow'],
     setup_requires=['pytest-runner', 'versioneer'],
-    tests_require=['piexif', 'pillow', 'pytest'],
+    tests_require=['piexif', 'pillow', 'pytest >=2.8'],
     packages=['madam'],
     classifiers=[
         'Development Status :: 4 - Beta',
