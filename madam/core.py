@@ -3,6 +3,7 @@ import functools
 import io
 import mimetypes
 import os
+import pickle
 
 
 class AssetStorage(metaclass=abc.ABCMeta):
@@ -62,6 +63,11 @@ class FileStorage:
 
     def __contains__(self, asset):
         return False
+
+    def add(self, asset):
+        asset_path = os.path.join(self.path, 'asset')
+        with open(asset_path, 'wb') as file:
+            pickle.dump(asset, file)
 
 
 class Asset:

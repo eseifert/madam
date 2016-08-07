@@ -39,6 +39,14 @@ class TestFileStorage:
 
         assert not contains
 
+    def test_add_writes_data_to_storage_path(self, storage):
+        asset = Asset()
+
+        storage.add(asset)
+
+        storage_path_file_count = len(os.listdir(storage.path))
+        assert storage_path_file_count >= 1
+
 
 class TestInMemoryStorage:
     @pytest.fixture
