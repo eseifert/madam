@@ -5,7 +5,25 @@ import mimetypes
 import os
 
 
-class InMemoryStorage:
+class AssetStorage(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def __setitem__(self, asset_id, asset):
+        pass
+
+    @abc.abstractmethod
+    def __getitem__(self, asset_id):
+        pass
+
+    @abc.abstractmethod
+    def __contains__(self, asset_id):
+        pass
+
+    @abc.abstractmethod
+    def __delitem__(self, key):
+        pass
+
+
+class InMemoryStorage(AssetStorage):
     def __init__(self):
         self.assets = {}
         
