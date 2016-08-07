@@ -27,6 +27,11 @@ class TestFileStorage:
 
             storage = FileStorage(storage_path)
 
+    def test_raises_error_when_storage_path_is_a_file(self):
+        with tempfile.NamedTemporaryFile() as file:
+            with pytest.raises(FileExistsError):
+                FileStorage(file.name)
+
 
 class TestAssetStorage:
     @pytest.fixture

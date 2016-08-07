@@ -38,7 +38,9 @@ class AssetStorage:
 
 class FileStorage:
     def __init__(self, path):
-        if not os.path.exists(path):
+        if os.path.isfile(path):
+            raise FileExistsError('The storage path "%s" is a file not a directory.' % path)
+        if not os.path.isdir(path):
             os.mkdir(path)
 
 
