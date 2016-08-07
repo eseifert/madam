@@ -16,7 +16,7 @@ class TestFileStorage:
         with tempfile.TemporaryDirectory() as tempdir:
             storage_path = os.path.join(tempdir, 'storageDir')
 
-            storage = FileStorage(storage_path)
+            FileStorage(storage_path)
 
             assert os.path.isdir(storage_path)
 
@@ -25,7 +25,7 @@ class TestFileStorage:
             storage_path = os.path.join(tempdir, 'storageDir')
             os.mkdir(storage_path)
 
-            storage = FileStorage(storage_path)
+            FileStorage(storage_path)
 
     def test_raises_error_when_storage_path_is_a_file(self):
         with tempfile.NamedTemporaryFile() as file:
