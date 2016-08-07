@@ -38,40 +38,40 @@ class TestInMemoryStorage:
     def storage(self):
         return InMemoryStorage()
 
-    def test_contains_asset(self, storage):
-        a = Asset()
-        storage['key'] = a
-        assert storage['key'] == a
+    def test_contains_is_true_when_asset_was_added(self, storage):
+        asset = Asset()
 
-    def test_contains_key(self, storage):
-        a = Asset()
-        assert 'key' not in storage
-        storage['key'] = a
-        assert 'key' in storage
+        storage.add(asset)
 
-    def test_asset_is_deleted(self, storage):
-        a = Asset()
-        storage['key'] = a
-        del storage['key']
-        assert 'key' not in storage
+        assert asset in storage
 
-    def test_deleting_unknown_key_raises_exception(self, storage):
-        with pytest.raises(KeyError):
-            del storage['key']
+    def test_contains_is_false_when_asset_was_deleted(self, storage):
+        asset = Asset()
+        storage.add(asset)
+
+        storage.remove(asset)
+
+        assert asset not in storage
+
+    def test_remove_raises_value_error_when_deleting_unknown_asset(self, storage):
+        asset = Asset()
+
+        with pytest.raises(ValueError):
+            storage.remove(asset)
 
     def test_get_returns_empty_list_when_storage_is_empty(self, storage):
         assets_with_1s_duration = storage.get()
         assert not assets_with_1s_duration
 
     def test_get_returns_assets_with_specified_madam_metadata(self, storage):
-        a = Asset()
-        a['duration'] = 1
-        storage['key'] = a
+        asset = Asset()
+        asset['duration'] = 1
+        storage.add(asset)
 
         assets_with_1s_duration = storage.get(duration=1)
 
         assert len(assets_with_1s_duration) == 1
-        assert assets_with_1s_duration[0] == a
+        assert assets_with_1s_duration[0] == asset
 
 
 @pytest.fixture

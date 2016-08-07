@@ -7,41 +7,34 @@ import os
 
 class AssetStorage(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def __setitem__(self, asset_id, asset):
+    def add(self, asset):
         pass
 
     @abc.abstractmethod
-    def __getitem__(self, asset_id):
+    def remove(self, asset):
         pass
 
     @abc.abstractmethod
     def __contains__(self, asset_id):
-        pass
-
-    @abc.abstractmethod
-    def __delitem__(self, key):
         pass
 
 
 class InMemoryStorage(AssetStorage):
     def __init__(self):
-        self.assets = {}
+        self.assets = []
         
-    def __setitem__(self, asset_id, asset):
-        self.assets[asset_id] = asset
+    def add(self, asset):
+        self.assets.append(asset)
         
-    def __getitem__(self, asset_id):
-        return self.assets[asset_id]
+    def remove(self, asset):
+        return self.assets.remove(asset)
     
-    def __contains__(self, asset_id):
-        return asset_id in self.assets
-    
-    def __delitem__(self, key):
-        del self.assets[key]
+    def __contains__(self, asset):
+        return asset in self.assets
     
     def get(self, **kwargs):
         matches = []
-        for asset in self.assets.values():
+        for asset in self.assets:
             madam_metadata = asset.metadata['madam']
             for key, value in kwargs.items():
                 if madam_metadata.get(key, None) == value:
