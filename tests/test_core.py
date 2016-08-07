@@ -13,19 +13,19 @@ from madam.core import Pipeline
 
 def test_file_storage_creates_storage_directory():
     with tempfile.TemporaryDirectory() as tempdir:
-        storagePath = os.path.join(tempdir, 'storageDir')
+        storage_path = os.path.join(tempdir, 'storageDir')
 
-        storage = FileStorage(storagePath)
+        storage = FileStorage(storage_path)
 
-        assert os.path.isdir(storagePath)
+        assert os.path.isdir(storage_path)
 
 
 def test_file_storage_uses_directory_when_directory_already_exists():
     with tempfile.TemporaryDirectory() as tempdir:
-        storagePath = os.path.join(tempdir, 'storageDir')
-        os.mkdir(storagePath)
+        storage_path = os.path.join(tempdir, 'storageDir')
+        os.mkdir(storage_path)
 
-        storage = FileStorage(storagePath)
+        storage = FileStorage(storage_path)
 
 
 class TestAssetStorage:
