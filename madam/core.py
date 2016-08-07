@@ -58,6 +58,7 @@ class FileStorage:
             raise FileExistsError('The storage path "%s" is a file not a directory.' % path)
         if not os.path.isdir(path):
             os.mkdir(path)
+        self.path = path
 
 
 class Asset:
