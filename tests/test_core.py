@@ -11,21 +11,21 @@ from madam.core import UnsupportedFormatError
 from madam.core import Pipeline
 
 
-def test_file_storage_creates_storage_directory():
-    with tempfile.TemporaryDirectory() as tempdir:
-        storage_path = os.path.join(tempdir, 'storageDir')
+class TestFileStorage:
+    def test_creates_storage_directory(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            storage_path = os.path.join(tempdir, 'storageDir')
 
-        storage = FileStorage(storage_path)
+            storage = FileStorage(storage_path)
 
-        assert os.path.isdir(storage_path)
+            assert os.path.isdir(storage_path)
 
+    def test_uses_directory_when_directory_already_exists(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            storage_path = os.path.join(tempdir, 'storageDir')
+            os.mkdir(storage_path)
 
-def test_file_storage_uses_directory_when_directory_already_exists():
-    with tempfile.TemporaryDirectory() as tempdir:
-        storage_path = os.path.join(tempdir, 'storageDir')
-        os.mkdir(storage_path)
-
-        storage = FileStorage(storage_path)
+            storage = FileStorage(storage_path)
 
 
 class TestAssetStorage:
