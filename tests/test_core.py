@@ -49,16 +49,6 @@ class TestAssetStorage:
         storage['key'] = a
         assert 'key' in storage
 
-    def test_asset_is_versioned(self, storage):
-        a = Asset()
-        updated_a = Asset()
-        storage['key'] = a
-        storage['key'] = updated_a
-        versions = storage.versions_of('key')
-        assert len(versions) == 2
-        assert versions[0] == a
-        assert versions[1] == updated_a
-
     def test_asset_is_deleted(self, storage):
         a = Asset()
         storage['key'] = a

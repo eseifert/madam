@@ -22,9 +22,6 @@ class AssetStorage:
     def __delitem__(self, key):
         del self.assets[key]
     
-    def versions_of(self, asset_id):
-        return self.assets[asset_id]
-    
     def get(self, **kwargs):
         matches = []
         for asset_versions in self.assets.values():
