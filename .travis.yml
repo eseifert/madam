@@ -13,8 +13,7 @@ before_script:
 env:
   - TOXENV=py34
   - TOXENV=py35
-  - TOXENV=coverage
 script:
   - tox -e $TOXENV
 after_success:
-  - test $TOXENV = "coverage" && coveralls
+  - test $TOXENV = "py35" && coveralls
