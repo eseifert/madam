@@ -68,6 +68,15 @@ class TestFileStorage:
 
         assert not asset in storage
 
+    def test_iterator_contains_all_stored_assets(self, storage):
+        storage.add(Asset())
+        storage.add(Asset())
+        storage.add(Asset())
+
+        iterator = iter(storage)
+
+        assert len(list(iterator)) == 3
+
 
 class TestInMemoryStorage:
     @pytest.fixture

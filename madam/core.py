@@ -83,6 +83,10 @@ class FileStorage(AssetStorage):
                     return
         raise ValueError('Unable to remove unknown asset %s', asset)
 
+    def __iter__(self):
+        with shelve.open(self._shelf_path) as assets:
+            yield from assets.values()
+
 
 class Asset:
     """
