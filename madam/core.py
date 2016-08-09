@@ -85,7 +85,7 @@ class FileStorage(AssetStorage):
 
     def __iter__(self):
         with shelve.open(self._shelf_path) as assets:
-            yield from assets.values()
+            return iter(list(assets.values()))
 
 
 class Asset:

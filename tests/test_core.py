@@ -77,6 +77,19 @@ class TestFileStorage:
 
         assert len(list(iterator)) == 3
 
+    def test_iterator_is_a_readable_storage_snapshot(self, storage):
+        asset1 = Asset()
+        asset2 = Asset()
+        storage.add(asset1)
+        storage.add(asset2)
+        iterator = iter(storage)
+
+        storage.remove(asset1)
+        storage.add(Asset())
+        storage.add(Asset())
+
+        assert list(iterator) == [asset1, asset2]
+
 
 class TestInMemoryStorage:
     @pytest.fixture
