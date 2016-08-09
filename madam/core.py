@@ -1,5 +1,6 @@
 import abc
 import io
+import itertools
 import mimetypes
 import os
 import shelve
@@ -63,7 +64,7 @@ class FileStorage(AssetStorage):
         self._shelf_path = os.path.join(self.path, 'shelf')
         with shelve.open(self._shelf_path) as assets:
             max_stored_asset_id = max(map(int, assets.keys())) if assets.keys() else 0
-            self._asset_id_sequence = iter(range(max_stored_asset_id + 1))
+            self._asset_id_sequence = itertools.count(start=max_stored_asset_id + 1)
 
     def __contains__(self, asset):
         with shelve.open(self._shelf_path) as assets:
