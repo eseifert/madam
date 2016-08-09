@@ -1,5 +1,4 @@
 import abc
-import functools
 import io
 import mimetypes
 import os
