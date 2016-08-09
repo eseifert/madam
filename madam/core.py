@@ -19,6 +19,10 @@ class AssetStorage(metaclass=abc.ABCMeta):
     def __contains__(self, asset_id):
         pass
 
+    @abc.abstractmethod
+    def __iter__(self):
+        pass
+
 
 class InMemoryStorage(AssetStorage):
     def __init__(self):
