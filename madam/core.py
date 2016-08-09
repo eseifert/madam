@@ -42,6 +42,9 @@ class InMemoryStorage(AssetStorage):
                     matches.append(asset)
         return matches
 
+    def __iter__(self):
+        return iter(list(self.assets))
+
 
 class FileStorage(AssetStorage):
     """

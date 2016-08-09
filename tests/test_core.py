@@ -131,6 +131,28 @@ class TestInMemoryStorage:
         assert len(assets_with_1s_duration) == 1
         assert assets_with_1s_duration[0] == asset
 
+    def test_iterator_contains_all_stored_assets(self, storage):
+        storage.add(Asset())
+        storage.add(Asset())
+        storage.add(Asset())
+
+        iterator = iter(storage)
+
+        assert len(list(iterator)) == 3
+
+    def test_iterator_is_a_readable_storage_snapshot(self, storage):
+        asset1 = Asset()
+        asset2 = Asset()
+        storage.add(asset1)
+        storage.add(asset2)
+        iterator = iter(storage)
+
+        storage.remove(asset1)
+        storage.add(Asset())
+        storage.add(Asset())
+
+        assert list(iterator) == [asset1, asset2]
+
 
 @pytest.fixture
 def asset():
