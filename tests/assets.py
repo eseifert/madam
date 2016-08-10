@@ -5,7 +5,9 @@ import piexif
 import madam.core
 
 
-def image_rgb(width=4, height=3, transpositions=[]):
+def image_rgb(width=4, height=3, transpositions=None):
+    if not transpositions:
+        transpositions = []
     image = PIL.Image.new('RGB', (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
     # rotations or flips as long as the image has a size of (2, 2) or greater
@@ -18,14 +20,14 @@ def image_rgb(width=4, height=3, transpositions=[]):
     return image
 
 
-def jpeg_rgb(exif={}, width=4, height=3, transpositions=[]):
+def jpeg_rgb(width=4, height=3, transpositions=None):
+    if not transpositions:
+        transpositions = []
     image = image_rgb(width=width, height=height, transpositions=transpositions)
     image_data = io.BytesIO()
     image.save(image_data, 'JPEG', quality=100)
     image_data.seek(0)
-
-    image_with_exif_metadata = add_exif_to_jpeg(exif, image_data) if exif else image_data
-    return image_with_exif_metadata
+    return image_data
 
 
 def png_rgb():
@@ -43,7 +45,11 @@ def add_exif_to_jpeg(exif, image_data):
     return image_with_exif_metadata
 
 
-def jpeg_asset(width=4, height=3, exif={}, transpositions=[]):
+def jpeg_asset(width=4, height=3, exif=None, transpositions=None):
+    if not exif:
+        exif = {}
+    if not transpositions:
+        transpositions = []
     asset = madam.core.Asset()
     asset.essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
     asset.metadata['exif'] = exif
