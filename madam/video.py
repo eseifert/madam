@@ -6,10 +6,11 @@ from madam.core import Asset, Processor
 
 class FFmpegProcessor(Processor):
     def can_read(self, file):
-        with subprocess.Popen(['ffprobe', '-print_format', 'json', '-show_format', '-loglevel', 'quiet', '-'],
-                              stdin=subprocess.PIPE, stdout=subprocess.PIPE) as process:
+        ffprobe_cmd = 'ffprobe -print_format json -show_format -loglevel quiet -'
+        with subprocess.Popen(ffprobe_cmd.split(), stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE) as process:
             try:
-                stdout, stderr = process.communicate(file.read())
+                stdout, stderr = process.communicate(input=file.read())
             except:
                 process.kill()
                 process.wait()
