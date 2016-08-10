@@ -5,12 +5,7 @@ import piexif
 import pytest
 
 import madam.image
-from assets import jpeg_asset, png_asset
-
-
-@pytest.fixture
-def exif():
-    return {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
+from assets import jpeg_asset, png_asset, exif
 
 
 def is_equal_in_black_white_space(result_image, expected_image):
