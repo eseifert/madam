@@ -168,6 +168,7 @@ def read(file, mime_type=None):
         file.seek(0)
         try:
             asset.metadata[metadata_format] = metadata_processor.read(file)
+            asset.essence = metadata_processor.remove(asset.essence)
         except:
             pass
     return asset
