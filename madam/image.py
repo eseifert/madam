@@ -67,6 +67,8 @@ class PillowProcessor(Processor):
         asset['mime_type'] = self.__mime_type_to_pillow_type.inv[image.format]
         asset['width'] = image.width
         asset['height'] = image.height
+        jpeg_file.seek(0)
+        asset.essence = jpeg_file
 
         if image.format == 'JPEG':
             jpeg_file.seek(0)

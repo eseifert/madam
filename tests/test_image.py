@@ -180,7 +180,7 @@ class TestPillowProcessor:
     def test_image_asset_essence_is_filled(self, image_data, pillow_processor):
         asset = pillow_processor.read(image_data)
 
-        assert asset.essence is not None
+        assert asset.essence.read()
 
     @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_asset().essence])
     def test_jpeg_asset_contains_size_information(self, pillow_processor, image_data):
