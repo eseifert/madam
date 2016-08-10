@@ -189,17 +189,6 @@ class TestPillowProcessor:
         assert asset.metadata['madam']['width'] == 4
         assert asset.metadata['madam']['height'] == 3
 
-    def test_jpeg_asset_essence_does_not_contain_exif_metadata(self, pillow_processor, exif):
-        jpeg_data = io.BytesIO()
-        piexif.insert(piexif.dump(exif), jpeg_asset().essence.read(), new_file=jpeg_data)
-        asset = pillow_processor.read(jpeg_data)
-        essence_bytes = asset.essence.read()
-
-        essence_exif = piexif.load(essence_bytes)
-
-        for ifd, ifd_data in essence_exif.items():
-            assert not ifd_data
-
 
 class TestExifProcessor:
     @pytest.fixture
