@@ -61,20 +61,20 @@ class PillowProcessor(Processor):
             'image/png': 'PNG'
         })
 
-    def read(self, jpeg_file):
+    def read(self, file):
         asset = Asset()
-        image = PIL.Image.open(jpeg_file)
+        image = PIL.Image.open(file)
         asset['mime_type'] = self.__mime_type_to_pillow_type.inv[image.format]
         asset['width'] = image.width
         asset['height'] = image.height
-        jpeg_file.seek(0)
-        asset.essence = jpeg_file
+        file.seek(0)
+        asset.essence = file
 
         if image.format == 'JPEG':
-            jpeg_file.seek(0)
-            asset.metadata['exif'] = self.exif_processor.read(jpeg_file)
-            jpeg_file.seek(0)
-            asset.essence = self.exif_processor.remove(jpeg_file)
+            file.seek(0)
+            asset.metadata['exif'] = self.exif_processor.read(file)
+            file.seek(0)
+            asset.essence = self.exif_processor.remove(file)
 
             exif_0th = asset.metadata['exif'].get('0th')
             if exif_0th:
