@@ -51,14 +51,12 @@ def add_exif_to_jpeg(exif, image_data):
     return image_with_exif_metadata
 
 
-def jpeg_asset(width=4, height=3, exif=None, transpositions=None):
-    if not exif:
-        exif = {}
+def jpeg_asset(width=4, height=3, transpositions=None):
     if not transpositions:
         transpositions = []
     asset = madam.core.Asset()
     asset.essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
-    asset.metadata['exif'] = exif
+    asset.metadata['exif'] = exif()
     asset.metadata['madam'] = {'width': width, 'height': height}
     return asset
 
