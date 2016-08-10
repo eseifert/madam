@@ -7,7 +7,10 @@ import pytest
 import madam.image
 from assets import jpeg_asset, png_asset
 
-jpeg_exif = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
+
+@pytest.fixture
+def exif():
+    return {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
 
 
 def is_equal_in_black_white_space(result_image, expected_image):
@@ -190,9 +193,9 @@ class TestPillowProcessor:
         assert asset.metadata['madam']['width'] == 4
         assert asset.metadata['madam']['height'] == 3
 
-    def test_jpeg_asset_essence_does_not_contain_exif_metadata(self, pillow_processor):
+    def test_jpeg_asset_essence_does_not_contain_exif_metadata(self, pillow_processor, exif):
         jpeg_data = io.BytesIO()
-        piexif.insert(piexif.dump(jpeg_exif), jpeg_asset().essence.read(), new_file=jpeg_data)
+        piexif.insert(piexif.dump(exif), jpeg_asset().essence.read(), new_file=jpeg_data)
         asset = pillow_processor.read(jpeg_data)
         essence_bytes = asset.essence.read()
 
@@ -214,17 +217,17 @@ class TestExifProcessor:
 
         assert not exif
 
-    def test_read_returns_exif_dict_when_jpeg_contains_exif(self, exif_processor):
+    def test_read_returns_exif_dict_when_jpeg_contains_exif(self, exif_processor, exif):
         jpeg_data = io.BytesIO()
-        piexif.insert(piexif.dump(jpeg_exif), jpeg_asset().essence.read(), new_file=jpeg_data)
+        piexif.insert(piexif.dump(exif), jpeg_asset().essence.read(), new_file=jpeg_data)
 
         exif = exif_processor.read(jpeg_data)
 
         assert exif
 
-    def test_remove_returns_essence_without_metadata(self, exif_processor):
+    def test_remove_returns_essence_without_metadata(self, exif_processor, exif):
         jpeg_data = io.BytesIO()
-        piexif.insert(piexif.dump(jpeg_exif), jpeg_asset().essence.read(), new_file=jpeg_data)
+        piexif.insert(piexif.dump(exif), jpeg_asset().essence.read(), new_file=jpeg_data)
         essence = exif_processor.remove(jpeg_data)
 
         essence_exif = piexif.load(essence.read())
@@ -232,12 +235,12 @@ class TestExifProcessor:
 
         assert not essence_exif_stripped_from_empty_entries
 
-    def test_add_returns_essence_with_metadata(self, exif_processor):
+    def test_add_returns_essence_with_metadata(self, exif_processor, exif):
         essence = jpeg_asset().essence
 
-        essence_with_exif = exif_processor.add(jpeg_exif, essence)
+        essence_with_exif = exif_processor.add(exif, essence)
 
         contained_exif = piexif.load(essence_with_exif.read())
         exif_stripped_from_empty_entries = {key: value for (key, value) in contained_exif.items() if value}
-        assert exif_stripped_from_empty_entries == jpeg_exif
+        assert exif_stripped_from_empty_entries == exif
 
