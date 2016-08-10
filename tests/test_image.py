@@ -75,7 +75,7 @@ class TestPillowProcessor:
         processor = madam.image.PillowProcessor(exif_processor)
         return processor
 
-    @pytest.mark.parametrize('image_file', [jpeg_asset().essence, png_rgb()])
+    @pytest.mark.parametrize('image_file', [jpeg_asset().essence, png_asset().essence])
     def test_can_read_image_files(self, pillow_processor, image_file):
         supports = pillow_processor.can_read(image_file)
         assert supports
@@ -211,7 +211,7 @@ class TestPillowProcessor:
 
     @pytest.mark.parametrize('image_data, mime_type', [
         (jpeg_asset().essence, 'image/jpeg'),
-        (png_rgb(), 'image/png')
+        (png_asset().essence, 'image/png')
     ])
     def test_read_image_returns_asset_with_image_mime_type(self, pillow_processor, image_data, mime_type):
         asset = pillow_processor.read(image_data)
@@ -229,13 +229,13 @@ class TestPillowProcessor:
         image_data_after_reading = jpeg_data.read()
         assert original_image_data == image_data_after_reading
 
-    @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_rgb()])
+    @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_asset().essence])
     def test_image_asset_essence_is_filled(self, image_data, pillow_processor):
         asset = pillow_processor.read(image_data)
 
         assert asset.essence is not None
 
-    @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_rgb()])
+    @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_asset().essence])
     def test_jpeg_asset_contains_size_information(self, pillow_processor, image_data):
         asset = pillow_processor.read(image_data)
 
