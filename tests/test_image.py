@@ -75,7 +75,7 @@ class TestPillowProcessor:
         processor = madam.image.PillowProcessor(exif_processor)
         return processor
 
-    @pytest.mark.parametrize('image_file', [jpeg_rgb(), png_rgb()])
+    @pytest.mark.parametrize('image_file', [jpeg_asset().essence, png_rgb()])
     def test_can_read_image_files(self, pillow_processor, image_file):
         supports = pillow_processor.can_read(image_file)
         assert supports
@@ -210,7 +210,7 @@ class TestPillowProcessor:
         assert image.format == 'PNG'
 
     @pytest.mark.parametrize('image_data, mime_type', [
-        (jpeg_rgb(), 'image/jpeg'),
+        (jpeg_asset().essence, 'image/jpeg'),
         (png_rgb(), 'image/png')
     ])
     def test_read_image_returns_asset_with_image_mime_type(self, pillow_processor, image_data, mime_type):
@@ -219,7 +219,7 @@ class TestPillowProcessor:
         assert asset['mime_type'] == mime_type
 
     def test_read_jpeg_does_not_alter_the_original_file(self, pillow_processor):
-        jpeg_data = jpeg_rgb()
+        jpeg_data = jpeg_asset().essence
         original_image_data = jpeg_data.read()
         jpeg_data.seek(0)
 
@@ -229,13 +229,13 @@ class TestPillowProcessor:
         image_data_after_reading = jpeg_data.read()
         assert original_image_data == image_data_after_reading
 
-    @pytest.mark.parametrize('image_data', [jpeg_rgb(), png_rgb()])
+    @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_rgb()])
     def test_image_asset_essence_is_filled(self, image_data, pillow_processor):
         asset = pillow_processor.read(image_data)
 
         assert asset.essence is not None
 
-    @pytest.mark.parametrize('image_data', [jpeg_rgb(), png_rgb()])
+    @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_rgb()])
     def test_jpeg_asset_contains_size_information(self, pillow_processor, image_data):
         asset = pillow_processor.read(image_data)
 
@@ -243,7 +243,8 @@ class TestPillowProcessor:
         assert asset.metadata['madam']['height'] == 3
 
     def test_jpeg_asset_essence_does_not_contain_exif_metadata(self, pillow_processor):
-        jpeg_data = jpeg_rgb(exif=jpeg_exif)
+        jpeg_data = io.BytesIO()
+        piexif.insert(piexif.dump(jpeg_exif), jpeg_asset().essence.read(), new_file=jpeg_data)
         asset = pillow_processor.read(jpeg_data)
         essence_bytes = asset.essence.read()
 
@@ -259,21 +260,23 @@ class TestExifProcessor:
         return madam.image.ExifProcessor()
 
     def test_read_returns_empty_dict_when_jpeg_contains_no_exif(self, exif_processor):
-        jpeg_data = jpeg_rgb()
+        jpeg_data = jpeg_asset().essence
 
         exif = exif_processor.read(jpeg_data)
 
         assert not exif
 
     def test_read_returns_exif_dict_when_jpeg_contains_exif(self, exif_processor):
-        jpeg_data = jpeg_rgb(exif=jpeg_exif)
+        jpeg_data = io.BytesIO()
+        piexif.insert(piexif.dump(jpeg_exif), jpeg_asset().essence.read(), new_file=jpeg_data)
 
         exif = exif_processor.read(jpeg_data)
 
         assert exif
 
     def test_remove_returns_essence_without_metadata(self, exif_processor):
-        jpeg_data = jpeg_rgb(exif=jpeg_exif)
+        jpeg_data = io.BytesIO()
+        piexif.insert(piexif.dump(jpeg_exif), jpeg_asset().essence.read(), new_file=jpeg_data)
         essence = exif_processor.remove(jpeg_data)
 
         essence_exif = piexif.load(essence.read())
@@ -282,7 +285,7 @@ class TestExifProcessor:
         assert not essence_exif_stripped_from_empty_entries
 
     def test_add_returns_essence_with_metadata(self, exif_processor):
-        essence = jpeg_rgb()
+        essence = jpeg_asset().essence
 
         essence_with_exif = exif_processor.add(jpeg_exif, essence)
 
