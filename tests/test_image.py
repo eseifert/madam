@@ -17,9 +17,7 @@ def is_equal_in_black_white_space(result_image, expected_image):
 class TestPillowProcessor:
     @pytest.fixture
     def pillow_processor(self):
-        exif_processor = madam.image.ExifProcessor()
-        processor = madam.image.PillowProcessor(exif_processor)
-        return processor
+        return madam.image.PillowProcessor()
 
     @pytest.mark.parametrize('image_file', [jpeg_asset().essence, png_asset().essence])
     def test_can_read_image_files(self, pillow_processor, image_file):

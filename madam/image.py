@@ -53,9 +53,8 @@ def operator(function):
 
 
 class PillowProcessor(Processor):
-    def __init__(self, exif_processor):
+    def __init__(self):
         super().__init__()
-        self.exif_processor = exif_processor
         self.__mime_type_to_pillow_type = bidict({
             'image/jpeg': 'JPEG',
             'image/png': 'PNG'
