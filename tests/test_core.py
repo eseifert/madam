@@ -202,8 +202,8 @@ class TestAsset:
 
 
 @pytest.mark.parametrize('path, mime_type', [
-    ('tests/16-bit-mono.wav', None),
-    ('tests/64kbits.mp3', None),
+    ('tests/resources/16-bit-mono.wav', None),
+    ('tests/resources/64kbits.mp3', None),
 ])
 def test_read_calls_read_method_for_respective_file_type(path, mime_type):
     # When
