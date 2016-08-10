@@ -1,6 +1,15 @@
+# coverage
+.coverage
+
 # py.test
 __pycache__/
 .cache/
+
+# setuptools
+.eggs/
+build/
+dist/
+*.egg-info/
 
 # tox
 .tox/
