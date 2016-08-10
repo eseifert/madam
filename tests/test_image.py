@@ -280,3 +280,13 @@ class TestExifProcessor:
         essence_exif_stripped_from_empty_entries = {key: value for (key, value) in essence_exif.items() if value}
 
         assert not essence_exif_stripped_from_empty_entries
+
+    def test_add_returns_essence_with_metadata(self, exif_processor):
+        essence = jpeg_rgb()
+
+        essence_with_exif = exif_processor.add(jpeg_exif, essence)
+
+        contained_exif = piexif.load(essence_with_exif.read())
+        exif_stripped_from_empty_entries = {key: value for (key, value) in contained_exif.items() if value}
+        assert exif_stripped_from_empty_entries == jpeg_exif
+

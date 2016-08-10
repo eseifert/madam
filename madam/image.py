@@ -27,6 +27,11 @@ class ExifProcessor(MetadataProcessor):
         piexif.remove(data, essence_without_metadata_as_stream)
         return essence_without_metadata_as_stream
 
+    def add(self, exif, file):
+        file_with_exif = io.BytesIO()
+        piexif.insert(piexif.dump(exif), file.read(), new_file=file_with_exif)
+        return file_with_exif
+
 
 class ResizeMode(Enum):
     EXACT = 0
