@@ -89,12 +89,13 @@ class PillowProcessor(Processor):
         if mode in (ResizeMode.FIT, ResizeMode.FILL):
             if mode == ResizeMode.FIT and width_delta < height_delta or \
                mode == ResizeMode.FILL and width_delta > height_delta:
-                resize_factor = width/image.width
+                resize_factor = width / image.width
             else:
-                resize_factor = height/image.height
-            resized_width = round(resize_factor*image.width)
-            resized_height = round(resize_factor*image.height)
-        resized_image = image.resize((resized_width, resized_height), resample=PIL.Image.LANCZOS)
+                resize_factor = height / image.height
+            resized_width = round(resize_factor * image.width)
+            resized_height = round(resize_factor * image.height)
+        resized_image = image.resize((resized_width, resized_height),
+                                     resample=PIL.Image.LANCZOS)
         resized_asset = self._image_to_asset(resized_image)
         return resized_asset
 
@@ -106,11 +107,14 @@ class PillowProcessor(Processor):
 
     def _rotate(self, asset, rotation):
         """
-        Creates a new image asset from specified asset whose essence is rotated by the specified rotation.
+        Creates a new image asset from specified asset whose essence is rotated
+        by the specified rotation.
 
         :param asset: Image asset to be rotated
-        :param rotation: One of ``PIL.Image.FLIP_LEFT_RIGHT``, ``PIL.Image.FLIP_TOP_BOTTOM``, ``PIL.Image.ROTATE_90``, \
-        ``PIL.Image.ROTATE_180``, ``PIL.Image.ROTATE_270``, or ``PIL.Image.TRANSPOSE``
+        :param rotation: One of ``PIL.Image.FLIP_LEFT_RIGHT``,
+        ``PIL.Image.FLIP_TOP_BOTTOM``, ``PIL.Image.ROTATE_90``,
+        ``PIL.Image.ROTATE_180``, ``PIL.Image.ROTATE_270``, or
+        ``PIL.Image.TRANSPOSE``
         :return: New image asset with rotated essence
         """
         image = PIL.Image.open(asset.essence)
@@ -121,7 +125,8 @@ class PillowProcessor(Processor):
     @operator
     def transpose(self, asset):
         """
-        Creates a new image asset whose essence is the transpose of the specified asset's essence.
+        Creates a new image asset whose essence is the transpose of the
+        specified asset's essence.
 
         :param asset: Image asset whose essence is to be transposed
         :return: New image asset with transposed essence
@@ -130,7 +135,10 @@ class PillowProcessor(Processor):
 
     @operator
     def flip(self, asset, orientation):
-        flip_orientation = PIL.Image.FLIP_LEFT_RIGHT if orientation == FlipOrientation.HORIZONTAL else PIL.Image.FLIP_TOP_BOTTOM
+        if orientation == FlipOrientation.HORIZONTAL:
+            flip_orientation = PIL.Image.FLIP_LEFT_RIGHT
+        else:
+            flip_orientation = PIL.Image.FLIP_TOP_BOTTOM
         return self._rotate(asset, flip_orientation)
 
     @operator
@@ -161,7 +169,9 @@ class PillowProcessor(Processor):
     @operator
     def convert(self, asset, mime_type):
         """
-        Creates a new asset of the specified MIME type from the essence of the specified asset.
+        Creates a new asset of the specified MIME type from the essence of the
+        specified asset.
+
         :param asset: Asset whose contents will be converted
         :param mime_type: Target MIME type
         :return: New asset with converted essence
