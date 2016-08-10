@@ -66,7 +66,7 @@ class TestFileStorage:
 
         storage.remove(asset)
 
-        assert not asset in storage
+        assert asset not in storage
 
     def test_iterator_contains_all_stored_assets(self, storage):
         storage.add(Asset())
