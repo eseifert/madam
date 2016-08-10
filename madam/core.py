@@ -217,3 +217,14 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def remove(self, file):
         pass
+
+    @abc.abstractmethod
+    def add(self, metadata, file):
+        """
+        Returns a byte stream whose contents represent the specified file where the specified metadata was added.
+
+        :param metadata: Metadata information to be added
+        :param file: Container file
+        :return: File-like object with combined content
+        """
+        pass
