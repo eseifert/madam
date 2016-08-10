@@ -27,16 +27,16 @@ class AssetStorage(metaclass=abc.ABCMeta):
 class InMemoryStorage(AssetStorage):
     def __init__(self):
         self.assets = []
-        
+
     def add(self, asset):
         self.assets.append(asset)
-        
+
     def remove(self, asset):
         return self.assets.remove(asset)
-    
+
     def __contains__(self, asset):
         return asset in self.assets
-    
+
     def get(self, **kwargs):
         matches = []
         for asset in self.assets:
