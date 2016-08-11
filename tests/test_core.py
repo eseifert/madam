@@ -156,6 +156,21 @@ class TestInMemoryStorage:
 
         assert len(list(tagged_assets)) == 0
 
+    def test_filter_by_tags_returns_assets_with_specified_tags(self, storage):
+        asset1 = Asset()
+        asset1['tags'].add('foo')
+        asset2 = Asset()
+        asset2['tags'] |= {'foo', 'bar'}
+        asset3 = Asset()
+        asset3['tags'] |= {'foo', 'bar'}
+        storage.add(asset1)
+        storage.add(asset2)
+        storage.add(asset3)
+
+        assets = storage.filter_by_tags('bar', 'foo')
+
+        assert asset2 in assets and asset3 in assets
+
 
 @pytest.fixture
 def asset():
