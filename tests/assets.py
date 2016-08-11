@@ -1,7 +1,6 @@
 import PIL.Image
 import io
 import piexif
-import pytest
 
 import madam.core
 
@@ -19,11 +18,6 @@ def image_rgb(width=4, height=3, transpositions=None):
     for transposition in transpositions:
         image = image.transpose(transposition)
     return image
-
-
-@pytest.fixture
-def exif():
-    return {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
 
 
 def jpeg_rgb(width=4, height=3, transpositions=None):
@@ -56,7 +50,7 @@ def jpeg_asset(width=4, height=3, transpositions=None):
         transpositions = []
     asset = madam.core.Asset()
     asset.essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
-    asset.metadata['exif'] = exif()
+    asset.metadata['exif'] = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
     asset.metadata['madam'] = {'width': width, 'height': height}
     return asset
 
