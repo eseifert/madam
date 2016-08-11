@@ -105,6 +105,8 @@ class FileStorage(AssetStorage):
         with shelve.open(self._shelf_path) as assets:
             return iter(list(assets.values()))
 
+    def filter_by_tags(self, *tags):
+        return iter([])
 
 class Asset:
     """

@@ -87,6 +87,11 @@ class TestStorages:
 
         assert list(iterator) == [asset1, asset2]
 
+    def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
+        tagged_assets = storage.filter_by_tags('some tag')
+
+        assert len(list(tagged_assets)) == 0
+
 
 @pytest.mark.usefixtures('file_storage')
 class TestFileStorage:
@@ -137,11 +142,6 @@ class TestInMemoryStorage:
 
         assert len(assets_with_1s_duration) == 1
         assert assets_with_1s_duration[0] == asset
-
-    def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
-        tagged_assets = storage.filter_by_tags('some tag')
-
-        assert len(list(tagged_assets)) == 0
 
     def test_filter_by_tags_returns_assets_with_specified_tags(self, storage):
         asset1 = Asset()
