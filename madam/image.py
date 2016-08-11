@@ -21,13 +21,13 @@ class ExifProcessor(MetadataProcessor):
         exif_stripped_from_empty_entries = {key: value for (key, value) in exif.items() if value}
         return exif_stripped_from_empty_entries
 
-    def remove(self, file):
+    def strip(self, file):
         data = file.read()
         essence_without_metadata_as_stream = io.BytesIO()
         piexif.remove(data, essence_without_metadata_as_stream)
         return essence_without_metadata_as_stream
 
-    def add(self, exif, file):
+    def combine(self, file, exif):
         file_with_exif = io.BytesIO()
         piexif.insert(piexif.dump(exif), file.read(), new_file=file_with_exif)
         return file_with_exif

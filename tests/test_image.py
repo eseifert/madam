@@ -213,7 +213,7 @@ class TestExifProcessor:
         exif = jpeg_asset().metadata['exif']
         jpeg_data = io.BytesIO()
         piexif.insert(piexif.dump(exif), jpeg_asset().essence.read(), new_file=jpeg_data)
-        essence = exif_processor.remove(jpeg_data)
+        essence = exif_processor.strip(jpeg_data)
 
         essence_exif = piexif.load(essence.read())
         essence_exif_stripped_from_empty_entries = {key: value for (key, value) in essence_exif.items() if value}
@@ -224,7 +224,7 @@ class TestExifProcessor:
         essence = jpeg_asset().essence
         exif = jpeg_asset().metadata['exif']
 
-        essence_with_exif = exif_processor.add(exif, essence)
+        essence_with_exif = exif_processor.combine(essence, exif)
 
         contained_exif = piexif.load(essence_with_exif.read())
         exif_stripped_from_empty_entries = {key: value for (key, value) in contained_exif.items() if value}

@@ -168,7 +168,7 @@ def read(file, mime_type=None):
         file.seek(0)
         try:
             asset.metadata[metadata_format] = metadata_processor.read(file)
-            asset.essence = metadata_processor.remove(asset.essence)
+            asset.essence = metadata_processor.strip(asset.essence)
         except:
             pass
     return asset
@@ -216,11 +216,11 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def remove(self, file):
+    def strip(self, file):
         pass
 
     @abc.abstractmethod
-    def add(self, metadata, file):
+    def combine(self, file, metadata):
         """
         Returns a byte stream whose contents represent the specified file where the specified metadata was added.
 
