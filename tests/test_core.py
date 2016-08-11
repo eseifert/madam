@@ -9,26 +9,25 @@ from madam.core import InMemoryStorage, FileStorage
 from madam.core import Pipeline
 
 
-class TestFileStorage:
-    @pytest.fixture
-    def storage(self, tmpdir):
-        storage_path = str(tmpdir.join('storageDir'))
-        return FileStorage(storage_path)
+@pytest.fixture
+def in_memory_storage():
+    return InMemoryStorage()
 
-    def test_creates_storage_directory(self, storage):
-        assert os.path.isdir(storage.path)
 
-    def test_uses_directory_when_directory_already_exists(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            storage_path = os.path.join(tempdir, 'storageDir')
-            os.mkdir(storage_path)
+@pytest.fixture
+def file_storage(tmpdir):
+    storage_path = str(tmpdir.join('storageDir'))
+    return FileStorage(storage_path)
 
-            FileStorage(storage_path)
 
-    def test_raises_error_when_storage_path_is_a_file(self):
-        with tempfile.NamedTemporaryFile() as file:
-            with pytest.raises(FileExistsError):
-                FileStorage(file.name)
+@pytest.mark.usefixtures('in_memory_storage', 'file_storage')
+class TestStorages:
+    @pytest.fixture(params=['in_memory_storage', 'file_storage'])
+    def storage(self, request, in_memory_storage, file_storage):
+        if request.param == 'in_memory_storage':
+            return in_memory_storage
+        elif request.param == 'file_storage':
+            return file_storage
 
     def test_contains_is_false_when_storage_is_empty(self, storage):
         asset = Asset()
@@ -44,13 +43,13 @@ class TestFileStorage:
 
         assert asset in storage
 
-    def test_add_writes_data_to_storage_path(self, storage):
+    def test_contains_is_false_when_asset_was_deleted(self, storage):
         asset = Asset()
-
         storage.add(asset)
 
-        storage_path_file_count = len(os.listdir(storage.path))
-        assert storage_path_file_count >= 1
+        storage.remove(asset)
+
+        assert asset not in storage
 
     def test_remove_raises_value_error_when_deleting_unknown_asset(self, storage):
         asset = Asset()
@@ -89,31 +88,41 @@ class TestFileStorage:
         assert list(iterator) == [asset1, asset2]
 
 
+@pytest.mark.usefixtures('file_storage')
+class TestFileStorage:
+    @pytest.fixture
+    def storage(self, file_storage):
+        return file_storage
+
+    def test_creates_storage_directory(self, storage):
+        assert os.path.isdir(storage.path)
+
+    def test_uses_directory_when_directory_already_exists(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            storage_path = os.path.join(tempdir, 'storageDir')
+            os.mkdir(storage_path)
+
+            FileStorage(storage_path)
+
+    def test_raises_error_when_storage_path_is_a_file(self):
+        with tempfile.NamedTemporaryFile() as file:
+            with pytest.raises(FileExistsError):
+                FileStorage(file.name)
+
+    def test_add_writes_data_to_storage_path(self, storage):
+        asset = Asset()
+
+        storage.add(asset)
+
+        storage_path_file_count = len(os.listdir(storage.path))
+        assert storage_path_file_count >= 1
+
+
+@pytest.mark.usefixtures('in_memory_storage')
 class TestInMemoryStorage:
     @pytest.fixture
-    def storage(self):
-        return InMemoryStorage()
-
-    def test_contains_is_true_when_asset_was_added(self, storage):
-        asset = Asset()
-
-        storage.add(asset)
-
-        assert asset in storage
-
-    def test_contains_is_false_when_asset_was_deleted(self, storage):
-        asset = Asset()
-        storage.add(asset)
-
-        storage.remove(asset)
-
-        assert asset not in storage
-
-    def test_remove_raises_value_error_when_deleting_unknown_asset(self, storage):
-        asset = Asset()
-
-        with pytest.raises(ValueError):
-            storage.remove(asset)
+    def storage(self, in_memory_storage):
+        return in_memory_storage
 
     def test_get_returns_empty_list_when_storage_is_empty(self, storage):
         assets_with_1s_duration = storage.get()
@@ -128,28 +137,6 @@ class TestInMemoryStorage:
 
         assert len(assets_with_1s_duration) == 1
         assert assets_with_1s_duration[0] == asset
-
-    def test_iterator_contains_all_stored_assets(self, storage):
-        storage.add(Asset())
-        storage.add(Asset())
-        storage.add(Asset())
-
-        iterator = iter(storage)
-
-        assert len(list(iterator)) == 3
-
-    def test_iterator_is_a_readable_storage_snapshot(self, storage):
-        asset1 = Asset()
-        asset2 = Asset()
-        storage.add(asset1)
-        storage.add(asset2)
-        iterator = iter(storage)
-
-        storage.remove(asset1)
-        storage.add(Asset())
-        storage.add(Asset())
-
-        assert list(iterator) == [asset1, asset2]
 
     def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
         tagged_assets = storage.filter_by_tags('some tag')
