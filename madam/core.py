@@ -135,6 +135,9 @@ class Asset:
     def essence(self, value):
         self.essence_data = value.read()
 
+    def __hash__(self):
+        return hash(self.essence_data)
+
 
 class UnsupportedFormatError(ValueError):
     """

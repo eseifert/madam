@@ -207,6 +207,14 @@ class TestAsset:
     def test_has_tags_metadata(self, asset):
         assert asset['tags'] is not None
 
+    def test_hash_is_equal_for_equal_assets(self):
+        asset1 = Asset()
+        asset1['SomeMetadata'] = 42
+        asset2 = Asset()
+        asset2['SomeMetadata'] = 42
+
+        assert hash(asset1) == hash(asset2)
+
 
 @pytest.fixture
 def pipeline():
