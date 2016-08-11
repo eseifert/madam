@@ -23,6 +23,16 @@ class AssetStorage(metaclass=abc.ABCMeta):
     def __iter__(self):
         pass
 
+    @abc.abstractmethod
+    def filter_by_tags(self, *tags):
+        """
+        Returns all assets in this storage that have at least the specified tags.
+
+        :param tags: Mandatory tags of an asset to be included in result
+        :return: Assets whose tags are a superset of the specified tags
+        """
+        pass
+
 
 class InMemoryStorage(AssetStorage):
     def __init__(self):
@@ -50,12 +60,6 @@ class InMemoryStorage(AssetStorage):
         return iter(list(self.assets))
 
     def filter_by_tags(self, *tags):
-        """
-        Returns all assets in this storage that have at least the specified tags.
-
-        :param tags: Mandatory tags of an asset to be included in result
-        :return: Assets whose tags are a superset of the specified tags
-        """
         tag_set = set(tags)
         assets_by_tags = [asset for asset in self.assets if tag_set.issubset(asset['tags'])]
         return iter(assets_by_tags)
