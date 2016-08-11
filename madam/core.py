@@ -106,7 +106,7 @@ class FileStorage(AssetStorage):
             return iter(list(assets.values()))
 
     def filter_by_tags(self, *tags):
-        return iter([])
+        return iter(self)
 
 class Asset:
     """

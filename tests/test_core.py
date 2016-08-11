@@ -92,6 +92,15 @@ class TestStorages:
 
         assert len(list(tagged_assets)) == 0
 
+    def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage):
+        asset = Asset()
+        asset['tags'].add('foo')
+        storage.add(asset)
+
+        assets = storage.filter_by_tags()
+
+        assert asset in assets
+
 
 @pytest.mark.usefixtures('file_storage')
 class TestFileStorage:
@@ -157,15 +166,6 @@ class TestInMemoryStorage:
         assets = storage.filter_by_tags('bar', 'foo')
 
         assert asset2 in assets and asset3 in assets
-
-    def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage):
-        asset = Asset()
-        asset['tags'].add('foo')
-        storage.add(asset)
-
-        assets = storage.filter_by_tags()
-
-        assert asset in assets
 
 
 @pytest.fixture
