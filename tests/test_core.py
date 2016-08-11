@@ -227,13 +227,12 @@ class TestAsset:
         assert hash(asset1) == hash(asset2)
 
 
-@pytest.fixture
-def pipeline():
-    return Pipeline()
-
-
-@pytest.mark.usefixtures('asset', 'pipeline')
+@pytest.mark.usefixtures('asset')
 class TestPipeline:
+    @pytest.fixture
+    def pipeline(self):
+        return Pipeline()
+
     def test_empty_pipeline_does_not_change_assets(self, pipeline, asset):
         another_asset = Asset()
 
