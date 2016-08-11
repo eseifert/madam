@@ -104,7 +104,7 @@ class Asset:
     """
     def __init__(self):
         self.essence_data = b''
-        self.metadata = {'madam': {}}
+        self.metadata = {'madam': {'tags': set()}}
         self.mime_type = None
 
     def __eq__(self, other):

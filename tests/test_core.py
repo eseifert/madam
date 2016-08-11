@@ -189,7 +189,8 @@ class TestAsset:
         for key, value in metadata_to_be_set.items():
             asset[key] = value
 
-        assert asset.metadata['madam'] == metadata_to_be_set
+        for inserted_key, inserted_value in metadata_to_be_set.items():
+            assert asset.metadata['madam'][inserted_key] == inserted_value
 
     def test_asset_essence_can_be_read_multiple_times(self, asset):
         asset.essence_data = b'42'
@@ -197,6 +198,9 @@ class TestAsset:
         same_essence_contents = asset.essence.read()
 
         assert essence_contents == same_essence_contents
+
+    def test_has_tags_metadata(self, asset):
+        assert asset['tags'] is not None
 
 
 @pytest.fixture
