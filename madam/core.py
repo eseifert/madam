@@ -106,7 +106,9 @@ class FileStorage(AssetStorage):
             return iter(list(assets.values()))
 
     def filter_by_tags(self, *tags):
-        return iter(self)
+        with shelve.open(self._shelf_path) as assets:
+            return iter([asset for asset in assets.values() if set(tags) <= asset['tags']])
+
 
 class Asset:
     """
