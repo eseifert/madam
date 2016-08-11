@@ -163,9 +163,9 @@ class TestInMemoryStorage:
         storage.add(asset2)
         storage.add(asset3)
 
-        assets = storage.filter_by_tags('bar', 'foo')
+        assets = list(storage.filter_by_tags('bar', 'foo'))
 
-        assert asset2 in assets and asset3 in assets
+        assert asset1 not in assets and asset2 in assets and asset3 in assets
 
 
 @pytest.fixture
