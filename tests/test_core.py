@@ -151,6 +151,11 @@ class TestInMemoryStorage:
 
         assert list(iterator) == [asset1, asset2]
 
+    def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
+        tagged_assets = storage.filter_by_tags('some tag')
+
+        assert len(list(tagged_assets)) == 0
+
 
 @pytest.fixture
 def asset():

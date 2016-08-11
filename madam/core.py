@@ -49,6 +49,9 @@ class InMemoryStorage(AssetStorage):
     def __iter__(self):
         return iter(list(self.assets))
 
+    def filter_by_tags(self, *tags):
+        return iter([])
+
 
 class FileStorage(AssetStorage):
     """
