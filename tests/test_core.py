@@ -1,13 +1,11 @@
-import io
+import unittest.mock
+
 import os
 import pytest
 import tempfile
-import unittest.mock
 
-import madam
-from madam.core import InMemoryStorage, FileStorage
 from madam.core import Asset
-from madam.core import UnsupportedFormatError
+from madam.core import InMemoryStorage, FileStorage
 from madam.core import Pipeline
 
 
@@ -199,30 +197,6 @@ class TestAsset:
         same_essence_contents = asset.essence.read()
 
         assert essence_contents == same_essence_contents
-
-
-@pytest.mark.parametrize('path, mime_type', [
-    ('tests/resources/16-bit-mono.wav', None),
-    ('tests/resources/64kbits.mp3', None),
-])
-def test_read_calls_read_method_for_respective_file_type(path, mime_type):
-    # When
-    with open(path, 'rb') as file:
-        data = file.read()
-    for processor in madam.core.processors:
-        if processor.can_read(io.BytesIO(data)):
-            with unittest.mock.patch.object(processor, 'read') as read_method:
-                # Then
-                madam.read(io.BytesIO(data), mime_type=mime_type)
-            # Assert
-            assert read_method.called
-            break
-
-
-def test_read_empty_file_raises_error():
-    file_data = io.BytesIO()
-    with pytest.raises(UnsupportedFormatError):
-        madam.read(file_data)
 
 
 @pytest.fixture
