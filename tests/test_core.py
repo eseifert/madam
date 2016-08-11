@@ -165,8 +165,8 @@ class TestAsset:
     def test_asset_has_essence(self, asset):
         assert hasattr(asset, 'essence')
 
-    def test_asset_has_metadata_dict(self, asset):
-        assert asset.metadata == {'madam': {}}
+    def test_asset_has_metadata(self, asset):
+        assert hasattr(asset, 'metadata')
 
     def test_asset_equality(self, asset):
         asset.some_attr = 42
