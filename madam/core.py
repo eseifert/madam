@@ -120,9 +120,11 @@ class Asset:
 
     Assets should not be instantiated directly. Instead, use :func:`~madam.core.read` to retrieve an Asset
     representing your content.
+
+    :param essence: The essence of the asset as a byte string
     """
-    def __init__(self):
-        self.essence_data = b''
+    def __init__(self, essence):
+        self.essence_data = essence
         self.metadata = {'madam': {'tags': set()}}
         self.mime_type = None
 

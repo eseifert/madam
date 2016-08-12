@@ -58,26 +58,26 @@ class TestStorages:
         assert asset not in storage
 
     def test_iterator_contains_all_stored_assets(self, storage):
-        storage.add(Asset())
-        storage.add(Asset())
-        storage.add(Asset())
+        storage.add(Asset(b'0'))
+        storage.add(Asset(b'1'))
+        storage.add(Asset(b'2'))
 
         iterator = iter(storage)
 
         assert len(list(iterator)) == 3
 
     def test_iterator_is_a_readable_storage_snapshot(self, storage):
-        asset1 = Asset()
-        asset2 = Asset()
+        asset0 = Asset(b'0')
+        asset1 = Asset(b'1')
+        storage.add(asset0)
         storage.add(asset1)
-        storage.add(asset2)
         iterator = iter(storage)
 
-        storage.remove(asset1)
-        storage.add(Asset())
-        storage.add(Asset())
+        storage.remove(asset0)
+        storage.add(Asset(b'2'))
+        storage.add(Asset(b'3'))
 
-        assert list(iterator) == [asset1, asset2]
+        assert list(iterator) == [asset0, asset1]
 
     def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
         tagged_assets = storage.filter_by_tags('some tag')
@@ -93,19 +93,19 @@ class TestStorages:
         assert asset in assets
 
     def test_filter_by_tags_returns_assets_with_specified_tags(self, storage):
-        asset1 = Asset()
-        asset1['tags'].add('foo')
-        asset2 = Asset()
+        asset0 = Asset(b'0')
+        asset0['tags'].add('foo')
+        asset1 = Asset(b'1')
+        asset1['tags'] |= {'foo', 'bar'}
+        asset2 = Asset(b'2')
         asset2['tags'] |= {'foo', 'bar'}
-        asset3 = Asset()
-        asset3['tags'] |= {'foo', 'bar'}
+        storage.add(asset0)
         storage.add(asset1)
         storage.add(asset2)
-        storage.add(asset3)
 
         assets = list(storage.filter_by_tags('bar', 'foo'))
 
-        assert asset1 not in assets and asset2 in assets and asset3 in assets
+        assert asset0 not in assets and asset1 in assets and asset2 in assets
 
 
 @pytest.mark.usefixtures('asset', 'file_storage')
@@ -158,7 +158,7 @@ class TestInMemoryStorage:
 
 @pytest.fixture
 def asset():
-    return Asset()
+    return Asset(b'')
 
 
 @pytest.mark.usefixtures('asset')
@@ -174,7 +174,7 @@ class TestAsset:
 
     def test_asset_equality(self, asset):
         asset.some_attr = 42
-        another_asset = Asset()
+        another_asset = Asset(b'')
         another_asset.some_attr = 42
 
         assert asset is not another_asset
@@ -207,12 +207,12 @@ class TestAsset:
         assert asset['tags'] is not None
 
     def test_hash_is_equal_for_equal_assets(self):
-        asset1 = Asset()
+        asset0 = Asset(b'same')
+        asset0['SomeMetadata'] = 42
+        asset1 = Asset(b'same')
         asset1['SomeMetadata'] = 42
-        asset2 = Asset()
-        asset2['SomeMetadata'] = 42
 
-        assert hash(asset1) == hash(asset2)
+        assert hash(asset0) == hash(asset1)
 
 
 @pytest.mark.usefixtures('asset')
@@ -222,7 +222,7 @@ class TestPipeline:
         return Pipeline()
 
     def test_empty_pipeline_does_not_change_assets(self, pipeline, asset):
-        another_asset = Asset()
+        another_asset = Asset(b'other')
 
         processed_assets = pipeline.process(asset, another_asset)
 

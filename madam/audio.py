@@ -9,7 +9,7 @@ import wave
 
 class WaveProcessor(Processor):
     def read(self, wave_file):
-        asset = Asset()
+        asset = Asset(b'')
         asset['mime_type'] = 'audio/wav'
         with wave.open(wave_file) as wave_data:
             asset['channels'] = wave_data.getnchannels()
@@ -31,7 +31,7 @@ class WaveProcessor(Processor):
 
 class MutagenProcessor(Processor):
     def read(self, mp3_file):
-        asset = Asset()
+        asset = Asset(b'')
         asset['mime_type'] = 'audio/mpeg'
 
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -23,4 +23,4 @@ class FFmpegProcessor(Processor):
         return bool(json_obj)
 
     def read(self, file):
-        return Asset()
+        return Asset(b'')

@@ -61,7 +61,7 @@ class PillowProcessor(Processor):
         })
 
     def read(self, file):
-        asset = Asset()
+        asset = Asset(b'')
         image = PIL.Image.open(file)
         asset['mime_type'] = self.__mime_type_to_pillow_type.inv[image.format]
         asset['width'] = image.width
@@ -145,7 +145,7 @@ class PillowProcessor(Processor):
     def auto_orient(self, asset):
         orientation = asset.metadata['exif']['0th'][piexif.ImageIFD.Orientation]
         if orientation == 1:
-            oriented_asset = Asset()
+            oriented_asset = Asset(b'')
             oriented_asset.essence = asset.essence
         elif orientation == 2:
             oriented_asset = self.flip(orientation=FlipOrientation.HORIZONTAL)(asset)
@@ -182,7 +182,7 @@ class PillowProcessor(Processor):
         image.save(converted_essence_data, pil_format)
         converted_essence_data.seek(0)
 
-        converted_asset = Asset()
+        converted_asset = Asset(b'')
         converted_asset.essence = converted_essence_data
         converted_asset.mime_type = mime_type
         return converted_asset
