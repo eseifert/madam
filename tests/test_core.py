@@ -20,7 +20,7 @@ def file_storage(tmpdir):
     return FileStorage(storage_path)
 
 
-@pytest.mark.usefixtures('in_memory_storage', 'file_storage')
+@pytest.mark.usefixtures('asset', 'in_memory_storage', 'file_storage')
 class TestStorages:
     @pytest.fixture(params=['in_memory_storage', 'file_storage'])
     def storage(self, request, in_memory_storage, file_storage):
@@ -29,36 +29,28 @@ class TestStorages:
         elif request.param == 'file_storage':
             return file_storage
 
-    def test_contains_is_false_when_storage_is_empty(self, storage):
-        asset = Asset()
-
+    def test_contains_is_false_when_storage_is_empty(self, storage, asset):
         contains = asset in storage
 
         assert not contains
 
-    def test_contains_is_true_when_asset_was_added(self, storage):
-        asset = Asset()
-
+    def test_contains_is_true_when_asset_was_added(self, storage, asset):
         storage.add(asset)
 
         assert asset in storage
 
-    def test_contains_is_false_when_asset_was_deleted(self, storage):
-        asset = Asset()
+    def test_contains_is_false_when_asset_was_deleted(self, storage, asset):
         storage.add(asset)
 
         storage.remove(asset)
 
         assert asset not in storage
 
-    def test_remove_raises_value_error_when_deleting_unknown_asset(self, storage):
-        asset = Asset()
-
+    def test_remove_raises_value_error_when_deleting_unknown_asset(self, storage, asset):
         with pytest.raises(ValueError):
             storage.remove(asset)
 
-    def test_remove_deletes_asset_from_storage(self, storage):
-        asset = Asset()
+    def test_remove_deletes_asset_from_storage(self, storage, asset):
         storage.add(asset)
 
         storage.remove(asset)
@@ -92,8 +84,7 @@ class TestStorages:
 
         assert len(list(tagged_assets)) == 0
 
-    def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage):
-        asset = Asset()
+    def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage, asset):
         asset['tags'].add('foo')
         storage.add(asset)
 
@@ -117,7 +108,7 @@ class TestStorages:
         assert asset1 not in assets and asset2 in assets and asset3 in assets
 
 
-@pytest.mark.usefixtures('file_storage')
+@pytest.mark.usefixtures('asset', 'file_storage')
 class TestFileStorage:
     @pytest.fixture
     def storage(self, file_storage):
@@ -138,9 +129,7 @@ class TestFileStorage:
             with pytest.raises(FileExistsError):
                 FileStorage(file.name)
 
-    def test_add_writes_data_to_storage_path(self, storage):
-        asset = Asset()
-
+    def test_add_writes_data_to_storage_path(self, storage, asset):
         storage.add(asset)
 
         storage_path_file_count = len(os.listdir(storage.path))
@@ -157,8 +146,7 @@ class TestInMemoryStorage:
         assets_with_1s_duration = storage.get()
         assert not assets_with_1s_duration
 
-    def test_get_returns_assets_with_specified_madam_metadata(self, storage):
-        asset = Asset()
+    def test_get_returns_assets_with_specified_madam_metadata(self, storage, asset):
         asset['duration'] = 1
         storage.add(asset)
 
