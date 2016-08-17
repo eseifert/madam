@@ -14,7 +14,7 @@ setup(
     setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['piexif', 'pillow', 'pytest >=2.8'],
     extras_require={
-        'doc': ['sphinx']
+        'doc': ['sphinx', 'sphinx_rtd_theme']
     },
     packages=['madam'],
     classifiers=[
