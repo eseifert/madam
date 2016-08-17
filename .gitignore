@@ -11,6 +11,9 @@ build/
 dist/
 *.egg-info/
 
+# Sphinx
+doc/_build/
+
 # tox
 .tox/
 

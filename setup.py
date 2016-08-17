@@ -13,6 +13,9 @@ setup(
     install_requires=['bidict', 'mutagen', 'piexif', 'pillow'],
     setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['piexif', 'pillow', 'pytest >=2.8'],
+    extras_require={
+        'doc': ['sphinx']
+    },
     packages=['madam'],
     classifiers=[
         'Development Status :: 4 - Beta',
