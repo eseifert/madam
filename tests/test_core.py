@@ -85,7 +85,7 @@ class TestStorages:
         assert len(list(tagged_assets)) == 0
 
     def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage, asset):
-        asset['tags'].add('foo')
+        asset.tags.add('foo')
         storage.add(asset)
 
         assets = storage.filter_by_tags()
@@ -94,11 +94,11 @@ class TestStorages:
 
     def test_filter_by_tags_returns_assets_with_specified_tags(self, storage):
         asset0 = Asset(b'0')
-        asset0['tags'].add('foo')
+        asset0.tags.add('foo')
         asset1 = Asset(b'1')
-        asset1['tags'] |= {'foo', 'bar'}
+        asset1.tags |= {'foo', 'bar'}
         asset2 = Asset(b'2')
-        asset2['tags'] |= {'foo', 'bar'}
+        asset2.tags |= {'foo', 'bar'}
         storage.add(asset0)
         storage.add(asset1)
         storage.add(asset2)
@@ -180,12 +180,12 @@ class TestAsset:
         assert asset is not another_asset
         assert asset == another_asset
 
-    def test_asset_getitem_is_identical_to_access_through_madam_metadata(self, asset):
-        madam_metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
+    def test_asset_getattr_is_identical_to_access_through_madam_metadata(self, asset):
+        madam_metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, '42': 43.0}
         asset.metadata['madam'] = madam_metadata
 
         for key, value in asset.metadata['madam'].items():
-            assert asset[key] == value
+            assert getattr(asset, key) == value
 
     def test_asset_setitem_is_identical_to_access_through_madam_metadata(self, asset):
         metadata_to_be_set = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
@@ -203,7 +203,7 @@ class TestAsset:
         assert essence_contents == same_essence_contents
 
     def test_has_tags_metadata(self, asset):
-        assert asset['tags'] is not None
+        assert asset.tags is not None
 
     def test_hash_is_equal_for_equal_assets(self):
         asset0 = Asset(b'same')

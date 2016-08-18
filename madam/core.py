@@ -61,7 +61,7 @@ class InMemoryStorage(AssetStorage):
 
     def filter_by_tags(self, *tags):
         tag_set = set(tags)
-        assets_by_tags = [asset for asset in self.assets if tag_set.issubset(asset['tags'])]
+        assets_by_tags = [asset for asset in self.assets if tag_set.issubset(asset.tags)]
         return iter(assets_by_tags)
 
 
@@ -111,7 +111,7 @@ class FileStorage(AssetStorage):
 
     def filter_by_tags(self, *tags):
         with shelve.open(self._shelf_path) as assets:
-            return iter([asset for asset in assets.values() if set(tags) <= asset['tags']])
+            return iter([asset for asset in assets.values() if set(tags) <= asset.tags])
 
 
 class Asset:
@@ -125,16 +125,29 @@ class Asset:
     """
     def __init__(self, essence):
         self.essence_data = essence
-        self.metadata = {'madam': {'tags': set()}}
-        self.mime_type = None
+        self.metadata = {'madam': {'tags': set(), 'mime_type': None}}
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return other.__dict__ == self.__dict__
         return False
 
-    def __getitem__(self, item):
-        return self.metadata['madam'][item]
+    def __getattr__(self, item):
+        if item in self.metadata:
+            return self.metadata[item]
+        elif item in self.metadata['madam']:
+            return self.metadata['madam'][item]
+        return getattr(super(), item)
+
+    def __setstate__(self, state):
+        """
+        Sets this objects __dict__ to the specified state.
+
+        Required for Asset to be unpicklable. If this is absent, pickle will not
+        set the __dict__ correctly due to the presence of :func:`~madam.core.Asset.__getattr__`.
+        :param state: The state passed by pickle
+        """
+        self.__dict__ = state
 
     def __setitem__(self, key, value):
         self.metadata['madam'][key] = value

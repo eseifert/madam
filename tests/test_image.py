@@ -42,8 +42,8 @@ class TestPillowProcessor:
 
         fitted_asset = fit_asset_operator(jpeg_asset_landscape)
 
-        assert fitted_asset['width'] == 9
-        assert fitted_asset['height'] == 7
+        assert fitted_asset.width == 9
+        assert fitted_asset.height == 7
 
     @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_portrait_image(self, pillow_processor, width, height):
@@ -52,8 +52,8 @@ class TestPillowProcessor:
 
         fitted_asset = fit_asset_operator(jpeg_asset_portrait)
 
-        assert fitted_asset['width'] == 6
-        assert fitted_asset['height'] == 10
+        assert fitted_asset.width == 6
+        assert fitted_asset.height == 10
 
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
@@ -62,8 +62,8 @@ class TestPillowProcessor:
 
         filling_asset = fill_asset_operator(jpeg_asset_landscape)
 
-        assert filling_asset['width'] == 13
-        assert filling_asset['height'] == 10
+        assert filling_asset.width == 13
+        assert filling_asset.height == 10
 
     @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
     def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image(self, pillow_processor, width, height):
@@ -72,8 +72,8 @@ class TestPillowProcessor:
 
         filling_asset = fill_asset_operator(jpeg_asset_portrait)
 
-        assert filling_asset['width'] == 9
-        assert filling_asset['height'] == 15
+        assert filling_asset.width == 9
+        assert filling_asset.height == 15
 
     def test_resize_scales_image_to_exact_dimensions_by_default(self, pillow_processor):
         jpeg = jpeg_asset()
@@ -81,8 +81,8 @@ class TestPillowProcessor:
 
         filling_asset = resize_operator(jpeg)
 
-        assert filling_asset['width'] == 9
-        assert filling_asset['height'] == 10
+        assert filling_asset.width == 9
+        assert filling_asset.height == 10
 
     def test_transpose_flips_dimensions(self, pillow_processor):
         asset = jpeg_asset()
@@ -90,7 +90,7 @@ class TestPillowProcessor:
 
         transposed_asset = transpose_operator(asset)
 
-        assert asset['width'] == transposed_asset['height'] and asset['height'] == transposed_asset['width']
+        assert asset.width == transposed_asset.height and asset.height == transposed_asset.width
 
     def test_transpose_is_reversible(self, pillow_processor):
         asset = jpeg_asset()
@@ -161,7 +161,7 @@ class TestPillowProcessor:
     def test_read_image_returns_asset_with_image_mime_type(self, pillow_processor, image_data, mime_type):
         asset = pillow_processor.read(image_data)
 
-        assert asset['mime_type'] == mime_type
+        assert asset.mime_type == mime_type
 
     def test_read_jpeg_does_not_alter_the_original_file(self, pillow_processor):
         jpeg_data = jpeg_asset().essence
