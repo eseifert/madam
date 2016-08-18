@@ -197,7 +197,6 @@ class TestAsset:
             assert asset.metadata['madam'][inserted_key] == inserted_value
 
     def test_asset_essence_can_be_read_multiple_times(self, asset):
-        asset.essence_data = b'42'
         essence_contents = asset.essence.read()
         same_essence_contents = asset.essence.read()
 

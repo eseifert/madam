@@ -149,10 +149,6 @@ class Asset:
         """
         return io.BytesIO(self.essence_data)
 
-    @essence.setter
-    def essence(self, value):
-        self.essence_data = value.read()
-
     def __hash__(self):
         return hash(self.essence_data)
 
@@ -192,7 +188,10 @@ def read(file, mime_type=None):
         file.seek(0)
         try:
             asset.metadata[metadata_format] = metadata_processor.read(file)
-            asset.essence = metadata_processor.strip(asset.essence)
+            stripped_essence = metadata_processor.strip(asset.essence)
+            clean_asset = Asset(stripped_essence.read())
+            clean_asset.metadata = asset.metadata
+            asset = clean_asset
         except:
             pass
     return asset
