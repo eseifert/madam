@@ -172,9 +172,9 @@ class TestAsset:
     def test_asset_has_metadata(self, asset):
         assert hasattr(asset, 'metadata')
 
-    def test_asset_equality(self, asset):
+    def test_assets_are_equal_when_essence_and_properties_are_identical(self, asset):
         asset.some_attr = 42
-        another_asset = Asset(b'')
+        another_asset = Asset(asset.essence.read())
         another_asset.some_attr = 42
 
         assert asset is not another_asset
