@@ -158,7 +158,7 @@ class TestInMemoryStorage:
 
 @pytest.fixture
 def asset():
-    return Asset(b'')
+    return Asset(b'TestEssence')
 
 
 @pytest.mark.usefixtures('asset')
