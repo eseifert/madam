@@ -59,3 +59,11 @@ def test_write_calls_write_method_for_respective_file_type(image_asset):
                 break
         else:
             pytest.fail('No processor found for %r' % image_asset)
+
+
+def test_write_unknown_asset_type_raises_error():
+    random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
+    asset = madam.core.Asset(random_data, metadata={})
+    with pytest.raises(UnsupportedFormatError):
+        with open(os.devnull) as file:
+            madam.write(asset, file)
