@@ -23,8 +23,8 @@ def test_jpeg_asset_essence_does_not_contain_exif_metadata():
 
 
 @pytest.mark.parametrize('path, mime_type', [
+    ('tests/resources/1x1-transparent.gif', None),
     ('tests/resources/16-bit-mono.wav', None),
-    ('tests/resources/64kbits.mp3', None),
 ])
 def test_read_calls_read_method_for_respective_file_type(path, mime_type):
     # When
