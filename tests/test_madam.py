@@ -1,6 +1,6 @@
+import io
 import unittest.mock
 
-import io
 import piexif
 import pytest
 
@@ -38,6 +38,8 @@ def test_read_calls_read_method_for_respective_file_type(path, mime_type):
             # Assert
             assert read_method.called
             break
+    else:
+        pytest.fail('No processor found for %r' % path)
 
 
 def test_read_empty_file_raises_error():
