@@ -93,12 +93,9 @@ class TestStorages:
         assert asset in assets
 
     def test_filter_by_tags_returns_assets_with_specified_tags(self, storage):
-        asset0 = Asset(b'0', metadata={})
-        asset0.tags.add('foo')
-        asset1 = Asset(b'1', metadata={})
-        asset1.tags |= {'foo', 'bar'}
-        asset2 = Asset(b'2', metadata={})
-        asset2.tags |= {'foo', 'bar'}
+        asset0 = Asset(b'0', metadata={'tags': {'foo'}})
+        asset1 = Asset(b'1', metadata={'tags': {'foo', 'bar'}})
+        asset2 = Asset(b'2', metadata={'tags': {'foo', 'bar'}})
         storage.add(asset0)
         storage.add(asset1)
         storage.add(asset2)
@@ -185,6 +182,13 @@ class TestAsset:
 
         for key, value in asset.metadata.items():
             assert getattr(asset, key) == value
+
+    def test_setattr_raises_when_attribute_is_a_metadata_attribute(self):
+        asset_with_metadata = Asset(b'', metadata={'SomeMetadata': 42})
+
+        with pytest.raises(NotImplementedError):
+            asset_with_metadata.SomeMetadata = 43
+
 
     def test_asset_essence_can_be_read_multiple_times(self, asset):
         essence_contents = asset.essence.read()

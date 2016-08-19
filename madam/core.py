@@ -141,6 +141,11 @@ class Asset:
             return self.metadata[item]
         raise AttributeError('%r object has no attribute %r' % (self.__class__, item))
 
+    def __setattr__(self, key, value):
+        if 'metadata' in self.__dict__ and key in self.__dict__['metadata']:
+            raise NotImplementedError('Unable to overwrite metadata attribute.')
+        super().__setattr__(key, value)
+
     def __setstate__(self, state):
         """
         Sets this objects __dict__ to the specified state.

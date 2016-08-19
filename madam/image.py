@@ -190,6 +190,5 @@ class PillowProcessor(Processor):
         image.save(converted_essence_data, pil_format)
         converted_essence_data.seek(0)
 
-        converted_asset = Asset(converted_essence_data.read(), metadata={})
-        converted_asset.mime_type = mime_type
+        converted_asset = Asset(converted_essence_data.read(), metadata={'mime_type': mime_type})
         return converted_asset
