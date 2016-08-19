@@ -80,8 +80,7 @@ class PillowProcessor(Processor):
             raise ValueError('Error when reading file-like object: %r' % file)
 
     def can_write(self, asset, **options):
-        # TODO: Implement
-        return False
+        return asset.mime_type in self.__mime_type_to_pillow_type
 
     def write(self, asset, file, **options):
         raise NotImplementedError()
