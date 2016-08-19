@@ -211,6 +211,32 @@ def read(file, mime_type=None):
     return asset
 
 
+def write(asset, file, **options):
+    """
+    Write the Asset object to the specified file.
+
+    :param asset: Asset that contains the data to be written
+    :param file: file-like object to be written
+    :param \**options: Output file format specific options (e.g. quality, interlacing, etc.)
+    :raises UnsupportedFormatError: if the output file format is not supported
+
+    :Example:
+
+    >>> import madam
+    >>> gif_asset = madam.Asset(essence=b'GIF89a\x01\x00\x01\x00\x00\x00\x00;')
+    >>> with open('path/to/file.gif', 'wb') as file:
+    ...     madam.write(gif_asset, file)
+    >>> wav_asset = madam.Asset(essence=b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00')
+    >>> with open('path/to/file.wav', 'wb') as file:
+    ...     madam.write(wav_asset, file)
+    """
+    processors_supporting_type = (processor for processor in processors if processor.can_write(asset, **options))
+    processor = next(processors_supporting_type, None)
+    if processor is None:
+        raise UnsupportedFormatError()
+    processor.write(asset, file, **options)
+
+
 class Pipeline:
     def __init__(self):
         self.operators = []

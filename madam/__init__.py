@@ -1,4 +1,4 @@
-from .core import read
+from .core import read, write
 
 from ._version import get_versions
 __version__ = get_versions()['version']
