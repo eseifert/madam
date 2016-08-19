@@ -181,7 +181,7 @@ def read(file, mime_type=None):
     """
     Reads the specified file and returns its contents as an Asset object.
 
-    :param file: file-like object or file path to be parsed
+    :param file: file-like object to be parsed
     :param mime_type: MIME type of the specified file
     :type mime_type: str
     :returns: Asset representing the specified file
@@ -190,7 +190,8 @@ def read(file, mime_type=None):
     :Example:
 
     >>> import madam
-    >>> madam.read('path/to/file.jpg')
+    >>> with open('path/to/file.jpg', 'rb') as file:
+    ...     madam.read(file)
     """
     processors_supporting_type = (processor for processor in processors if processor.can_read(file))
     processor = next(processors_supporting_type, None)
