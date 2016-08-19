@@ -8,7 +8,7 @@ import pytest
 import madam.core
 
 
-def image_rgb(width=4, height=3, transpositions=None):
+def image_rgb(width, height, transpositions=None):
     if not transpositions:
         transpositions = []
     image = PIL.Image.new('RGB', (width, height))
@@ -34,7 +34,7 @@ def jpeg_rgb(width=4, height=3, transpositions=None):
 
 
 def png_rgb():
-    image = image_rgb()
+    image = image_rgb(width=4, height=3)
     image_data = io.BytesIO()
     image.save(image_data, 'PNG')
     image_data.seek(0)
