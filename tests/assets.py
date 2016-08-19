@@ -33,8 +33,8 @@ def jpeg_rgb(width=4, height=3, transpositions=None):
     return image_data
 
 
-def png_rgb():
-    image = image_rgb(width=4, height=3)
+def png_rgb(width, height):
+    image = image_rgb(width, height)
     image_data = io.BytesIO()
     image.save(image_data, 'PNG')
     image_data.seek(0)
@@ -65,10 +65,12 @@ def jpeg_asset(width=4, height=3, transpositions=None):
 
 @pytest.fixture
 def png_asset():
-    essence = png_rgb().read()
+    width = 4
+    height = 3
+    essence = png_rgb(width, height).read()
     metadata = {
-        'width': 0,
-        'height': 0,
+        'width': width,
+        'height': height,
         'mime_type': 'image/png'
     }
     asset = madam.core.Asset(essence, metadata)
