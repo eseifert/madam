@@ -50,9 +50,8 @@ class InMemoryStorage(AssetStorage):
     def get(self, **kwargs):
         matches = []
         for asset in self.assets:
-            madam_metadata = asset.metadata['madam']
             for key, value in kwargs.items():
-                if madam_metadata.get(key, None) == value:
+                if asset.metadata.get(key, None) == value:
                     matches.append(asset)
         return matches
 
@@ -125,7 +124,7 @@ class Asset:
     """
     def __init__(self, essence):
         self.essence_data = essence
-        self.metadata = {'madam': {'tags': set(), 'mime_type': None}}
+        self.metadata = {'tags': set(), 'mime_type': None}
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -135,8 +134,6 @@ class Asset:
     def __getattr__(self, item):
         if item in self.metadata:
             return self.metadata[item]
-        elif item in self.metadata['madam']:
-            return self.metadata['madam'][item]
         raise AttributeError('%r object has no attribute %r' % (self.__class__, item))
 
     def __setstate__(self, state):
@@ -150,7 +147,7 @@ class Asset:
         self.__dict__ = state
 
     def __setitem__(self, key, value):
-        self.metadata['madam'][key] = value
+        self.metadata[key] = value
 
     @property
     def essence(self):

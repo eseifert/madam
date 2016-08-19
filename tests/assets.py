@@ -1,3 +1,4 @@
+import PIL.Image
 import io
 
 import piexif
@@ -54,7 +55,9 @@ def jpeg_asset(width=4, height=3, transpositions=None):
     essence = jpeg_rgb(width=width, height=height, transpositions=transpositions).read()
     asset = madam.core.Asset(essence)
     asset.metadata['exif'] = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
-    asset.metadata['madam'] = {'width': width, 'height': height, 'mime_type': 'image/jpeg'}
+    asset.metadata['width'] = width
+    asset.metadata['height'] = height
+    asset.metadata['mime_type'] = 'image/jpeg'
     return asset
 
 
@@ -62,7 +65,9 @@ def jpeg_asset(width=4, height=3, transpositions=None):
 def png_asset():
     essence = png_rgb().read()
     asset = madam.core.Asset(essence)
-    asset.metadata['madam'] = {'width': 0, 'height': 0, 'mime_type': 'image/png'}
+    asset.metadata['width'] = 0
+    asset.metadata['height'] = 0
+    asset.metadata['mime_type'] = 'image/png'
     return asset
 
 

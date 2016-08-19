@@ -184,8 +184,8 @@ class TestPillowProcessor:
     def test_jpeg_asset_contains_size_information(self, pillow_processor, image_data):
         asset = pillow_processor.read(image_data)
 
-        assert asset.metadata['madam']['width'] == 4
-        assert asset.metadata['madam']['height'] == 3
+        assert asset.metadata['width'] == 4
+        assert asset.metadata['height'] == 3
 
 
 class TestExifProcessor:

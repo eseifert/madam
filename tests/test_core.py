@@ -180,11 +180,10 @@ class TestAsset:
         assert asset is not another_asset
         assert asset == another_asset
 
-    def test_asset_getattr_is_identical_to_access_through_madam_metadata(self, asset):
-        madam_metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, '42': 43.0}
-        asset.metadata['madam'] = madam_metadata
+    def test_asset_getattr_is_identical_to_access_through_metadata(self, asset):
+        asset.metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, '42': 43.0}
 
-        for key, value in asset.metadata['madam'].items():
+        for key, value in asset.metadata.items():
             assert getattr(asset, key) == value
 
     def test_asset_setitem_is_identical_to_access_through_madam_metadata(self, asset):
@@ -194,7 +193,7 @@ class TestAsset:
             asset[key] = value
 
         for inserted_key, inserted_value in metadata_to_be_set.items():
-            assert asset.metadata['madam'][inserted_key] == inserted_value
+            assert asset.metadata[inserted_key] == inserted_value
 
     def test_asset_essence_can_be_read_multiple_times(self, asset):
         essence_contents = asset.essence.read()
