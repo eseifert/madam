@@ -137,7 +137,7 @@ class Asset:
             return self.metadata[item]
         elif item in self.metadata['madam']:
             return self.metadata['madam'][item]
-        return getattr(super(), item)
+        raise AttributeError('%r object has no attribute %r' % (self.__class__, item))
 
     def __setstate__(self, state):
         """
