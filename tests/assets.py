@@ -1,6 +1,8 @@
-import PIL.Image
 import io
+
 import piexif
+import PIL.Image
+import pytest
 
 import madam.core
 
@@ -45,17 +47,28 @@ def add_exif_to_jpeg(exif, image_data):
     return image_with_exif_metadata
 
 
+@pytest.fixture
 def jpeg_asset(width=4, height=3, transpositions=None):
     if not transpositions:
         transpositions = []
     essence = jpeg_rgb(width=width, height=height, transpositions=transpositions).read()
     asset = madam.core.Asset(essence)
     asset.metadata['exif'] = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
-    asset.metadata['madam'] = {'width': width, 'height': height}
+    asset.metadata['madam'] = {'width': width, 'height': height, 'mime_type': 'image/jpeg'}
     return asset
 
 
+@pytest.fixture
 def png_asset():
     essence = png_rgb().read()
     asset = madam.core.Asset(essence)
+    asset.metadata['madam'] = {'width': 0, 'height': 0, 'mime_type': 'image/png'}
     return asset
+
+
+@pytest.fixture(params=['jpeg_asset', 'png_asset'])
+def image_asset(request, jpeg_asset, png_asset):
+    if request.param == 'jpeg_asset':
+        return jpeg_asset
+    else:
+        return png_asset
