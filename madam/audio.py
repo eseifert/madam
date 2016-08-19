@@ -45,13 +45,13 @@ class MutagenProcessor(Processor):
             copy_path = os.path.join(temp_dir, filename)
             shutil.copyfile(file_path, copy_path)
 
+            mp3 = mutagen.mp3.MP3(copy_path)
+            metadata = {'mime_type': 'audio/mpeg', 'duration': mp3.info.length}
+            mp3.tags.delete(copy_path)
+
             with open(copy_path, 'rb') as mp3_file_copy:
                 essence = mp3_file_copy.read()
-                asset = Asset(essence, metadata={'mime_type': 'audio/mpeg'})
-
-            mp3 = mutagen.mp3.MP3(copy_path)
-            asset['duration'] = mp3.info.length
-            mp3.tags.delete(copy_path)
+                asset = Asset(essence, metadata)
         return asset
 
     def can_read(self, file):

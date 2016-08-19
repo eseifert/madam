@@ -151,9 +151,6 @@ class Asset:
         """
         self.__dict__ = state
 
-    def __setitem__(self, key, value):
-        self.metadata[key] = value
-
     @property
     def essence(self):
         """

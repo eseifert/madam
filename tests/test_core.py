@@ -146,8 +146,8 @@ class TestInMemoryStorage:
         assets_with_1s_duration = storage.get()
         assert not assets_with_1s_duration
 
-    def test_get_returns_assets_with_specified_madam_metadata(self, storage, asset):
-        asset['duration'] = 1
+    def test_get_returns_assets_with_specified_madam_metadata(self, storage):
+        asset = Asset(b'TestEssence', metadata={'duration': 1})
         storage.add(asset)
 
         assets_with_1s_duration = storage.get(duration=1)
@@ -186,15 +186,6 @@ class TestAsset:
         for key, value in asset.metadata.items():
             assert getattr(asset, key) == value
 
-    def test_asset_setitem_is_identical_to_access_through_madam_metadata(self, asset):
-        metadata_to_be_set = {'SomeKey': 'SomeValue', 'AnotherKey': None, 42: 43.0}
-
-        for key, value in metadata_to_be_set.items():
-            asset[key] = value
-
-        for inserted_key, inserted_value in metadata_to_be_set.items():
-            assert asset.metadata[inserted_key] == inserted_value
-
     def test_asset_essence_can_be_read_multiple_times(self, asset):
         essence_contents = asset.essence.read()
         same_essence_contents = asset.essence.read()
@@ -205,10 +196,9 @@ class TestAsset:
         assert asset.tags is not None
 
     def test_hash_is_equal_for_equal_assets(self):
-        asset0 = Asset(b'same', metadata={})
-        asset0['SomeMetadata'] = 42
-        asset1 = Asset(b'same', metadata={})
-        asset1['SomeMetadata'] = 42
+        metadata = {'SomeMetadata': 42}
+        asset0 = Asset(b'same', metadata)
+        asset1 = Asset(b'same', metadata)
 
         assert hash(asset0) == hash(asset1)
 
