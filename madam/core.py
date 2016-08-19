@@ -231,11 +231,19 @@ class Processor(metaclass=abc.ABCMeta):
         processors.append(self)
 
     @abc.abstractmethod
+    def can_read(self, mime_type):
+        pass
+
+    @abc.abstractmethod
     def read(self, file):
         pass
 
     @abc.abstractmethod
-    def can_read(self, mime_type):
+    def can_write(self, asset, **options):
+        pass
+
+    @abc.abstractmethod
+    def write(self, asset, file, **options):
         pass
 
 

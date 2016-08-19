@@ -24,3 +24,10 @@ class FFmpegProcessor(Processor):
 
     def read(self, file):
         return Asset(b'')
+
+    def can_write(self, asset, **options):
+        # TODO: Implement
+        return False
+
+    def write(self, asset, file, **options):
+        raise NotImplementedError()
