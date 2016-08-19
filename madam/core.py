@@ -121,10 +121,15 @@ class Asset:
     representing your content.
 
     :param essence: The essence of the asset as a byte string
+    :param metadata: The metadata describing the essence
     """
-    def __init__(self, essence):
+    def __init__(self, essence, metadata):
         self.essence_data = essence
-        self.metadata = {'tags': set(), 'mime_type': None}
+        self.metadata = metadata
+        if 'tags' not in self.metadata:
+            self.metadata['tags'] = set()
+        if 'mime_type' not in self.metadata:
+            self.metadata['mime_type'] = None
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -200,8 +205,7 @@ def read(file, mime_type=None):
         try:
             asset.metadata[metadata_format] = metadata_processor.read(file)
             stripped_essence = metadata_processor.strip(asset.essence)
-            clean_asset = Asset(stripped_essence.read())
-            clean_asset.metadata = asset.metadata
+            clean_asset = Asset(stripped_essence.read(), metadata=asset.metadata)
             asset = clean_asset
         except:
             pass

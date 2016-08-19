@@ -14,10 +14,12 @@ class WaveProcessor(Processor):
             essence_stream = io.BytesIO()
             essence_stream.write(essence_bytes)
             essence_stream.seek(0)
-            asset = Asset(essence_stream.read())
-            asset['channels'] = wave_data.getnchannels()
-            asset['framerate'] = wave_data.getframerate()
-        asset['mime_type'] = 'audio/wav'
+            metadata = {
+                'mime_type': 'audio/wav',
+                'channels': wave_data.getnchannels(),
+                'framerate': wave_data.getframerate(),
+            }
+            asset = Asset(essence_stream.read(), metadata)
         return asset
 
     def can_read(self, file):
@@ -45,8 +47,7 @@ class MutagenProcessor(Processor):
 
             with open(copy_path, 'rb') as mp3_file_copy:
                 essence = mp3_file_copy.read()
-                asset = Asset(essence)
-                asset['mime_type'] = 'audio/mpeg'
+                asset = Asset(essence, metadata={'mime_type': 'audio/mpeg'})
 
             mp3 = mutagen.mp3.MP3(copy_path)
             asset['duration'] = mp3.info.length

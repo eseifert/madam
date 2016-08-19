@@ -53,21 +53,25 @@ def jpeg_asset(width=4, height=3, transpositions=None):
     if not transpositions:
         transpositions = []
     essence = jpeg_rgb(width=width, height=height, transpositions=transpositions).read()
-    asset = madam.core.Asset(essence)
-    asset.metadata['exif'] = {'0th': {piexif.ImageIFD.Artist: b'Test artist'}}
-    asset.metadata['width'] = width
-    asset.metadata['height'] = height
-    asset.metadata['mime_type'] = 'image/jpeg'
+    metadata = {
+        'exif': {'0th': {piexif.ImageIFD.Artist: b'Test artist'}},
+        'width': width,
+        'height': height,
+        'mime_type': 'image/jpeg'
+    }
+    asset = madam.core.Asset(essence, metadata)
     return asset
 
 
 @pytest.fixture
 def png_asset():
     essence = png_rgb().read()
-    asset = madam.core.Asset(essence)
-    asset.metadata['width'] = 0
-    asset.metadata['height'] = 0
-    asset.metadata['mime_type'] = 'image/png'
+    metadata = {
+        'width': 0,
+        'height': 0,
+        'mime_type': 'image/png'
+    }
+    asset = madam.core.Asset(essence, metadata)
     return asset
 
 

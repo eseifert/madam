@@ -23,7 +23,7 @@ class FFmpegProcessor(Processor):
         return bool(json_obj)
 
     def read(self, file):
-        return Asset(b'')
+        return Asset(b'', metadata={})
 
     def can_write(self, asset, **options):
         # TODO: Implement

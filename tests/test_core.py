@@ -58,24 +58,24 @@ class TestStorages:
         assert asset not in storage
 
     def test_iterator_contains_all_stored_assets(self, storage):
-        storage.add(Asset(b'0'))
-        storage.add(Asset(b'1'))
-        storage.add(Asset(b'2'))
+        storage.add(Asset(b'0', metadata={}))
+        storage.add(Asset(b'1', metadata={}))
+        storage.add(Asset(b'2', metadata={}))
 
         iterator = iter(storage)
 
         assert len(list(iterator)) == 3
 
     def test_iterator_is_a_readable_storage_snapshot(self, storage):
-        asset0 = Asset(b'0')
-        asset1 = Asset(b'1')
+        asset0 = Asset(b'0', metadata={})
+        asset1 = Asset(b'1', metadata={})
         storage.add(asset0)
         storage.add(asset1)
         iterator = iter(storage)
 
         storage.remove(asset0)
-        storage.add(Asset(b'2'))
-        storage.add(Asset(b'3'))
+        storage.add(Asset(b'2', metadata={}))
+        storage.add(Asset(b'3', metadata={}))
 
         assert list(iterator) == [asset0, asset1]
 
@@ -93,11 +93,11 @@ class TestStorages:
         assert asset in assets
 
     def test_filter_by_tags_returns_assets_with_specified_tags(self, storage):
-        asset0 = Asset(b'0')
+        asset0 = Asset(b'0', metadata={})
         asset0.tags.add('foo')
-        asset1 = Asset(b'1')
+        asset1 = Asset(b'1', metadata={})
         asset1.tags |= {'foo', 'bar'}
-        asset2 = Asset(b'2')
+        asset2 = Asset(b'2', metadata={})
         asset2.tags |= {'foo', 'bar'}
         storage.add(asset0)
         storage.add(asset1)
@@ -158,7 +158,7 @@ class TestInMemoryStorage:
 
 @pytest.fixture
 def asset():
-    return Asset(b'TestEssence')
+    return Asset(b'TestEssence', metadata={})
 
 
 @pytest.mark.usefixtures('asset')
@@ -174,7 +174,7 @@ class TestAsset:
 
     def test_assets_are_equal_when_essence_and_properties_are_identical(self, asset):
         asset.some_attr = 42
-        another_asset = Asset(asset.essence.read())
+        another_asset = Asset(asset.essence.read(), metadata={})
         another_asset.some_attr = 42
 
         assert asset is not another_asset
@@ -205,9 +205,9 @@ class TestAsset:
         assert asset.tags is not None
 
     def test_hash_is_equal_for_equal_assets(self):
-        asset0 = Asset(b'same')
+        asset0 = Asset(b'same', metadata={})
         asset0['SomeMetadata'] = 42
-        asset1 = Asset(b'same')
+        asset1 = Asset(b'same', metadata={})
         asset1['SomeMetadata'] = 42
 
         assert hash(asset0) == hash(asset1)
@@ -220,7 +220,7 @@ class TestPipeline:
         return Pipeline()
 
     def test_empty_pipeline_does_not_change_assets(self, pipeline, asset):
-        another_asset = Asset(b'other')
+        another_asset = Asset(b'other', metadata={})
 
         processed_assets = pipeline.process(asset, another_asset)
 
