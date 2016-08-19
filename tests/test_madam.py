@@ -1,4 +1,5 @@
 import io
+import os
 import unittest.mock
 
 import piexif
@@ -6,7 +7,7 @@ import pytest
 
 import madam
 from madam.core import UnsupportedFormatError
-from assets import jpeg_asset
+from assets import jpeg_asset, png_asset, image_asset
 
 
 def test_jpeg_asset_essence_does_not_contain_exif_metadata():
@@ -46,3 +47,15 @@ def test_read_empty_file_raises_error():
     file_data = io.BytesIO()
     with pytest.raises(UnsupportedFormatError):
         madam.read(file_data)
+
+
+def test_write_calls_write_method_for_respective_file_type(image_asset):
+    with open(os.devnull, 'wb') as file:
+        for processor in madam.core.processors:
+            if processor.can_write(image_asset):
+                with unittest.mock.patch.object(processor, 'write') as write_method:
+                    madam.write(image_asset, file)
+                assert write_method.called
+                break
+        else:
+            pytest.fail('No processor found for %r' % image_asset)
