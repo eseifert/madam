@@ -9,19 +9,19 @@ import shelve
 class AssetStorage(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def add(self, asset):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def remove(self, asset):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def __contains__(self, asset_id):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def __iter__(self):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def filter_by_tags(self, *tags):
@@ -31,7 +31,7 @@ class AssetStorage(metaclass=abc.ABCMeta):
         :param tags: Mandatory tags of an asset to be included in result
         :return: Assets whose tags are a superset of the specified tags
         """
-        pass
+        raise NotImplementedError()
 
 
 class InMemoryStorage(AssetStorage):
@@ -261,19 +261,19 @@ class Processor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def can_read(self, mime_type):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def read(self, file):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def can_write(self, asset, **options):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def write(self, asset, file, **options):
-        pass
+        raise NotImplementedError()
 
 
 class MetadataProcessor(metaclass=abc.ABCMeta):
@@ -283,15 +283,15 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def format(self):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def read(self, file):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def strip(self, file):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def combine(self, file, metadata):
@@ -302,4 +302,4 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         :param file: Container file
         :return: File-like object with combined content
         """
-        pass
+        raise NotImplementedError()

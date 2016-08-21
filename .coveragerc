@@ -3,3 +3,8 @@ source = madam
 
 [report]
 omit = */_version.py
+exclude_lines =
+    # Re-enable the standard pragma
+    pragma: no cover
+    # Don't complain if tests don't hit defensive assertion code
+    raise NotImplementedError()
