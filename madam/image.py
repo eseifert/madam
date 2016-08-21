@@ -85,6 +85,7 @@ class PillowProcessor(Processor):
         return asset.mime_type in self.__mime_type_to_pillow_type
 
     def write(self, asset, file, **options):
+        # TODO: Implement
         raise NotImplementedError()
 
     @operator

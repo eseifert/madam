@@ -34,6 +34,7 @@ class WaveProcessor(Processor):
         return False
 
     def write(self, asset, file, **options):
+        # TODO: Implement
         raise NotImplementedError()
 
 
@@ -66,4 +67,5 @@ class MutagenProcessor(Processor):
         return False
 
     def write(self, asset, file, **options):
+        # TODO: Implement
         raise NotImplementedError()
