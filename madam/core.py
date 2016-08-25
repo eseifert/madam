@@ -346,6 +346,15 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def read(self, file):
+        """
+        Reads the file and returns the metadata.
+
+        The type of metadata that is returned is specified by :attr:`~madam.core.MetadataProcessor.format`.
+
+        :param file: File-like object to be read
+        :return: Metadata contained in the file
+        :raises UnsupportedFormatError: if the data is corrupt or its format is not supported
+        """
         raise NotImplementedError()
 
     @abc.abstractmethod
