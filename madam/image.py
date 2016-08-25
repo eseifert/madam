@@ -7,7 +7,7 @@ import piexif
 import PIL.ExifTags
 import PIL.Image
 
-from madam.core import Asset, Processor, MetadataProcessor
+from madam.core import Asset, Processor, MetadataProcessor, UnsupportedFormatError
 
 
 class ExifProcessor(MetadataProcessor):
@@ -17,7 +17,10 @@ class ExifProcessor(MetadataProcessor):
 
     def read(self, file):
         data = file.read()
-        exif = piexif.load(data)
+        try:
+            exif = piexif.load(data)
+        except ValueError:
+            raise UnsupportedFormatError()
         exif_stripped_from_empty_entries = {key: value for (key, value) in exif.items() if value}
         return exif_stripped_from_empty_entries
 

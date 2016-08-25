@@ -5,6 +5,7 @@ import piexif
 import pytest
 
 import madam.image
+from madam.core import UnsupportedFormatError
 from assets import jpeg_asset, png_asset
 
 
@@ -209,6 +210,12 @@ class TestExifProcessor:
 
         assert exif
 
+    def test_read_raises_error_when_file_format_is_invalid(self, exif_processor):
+        junk_data = io.BytesIO(b'abc123')
+
+        with pytest.raises(UnsupportedFormatError):
+            exif_processor.read(junk_data)
+
     def test_remove_returns_essence_without_metadata(self, exif_processor):
         exif = jpeg_asset().metadata['exif']
         jpeg_data = io.BytesIO()
@@ -229,4 +236,3 @@ class TestExifProcessor:
         contained_exif = piexif.load(essence_with_exif.read())
         exif_stripped_from_empty_entries = {key: value for (key, value) in contained_exif.items() if value}
         assert exif_stripped_from_empty_entries == exif
-
