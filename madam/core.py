@@ -1,10 +1,11 @@
 import abc
-import collections
 import io
 import itertools
 import mimetypes
 import os
 import shelve
+
+from frozendict import frozendict
 
 
 class AssetStorage(metaclass=abc.ABCMeta):
@@ -142,36 +143,7 @@ def _freeze_dict(dictionary):
         if isinstance(value, set):
             value = frozenset(value)
         entries[key] = value
-    return _FrozenDict(entries)
-
-
-class _FrozenDict(collections.Mapping):
-    def __init__(self, dictionary):
-        """
-        Initializes a read-only dictionary with the contents of the specified dict.
-
-        :param dictionary: Contents of the read-only dictionary
-        """
-        self.entries = frozenset(dictionary.items())
-
-    def __getitem__(self, item):
-        for key, value in self.entries:
-            if key == item:
-                return value
-
-    def __contains__(self, item):
-        for key, _ in self.entries:
-            if key == item:
-                return True
-
-    def __iter__(self):
-        return (key for key, value in self.entries)
-
-    def __len__(self):
-        return len(self.entries)
-
-    def __hash__(self):
-        return hash(self.entries)
+    return frozendict(entries)
 
 
 class Asset:
