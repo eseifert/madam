@@ -262,7 +262,10 @@ def write(asset, file):
     >>> gif_asset = Asset(essence=b'GIF89a\x01\x00\x01\x00\x00\x00\x00;', mime_type='image/gif')
     >>> with open(os.devnull, 'wb') as file:
     ...     madam.write(gif_asset, file)
-    >>> wav_asset = Asset(essence=b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00', mime_type='video/mp4')
+    >>> wav_asset = Asset(
+    ...     essence=b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac'
+    ...             b'\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00',
+    ...     mime_type='video/mp4')
     >>> with open(os.devnull, 'wb') as file:
     ...     madam.write(wav_asset, file)
     """
