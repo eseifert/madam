@@ -101,6 +101,10 @@ class FileStorage(AssetStorage):
         if not tags:
             tags = set()
         with shelve.open(self._shelf_path) as assets:
+            for asset_id, asset_with_tags in assets.items():
+                if asset == asset_with_tags[0]:
+                    assets[asset_id] = (asset, tags)
+                    return
             asset_id = next(self._asset_id_sequence)
             assets[str(asset_id)] = (asset, tags)
 

@@ -104,6 +104,14 @@ class TestStorages:
 
         assert asset0 not in assets and asset1 in assets and asset2 in assets
 
+    @pytest.mark.parametrize('tags', [None, {'my', 'tags'}])
+    def test_add_does_nothing_when_asset_is_already_in_storage(self, storage, asset, tags):
+        storage.add(asset, tags=tags)
+
+        storage.add(asset, tags=tags)
+
+        assert len(list(storage)) == 1
+
 
 @pytest.mark.usefixtures('asset', 'file_storage')
 class TestFileStorage:
@@ -151,14 +159,6 @@ class TestInMemoryStorage:
 
         assert len(assets_with_1s_duration) == 1
         assert assets_with_1s_duration[0] == asset
-
-    @pytest.mark.parametrize('tags', [None, {'my', 'tags'}])
-    def test_add_does_nothing_when_asset_is_already_in_storage(self, storage, asset, tags):
-        storage.add(asset, tags=tags)
-
-        storage.add(asset, tags=tags)
-
-        assert len(list(storage)) == 1
 
 
 @pytest.fixture
