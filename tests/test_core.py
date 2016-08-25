@@ -77,7 +77,7 @@ class TestStorages:
         storage.add(Asset(b'2', metadata={}))
         storage.add(Asset(b'3', metadata={}))
 
-        assert list(iterator) == [asset0, asset1]
+        assert set(iterator) == {asset0, asset1}
 
     def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
         tagged_assets = storage.filter_by_tags('some tag')
