@@ -125,6 +125,26 @@ class FileStorage(AssetStorage):
             return iter([asset for asset, tags in assets.values() if set(search_tags) <= tags])
 
 
+def _freeze_dict(dictionary):
+    """
+    Creates a read-only dictionary from the specified dictionary.
+
+    If the dictionary contains a value which is a dictionary, this dict
+    is recursively transformed into a read-only dict.
+
+    :param dictionary: Dict to be transformed into a read-only dict
+    :return: Read-only dictionary
+    """
+    entries = {}
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            value = _freeze_dict(value)
+        if isinstance(value, set):
+            value = frozenset(value)
+        entries[key] = value
+    return _FrozenDict(entries)
+
+
 class _FrozenDict(collections.Mapping):
     def __init__(self, dictionary):
         """
@@ -132,26 +152,7 @@ class _FrozenDict(collections.Mapping):
 
         :param dictionary: Contents of the read-only dictionary
         """
-        self.entries = self._dict_to_frozenset_with_tuples(dictionary)
-
-    def _dict_to_frozenset_with_tuples(self, dictionary):
-        """
-        Creates a read-only dictionary from the specified dictionary.
-
-        If the dictionary contains a value which is a dictionary, this dict
-        is recursively transformed into a read-only dict.
-
-        :param dictionary: Dict to be transformed into a read-only dict
-        :return: Read-only dictionary
-        """
-        tuples = set()
-        for key, value in dictionary.items():
-            if isinstance(value, dict):
-                value = _FrozenDict(value)
-            if isinstance(value, set):
-                value = frozenset(value)
-            tuples.add((key, value))
-        return frozenset(tuples)
+        self.entries = frozenset(dictionary.items())
 
     def __getitem__(self, item):
         for key, value in self.entries:
@@ -187,7 +188,7 @@ class Asset:
         self.essence_data = essence
         if 'mime_type' not in metadata:
             metadata['mime_type'] = None
-        self.metadata = _FrozenDict(metadata)
+        self.metadata = _freeze_dict(metadata)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -266,7 +267,7 @@ def read(file, mime_type=None):
             metadata = dict(asset.metadata)
             metadata[metadata_format] = metadata_processor.read(file)
             stripped_essence = metadata_processor.strip(asset.essence)
-            clean_asset = Asset(stripped_essence.read(), metadata=_FrozenDict(metadata))
+            clean_asset = Asset(stripped_essence.read(), metadata=_freeze_dict(metadata))
             asset = clean_asset
         except UnsupportedFormatError:
             pass
