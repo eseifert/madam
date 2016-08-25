@@ -152,10 +152,11 @@ class TestInMemoryStorage:
         assert len(assets_with_1s_duration) == 1
         assert assets_with_1s_duration[0] == asset
 
-    def test_add_does_nothing_when_asset_is_already_in_storage(self, storage, asset):
-        storage.add(asset)
+    @pytest.mark.parametrize('tags', [None, {'my', 'tags'}])
+    def test_add_does_nothing_when_asset_is_already_in_storage(self, storage, asset, tags):
+        storage.add(asset, tags=tags)
 
-        storage.add(asset)
+        storage.add(asset, tags=tags)
 
         assert len(list(storage)) == 1
 
