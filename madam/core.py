@@ -247,14 +247,12 @@ def read(file, mime_type=None):
     return asset
 
 
-def write(asset, file, **options):
+def write(asset, file):
     r"""
     Write the Asset object to the specified file.
 
     :param asset: Asset that contains the data to be written
     :param file: file-like object to be written
-    :param \**options: Output file format specific options (e.g. quality, interlacing, etc.)
-    :raises UnsupportedFormatError: if the output file format is not supported
 
     :Example:
 
@@ -269,6 +267,7 @@ def write(asset, file, **options):
     ...     madam.write(wav_asset, file)
     """
     shutil.copyfileobj(asset.essence, file)
+
 
 class Pipeline:
     def __init__(self):
