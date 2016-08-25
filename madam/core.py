@@ -268,7 +268,7 @@ def read(file, mime_type=None):
             stripped_essence = metadata_processor.strip(asset.essence)
             clean_asset = Asset(stripped_essence.read(), metadata=_FrozenDict(metadata))
             asset = clean_asset
-        except:
+        except UnsupportedFormatError:
             pass
     return asset
 
