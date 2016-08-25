@@ -84,8 +84,8 @@ class TestStorages:
 
         assert len(list(tagged_assets)) == 0
 
-    def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage, asset):
-        asset.tags.add('foo')
+    def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage):
+        asset = Asset(b'TestEssence', metadata={'tags': {'foo'}})
         storage.add(asset)
 
         assets = storage.filter_by_tags()
@@ -177,8 +177,8 @@ class TestAsset:
         assert asset is not another_asset
         assert asset == another_asset
 
-    def test_asset_getattr_is_identical_to_access_through_metadata(self, asset):
-        asset.metadata = {'SomeKey': 'SomeValue', 'AnotherKey': None, '42': 43.0}
+    def test_asset_getattr_is_identical_to_access_through_metadata(self):
+        asset = Asset(b'TestEssence', metadata={'SomeKey': 'SomeValue', 'AnotherKey': None, '42': 43.0})
 
         for key, value in asset.metadata.items():
             assert getattr(asset, key) == value

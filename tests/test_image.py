@@ -121,8 +121,8 @@ class TestPillowProcessor:
     ])
     def test_auto_orient(self, pillow_processor, exif_orientation, image_transpositions):
         reference_asset = jpeg_asset()
-        misoriented_asset = jpeg_asset(transpositions=image_transpositions)
-        misoriented_asset.metadata['exif'] = {'0th': {piexif.ImageIFD.Orientation: exif_orientation}}
+        misoriented_asset = jpeg_asset(transpositions=image_transpositions,
+                                       exif={'0th': {piexif.ImageIFD.Orientation: exif_orientation}})
         auto_orient_operator = pillow_processor.auto_orient()
 
         oriented_asset = auto_orient_operator(misoriented_asset)
