@@ -9,7 +9,7 @@ import shelve
 
 class AssetStorage(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def add(self, asset):
+    def add(self, asset, tags=None):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -37,31 +37,36 @@ class AssetStorage(metaclass=abc.ABCMeta):
 
 class InMemoryStorage(AssetStorage):
     def __init__(self):
-        self.assets = []
+        self.tags_by_asset = {}
 
-    def add(self, asset):
-        self.assets.append(asset)
+    def add(self, asset, tags=None):
+        if not tags:
+            tags = set()
+        self.tags_by_asset[asset] = tags
 
     def remove(self, asset):
-        return self.assets.remove(asset)
+        if asset not in self.tags_by_asset:
+            raise ValueError('Unable to delete asset that is not contained in storage.')
+        del self.tags_by_asset[asset]
+
 
     def __contains__(self, asset):
-        return asset in self.assets
+        return asset in self.tags_by_asset
 
     def get(self, **kwargs):
         matches = []
-        for asset in self.assets:
+        for asset in self.tags_by_asset.keys():
             for key, value in kwargs.items():
                 if asset.metadata.get(key, None) == value:
                     matches.append(asset)
         return matches
 
     def __iter__(self):
-        return iter(list(self.assets))
+        return iter(list(self.tags_by_asset.keys()))
 
     def filter_by_tags(self, *tags):
-        tag_set = set(tags)
-        assets_by_tags = [asset for asset in self.assets if tag_set.issubset(asset.tags)]
+        search_tags = set(tags)
+        assets_by_tags = [asset for asset, tags in self.tags_by_asset.items() if search_tags.issubset(tags)]
         return iter(assets_by_tags)
 
 
@@ -90,28 +95,30 @@ class FileStorage(AssetStorage):
 
     def __contains__(self, asset):
         with shelve.open(self._shelf_path) as assets:
-            return asset in assets.values()
+            return asset in (stored_asset for stored_asset, tags in assets.values())
 
-    def add(self, asset):
+    def add(self, asset, tags=None):
+        if not tags:
+            tags = set()
         with shelve.open(self._shelf_path) as assets:
             asset_id = next(self._asset_id_sequence)
-            assets[str(asset_id)] = asset
+            assets[str(asset_id)] = (asset, tags)
 
     def remove(self, asset):
         with shelve.open(self._shelf_path) as assets:
-            for key, value in assets.items():
-                if value == asset:
-                    del assets[key]
+            for asset_id, (stored_asset, _) in assets.items():
+                if stored_asset == asset:
+                    del assets[asset_id]
                     return
         raise ValueError('Unable to remove unknown asset %s', asset)
 
     def __iter__(self):
         with shelve.open(self._shelf_path) as assets:
-            return iter(list(assets.values()))
+            return iter([asset for asset, tags in assets.values()])
 
-    def filter_by_tags(self, *tags):
+    def filter_by_tags(self, *search_tags):
         with shelve.open(self._shelf_path) as assets:
-            return iter([asset for asset in assets.values() if set(tags) <= asset.tags])
+            return iter([asset for asset, tags in assets.values() if set(search_tags) <= tags])
 
 
 class _FrozenDict(collections.Mapping):
@@ -174,8 +181,6 @@ class Asset:
     """
     def __init__(self, essence, metadata):
         self.essence_data = essence
-        if 'tags' not in metadata:
-            metadata['tags'] = set()
         if 'mime_type' not in metadata:
             metadata['mime_type'] = None
         self.metadata = _FrozenDict(metadata)

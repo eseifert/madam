@@ -85,20 +85,20 @@ class TestStorages:
         assert len(list(tagged_assets)) == 0
 
     def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage):
-        asset = Asset(b'TestEssence', metadata={'tags': {'foo'}})
-        storage.add(asset)
+        asset = Asset(b'TestEssence', metadata={})
+        storage.add(asset, tags={'foo'})
 
         assets = storage.filter_by_tags()
 
         assert asset in assets
 
     def test_filter_by_tags_returns_assets_with_specified_tags(self, storage):
-        asset0 = Asset(b'0', metadata={'tags': {'foo'}})
-        asset1 = Asset(b'1', metadata={'tags': {'foo', 'bar'}})
-        asset2 = Asset(b'2', metadata={'tags': {'foo', 'bar'}})
-        storage.add(asset0)
-        storage.add(asset1)
-        storage.add(asset2)
+        asset0 = Asset(b'0', metadata={})
+        asset1 = Asset(b'1', metadata={})
+        asset2 = Asset(b'2', metadata={})
+        storage.add(asset0, tags={'foo'})
+        storage.add(asset1, tags={'foo', 'bar'})
+        storage.add(asset2, tags={'foo', 'bar'})
 
         assets = list(storage.filter_by_tags('bar', 'foo'))
 
@@ -195,9 +195,6 @@ class TestAsset:
         same_essence_contents = asset.essence.read()
 
         assert essence_contents == same_essence_contents
-
-    def test_has_tags_metadata(self, asset):
-        assert asset.tags is not None
 
     def test_hash_is_equal_for_equal_assets(self):
         metadata = {'SomeMetadata': 42}
