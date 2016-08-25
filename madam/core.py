@@ -4,6 +4,7 @@ import itertools
 import mimetypes
 import os
 import shelve
+import shutil
 
 from frozendict import frozendict
 
@@ -267,12 +268,7 @@ def write(asset, file, **options):
     >>> with open(os.devnull, 'wb') as file:
     ...     madam.write(wav_asset, file)
     """
-    processors_supporting_type = (processor for processor in processors if processor.can_write(asset, **options))
-    processor = next(processors_supporting_type, None)
-    if processor is None:
-        raise UnsupportedFormatError()
-    processor.write(asset, file, **options)
-
+    shutil.copyfileobj(asset.essence, file)
 
 class Pipeline:
     def __init__(self):
@@ -299,14 +295,6 @@ class Processor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def read(self, file):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def can_write(self, asset, **options):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def write(self, asset, file, **options):
         raise NotImplementedError()
 
 

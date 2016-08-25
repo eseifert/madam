@@ -24,11 +24,3 @@ class FFmpegProcessor(Processor):
 
     def read(self, file):
         return Asset(b'', metadata={})
-
-    def can_write(self, asset, **options):
-        # TODO: Implement
-        return False
-
-    def write(self, asset, file, **options):
-        # TODO: Implement
-        raise NotImplementedError()

@@ -29,14 +29,6 @@ class WaveProcessor(Processor):
         except:
             return False
 
-    def can_write(self, asset, **options):
-        # TODO: Implement
-        return False
-
-    def write(self, asset, file, **options):
-        # TODO: Implement
-        raise NotImplementedError()
-
 
 class MutagenProcessor(Processor):
     def read(self, mp3_file):
@@ -61,11 +53,3 @@ class MutagenProcessor(Processor):
             if mutagen.File(temp_file.name):
                 return True
         return False
-
-    def can_write(self, asset, **options):
-        # TODO: Implement
-        return False
-
-    def write(self, asset, file, **options):
-        # TODO: Implement
-        raise NotImplementedError()

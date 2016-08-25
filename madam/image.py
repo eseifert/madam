@@ -84,13 +84,6 @@ class PillowProcessor(Processor):
         except:
             raise ValueError('Error when reading file-like object: %r' % file)
 
-    def can_write(self, asset, **options):
-        return asset.mime_type in self.__mime_type_to_pillow_type
-
-    def write(self, asset, file, **options):
-        # TODO: Implement
-        raise NotImplementedError()
-
     @operator
     def resize(self, asset, width, height, mode=ResizeMode.EXACT):
         image = PIL.Image.open(asset.essence)
