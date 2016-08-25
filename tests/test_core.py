@@ -58,24 +58,24 @@ class TestStorages:
         assert asset not in storage
 
     def test_iterator_contains_all_stored_assets(self, storage):
-        storage.add(Asset(b'0', metadata={}))
-        storage.add(Asset(b'1', metadata={}))
-        storage.add(Asset(b'2', metadata={}))
+        storage.add(Asset(b'0'))
+        storage.add(Asset(b'1'))
+        storage.add(Asset(b'2'))
 
         iterator = iter(storage)
 
         assert len(list(iterator)) == 3
 
     def test_iterator_is_a_readable_storage_snapshot(self, storage):
-        asset0 = Asset(b'0', metadata={})
-        asset1 = Asset(b'1', metadata={})
+        asset0 = Asset(b'0')
+        asset1 = Asset(b'1')
         storage.add(asset0)
         storage.add(asset1)
         iterator = iter(storage)
 
         storage.remove(asset0)
-        storage.add(Asset(b'2', metadata={}))
-        storage.add(Asset(b'3', metadata={}))
+        storage.add(Asset(b'2'))
+        storage.add(Asset(b'3'))
 
         assert set(iterator) == {asset0, asset1}
 
@@ -85,7 +85,7 @@ class TestStorages:
         assert len(list(tagged_assets)) == 0
 
     def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage):
-        asset = Asset(b'TestEssence', metadata={})
+        asset = Asset(b'TestEssence')
         storage.add(asset, tags={'foo'})
 
         assets = storage.filter_by_tags()
@@ -93,9 +93,9 @@ class TestStorages:
         assert asset in assets
 
     def test_filter_by_tags_returns_assets_with_specified_tags(self, storage):
-        asset0 = Asset(b'0', metadata={})
-        asset1 = Asset(b'1', metadata={})
-        asset2 = Asset(b'2', metadata={})
+        asset0 = Asset(b'0')
+        asset1 = Asset(b'1')
+        asset2 = Asset(b'2')
         storage.add(asset0, tags={'foo'})
         storage.add(asset1, tags={'foo', 'bar'})
         storage.add(asset2, tags={'foo', 'bar'})
@@ -152,7 +152,7 @@ class TestInMemoryStorage:
         assert not assets_with_1s_duration
 
     def test_get_returns_assets_with_specified_madam_metadata(self, storage):
-        asset = Asset(b'TestEssence', metadata={'duration': 1})
+        asset = Asset(b'TestEssence', duration=1)
         storage.add(asset)
 
         assets_with_1s_duration = storage.get(duration=1)
@@ -163,7 +163,7 @@ class TestInMemoryStorage:
 
 @pytest.fixture
 def asset():
-    return Asset(b'TestEssence', metadata={})
+    return Asset(b'TestEssence')
 
 
 @pytest.mark.usefixtures('asset')
@@ -179,20 +179,20 @@ class TestAsset:
 
     def test_assets_are_equal_when_essence_and_properties_are_identical(self, asset):
         asset.some_attr = 42
-        another_asset = Asset(asset.essence.read(), metadata={})
+        another_asset = Asset(asset.essence.read())
         another_asset.some_attr = 42
 
         assert asset is not another_asset
         assert asset == another_asset
 
     def test_asset_getattr_is_identical_to_access_through_metadata(self):
-        asset = Asset(b'TestEssence', metadata={'SomeKey': 'SomeValue', 'AnotherKey': None, '42': 43.0})
+        asset = Asset(b'TestEssence', SomeKey='SomeValue', AnotherKey=None, _42=43.0)
 
         for key, value in asset.metadata.items():
             assert getattr(asset, key) == value
 
     def test_setattr_raises_when_attribute_is_a_metadata_attribute(self):
-        asset_with_metadata = Asset(b'', metadata={'SomeMetadata': 42})
+        asset_with_metadata = Asset(b'', SomeMetadata=42)
 
         with pytest.raises(NotImplementedError):
             asset_with_metadata.SomeMetadata = 43
@@ -205,15 +205,15 @@ class TestAsset:
         assert essence_contents == same_essence_contents
 
     def test_hash_is_equal_for_equal_assets(self):
-        metadata = {'SomeMetadata': 42}
-        asset0 = Asset(b'same', metadata)
-        asset1 = Asset(b'same', metadata)
+        metadata = dict(SomeMetadata=42)
+        asset0 = Asset(b'same', **metadata)
+        asset1 = Asset(b'same', **metadata)
 
         assert hash(asset0) == hash(asset1)
 
     def test_hash_is_different_when_assets_have_different_metadata(self):
-        asset0 = Asset(b'same', metadata={'SomeMetadata': 42})
-        asset1 = Asset(b'same', metadata={'DifferentMetadata': 43})
+        asset0 = Asset(b'same', SomeMetadata=42)
+        asset1 = Asset(b'same', DifferentMetadata=43)
 
         assert hash(asset0) != hash(asset1)
 
@@ -225,7 +225,7 @@ class TestPipeline:
         return Pipeline()
 
     def test_empty_pipeline_does_not_change_assets(self, pipeline, asset):
-        another_asset = Asset(b'other', metadata={})
+        another_asset = Asset(b'other')
 
         processed_assets = pipeline.process(asset, another_asset)
 

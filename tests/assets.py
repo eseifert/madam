@@ -53,14 +53,14 @@ def jpeg_asset(width=4, height=3, transpositions=None, **additional_metadata):
     if not transpositions:
         transpositions = []
     essence = jpeg_rgb(width=width, height=height, transpositions=transpositions).read()
-    metadata = {
-        'exif': {'0th': {piexif.ImageIFD.Artist: b'Test artist'}},
-        'width': width,
-        'height': height,
-        'mime_type': 'image/jpeg'
-    }
+    metadata = dict(
+        exif={'0th': {piexif.ImageIFD.Artist: b'Test artist'}},
+        width=width,
+        height=height,
+        mime_type='image/jpeg'
+    )
     metadata.update(additional_metadata)
-    asset = madam.core.Asset(essence, metadata)
+    asset = madam.core.Asset(essence, **metadata)
     return asset
 
 
@@ -69,12 +69,12 @@ def png_asset():
     width = 4
     height = 3
     essence = png_rgb(width, height).read()
-    metadata = {
-        'width': width,
-        'height': height,
-        'mime_type': 'image/png'
-    }
-    asset = madam.core.Asset(essence, metadata)
+    metadata = dict(
+        width=width,
+        height=height,
+        mime_type='image/png'
+    )
+    asset = madam.core.Asset(essence, **metadata)
     return asset
 
 

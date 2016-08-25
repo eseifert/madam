@@ -156,7 +156,7 @@ class Asset:
     :param essence: The essence of the asset as a byte string
     :param metadata: The metadata describing the essence
     """
-    def __init__(self, essence, metadata):
+    def __init__(self, essence, **metadata):
         self.essence_data = essence
         if 'mime_type' not in metadata:
             metadata['mime_type'] = None

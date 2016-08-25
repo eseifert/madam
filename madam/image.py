@@ -65,13 +65,13 @@ class PillowProcessor(Processor):
 
     def read(self, file):
         image = PIL.Image.open(file)
-        metadata = {
-            'mime_type': self.__mime_type_to_pillow_type.inv[image.format],
-            'width': image.width,
-            'height': image.height
-        }
+        metadata = dict(
+            mime_type=self.__mime_type_to_pillow_type.inv[image.format],
+            width=image.width,
+            height=image.height
+        )
         file.seek(0)
-        asset = Asset(file.read(), metadata)
+        asset = Asset(file.read(), **metadata)
         return asset
 
     def can_read(self, file):
@@ -194,5 +194,5 @@ class PillowProcessor(Processor):
         image.save(converted_essence_data, pil_format)
         converted_essence_data.seek(0)
 
-        converted_asset = Asset(converted_essence_data.read(), metadata={'mime_type': mime_type})
+        converted_asset = Asset(converted_essence_data.read(), mime_type=mime_type)
         return converted_asset
