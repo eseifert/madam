@@ -206,6 +206,12 @@ class TestAsset:
 
         assert hash(asset0) == hash(asset1)
 
+    def test_hash_is_different_when_assets_have_different_metadata(self):
+        asset0 = Asset(b'same', metadata={'SomeMetadata': 42})
+        asset1 = Asset(b'same', metadata={'DifferentMetadata': 43})
+
+        assert hash(asset0) != hash(asset1)
+
 
 @pytest.mark.usefixtures('asset')
 class TestPipeline:

@@ -1,4 +1,5 @@
 import abc
+import collections
 import io
 import itertools
 import mimetypes
@@ -113,6 +114,54 @@ class FileStorage(AssetStorage):
             return iter([asset for asset in assets.values() if set(tags) <= asset.tags])
 
 
+class _FrozenDict(collections.Mapping):
+    def __init__(self, dictionary):
+        """
+        Initializes a read-only dictionary with the contents of the specified dict.
+
+        :param dictionary: Contents of the read-only dictionary
+        """
+        self.entries = self._dict_to_frozenset_with_tuples(dictionary)
+
+    def _dict_to_frozenset_with_tuples(self, dictionary):
+        """
+        Creates a read-only dictionary from the specified dictionary.
+
+        If the dictionary contains a value which is a dictionary, this dict
+        is recursively transformed into a read-only dict.
+
+        :param dictionary: Dict to be transformed into a read-only dict
+        :return: Read-only dictionary
+        """
+        tuples = set()
+        for key, value in dictionary.items():
+            if isinstance(value, dict):
+                value = _FrozenDict(value)
+            if isinstance(value, set):
+                value = frozenset(value)
+            tuples.add((key, value))
+        return frozenset(tuples)
+
+    def __getitem__(self, item):
+        for key, value in self.entries:
+            if key == item:
+                return value
+
+    def __contains__(self, item):
+        for key, _ in self.entries:
+            if key == item:
+                return True
+
+    def __iter__(self):
+        return (key for key, value in self.entries)
+
+    def __len__(self):
+        return len(self.entries)
+
+    def __hash__(self):
+        return hash(self.entries)
+
+
 class Asset:
     """
     Represents a digital asset.
@@ -125,11 +174,11 @@ class Asset:
     """
     def __init__(self, essence, metadata):
         self.essence_data = essence
-        self.metadata = metadata
-        if 'tags' not in self.metadata:
-            self.metadata['tags'] = set()
-        if 'mime_type' not in self.metadata:
-            self.metadata['mime_type'] = None
+        if 'tags' not in metadata:
+            metadata['tags'] = set()
+        if 'mime_type' not in metadata:
+            metadata['mime_type'] = None
+        self.metadata = _FrozenDict(metadata)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -167,7 +216,7 @@ class Asset:
         return io.BytesIO(self.essence_data)
 
     def __hash__(self):
-        return hash(self.essence_data)
+        return hash(self.essence_data) ^ hash(self.metadata)
 
 
 class UnsupportedFormatError(ValueError):
@@ -205,9 +254,10 @@ def read(file, mime_type=None):
     for metadata_format, metadata_processor in metadata_processors_by_format.items():
         file.seek(0)
         try:
-            asset.metadata[metadata_format] = metadata_processor.read(file)
+            metadata = dict(asset.metadata)
+            metadata[metadata_format] = metadata_processor.read(file)
             stripped_essence = metadata_processor.strip(asset.essence)
-            clean_asset = Asset(stripped_essence.read(), metadata=asset.metadata)
+            clean_asset = Asset(stripped_essence.read(), metadata=_FrozenDict(metadata))
             asset = clean_asset
         except:
             pass
