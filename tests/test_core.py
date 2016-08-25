@@ -152,6 +152,13 @@ class TestInMemoryStorage:
         assert len(assets_with_1s_duration) == 1
         assert assets_with_1s_duration[0] == asset
 
+    def test_add_does_nothing_when_asset_is_already_in_storage(self, storage, asset):
+        storage.add(asset)
+
+        storage.add(asset)
+
+        assert len(list(storage)) == 1
+
 
 @pytest.fixture
 def asset():
