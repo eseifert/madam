@@ -45,12 +45,25 @@ def test_read_calls_read_method_for_respective_file_type(path, mime_type):
 
 def test_read_empty_file_raises_error():
     file_data = io.BytesIO()
+
     with pytest.raises(UnsupportedFormatError):
         madam.read(file_data)
 
 
-def test_writes_correct_essence(image_asset):
+def test_writes_correct_essence_without_metadata(image_asset):
+    asset = madam.core.Asset(essence=image_asset.essence.read())
     file = io.BytesIO()
-    madam.write(image_asset, file)
+
+    madam.write(asset, file)
+
     file.seek(0)
-    assert file.read() == image_asset.essence.read()
+    assert file.read() == asset.essence.read()
+
+
+def test_writes_correct_essence_with_metadata(jpeg_asset):
+    file = io.BytesIO()
+
+    madam.write(jpeg_asset, file)
+
+    file.seek(0)
+    assert file.read() != jpeg_asset.essence.read()

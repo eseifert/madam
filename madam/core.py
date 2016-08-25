@@ -269,7 +269,12 @@ def write(asset, file):
     >>> with open(os.devnull, 'wb') as file:
     ...     madam.write(wav_asset, file)
     """
-    shutil.copyfileobj(asset.essence, file)
+    essence_with_metadata = asset.essence
+    for metadata_format, processor in metadata_processors_by_format.items():
+        metadata = getattr(asset, metadata_format, None)
+        if metadata is not None:
+            essence_with_metadata = processor.combine(essence_with_metadata, metadata)
+    shutil.copyfileobj(essence_with_metadata, file)
 
 
 class Pipeline:
