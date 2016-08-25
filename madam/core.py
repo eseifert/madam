@@ -247,7 +247,7 @@ def read(file, mime_type=None):
 
 
 def write(asset, file, **options):
-    """
+    r"""
     Write the Asset object to the specified file.
 
     :param asset: Asset that contains the data to be written
@@ -257,12 +257,14 @@ def write(asset, file, **options):
 
     :Example:
 
+    >>> import os
     >>> import madam
-    >>> gif_asset = madam.Asset(essence=b'GIF89a\x01\x00\x01\x00\x00\x00\x00;')
-    >>> with open('path/to/file.gif', 'wb') as file:
+    >>> from madam.core import Asset
+    >>> gif_asset = Asset(essence=b'GIF89a\x01\x00\x01\x00\x00\x00\x00;', metadata={'mime_type': 'image/gif'})
+    >>> with open(os.devnull, 'wb') as file:
     ...     madam.write(gif_asset, file)
-    >>> wav_asset = madam.Asset(essence=b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00')
-    >>> with open('path/to/file.wav', 'wb') as file:
+    >>> wav_asset = Asset(essence=b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00', metadata={'mime_type': 'video/mp4'})
+    >>> with open(os.devnull, 'wb') as file:
     ...     madam.write(wav_asset, file)
     """
     processors_supporting_type = (processor for processor in processors if processor.can_write(asset, **options))
