@@ -18,11 +18,18 @@ setup(
     },
     packages=['madam'],
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Operating System :: POSIX',
         'Programming Language :: Python',
-        'Topic :: Multimedia :: Graphics :: Graphics Conversion'
-    ]
+        'Topic :: Multimedia :: Graphics :: Graphics Conversion',
+        'Topic :: Multimedia :: Sound/Audio :: Conversion',
+        'Topic :: Multimedia :: Video :: Graphics Conversion',
+        'License :: OSI Approved :: GNU Affero General Public License v3',
+        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+    ],
+    keywords='asset media processing'
 )
