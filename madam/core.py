@@ -165,7 +165,7 @@ class Asset:
         :param essence: The essence of the asset as a file-like object
         :param metadata: The metadata describing the essence
         """
-        self.essence_data = essence.read()
+        self._essence_data = essence.read()
         if 'mime_type' not in metadata:
             metadata['mime_type'] = None
         self.metadata = _freeze_dict(metadata)
@@ -203,10 +203,10 @@ class Asset:
         The essence of an MP3 file, for example, is only comprised of the actual audio data,
         whereas metadata such as ID3 tags are stored separately as metadata.
         """
-        return io.BytesIO(self.essence_data)
+        return io.BytesIO(self._essence_data)
 
     def __hash__(self):
-        return hash(self.essence_data) ^ hash(self.metadata)
+        return hash(self._essence_data) ^ hash(self.metadata)
 
 
 class UnsupportedFormatError(ValueError):
