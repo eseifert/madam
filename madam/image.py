@@ -11,6 +11,9 @@ from madam.core import Asset, Processor, MetadataProcessor, UnsupportedFormatErr
 
 
 class ExifProcessor(MetadataProcessor):
+    """
+    Represents a metadata processor that supports Exif data.
+    """
     @property
     def format(self):
         return 'exif'
@@ -37,13 +40,24 @@ class ExifProcessor(MetadataProcessor):
 
 
 class ResizeMode(Enum):
+    """
+    Represents a behavior for image resize operations.
+    """
+    #: Resized image exactly matches the specified dimensions
     EXACT = 0
+    #: Resized image is resized to fit completely into the specified dimensions
     FIT = 1
+    #: Resized image is resized to completely fill the specified dimensions
     FILL = 2
 
 
 class FlipOrientation(Enum):
+    """
+    Represents an axis for image flip operations.
+    """
+    #: Horizontal axis
     HORIZONTAL = 0
+    #: Vertical axis
     VERTICAL = 1
 
 
@@ -56,6 +70,9 @@ def operator(function):
 
 
 class PillowProcessor(Processor):
+    """
+    Represents a processor that uses Pillow as a backend.
+    """
     def __init__(self):
         super().__init__()
         self.__mime_type_to_pillow_type = bidict({
@@ -86,6 +103,15 @@ class PillowProcessor(Processor):
 
     @operator
     def resize(self, asset, width, height, mode=ResizeMode.EXACT):
+        """
+        Creates a new Asset whose essence is resized according to the specified parameters.
+
+        :param asset: Asset to be resized
+        :param width: target width
+        :param height: target height
+        :param mode: resize behavior
+        :return: Asset with resized essence
+        """
         image = PIL.Image.open(asset.essence)
         width_delta = width - image.width
         height_delta = height - image.height
@@ -141,6 +167,13 @@ class PillowProcessor(Processor):
 
     @operator
     def flip(self, asset, orientation):
+        """
+        Creates a new asset whose essence is flipped according the specified orientation.
+
+        :param asset: Asset whose essence is to be flipped
+        :param orientation: axis of the flip operation
+        :return: Asset with flipped essence
+        """
         if orientation == FlipOrientation.HORIZONTAL:
             flip_orientation = PIL.Image.FLIP_LEFT_RIGHT
         else:
@@ -149,6 +182,12 @@ class PillowProcessor(Processor):
 
     @operator
     def auto_orient(self, asset):
+        """
+        Creates a new asset whose essence is rotated according to the Exif orientation.
+
+        :param asset: Asset with Exif metadata
+        :return: Asset with rotated essence
+        """
         orientation = asset.metadata['exif']['0th'][piexif.ImageIFD.Orientation]
         if orientation == 1:
             oriented_asset = Asset(asset.essence, metadata={})
