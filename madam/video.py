@@ -6,6 +6,9 @@ from madam.core import Asset, Processor
 
 
 class FFmpegProcessor(Processor):
+    """
+    Represents a processor that uses FFmpeg to read audio and video data.
+    """
     def can_read(self, file):
         ffprobe_cmd = 'ffprobe -print_format json -show_format -loglevel quiet -'
         with subprocess.Popen(ffprobe_cmd.split(), stdin=subprocess.PIPE,
