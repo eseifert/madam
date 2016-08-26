@@ -60,6 +60,11 @@ class AssetStorage(metaclass=abc.ABCMeta):
 
 
 class InMemoryStorage(AssetStorage):
+    """
+    Represents a non-persistent storage backend for assets.
+
+    Assets are not serialized, but stored in main memory.
+    """
     def __init__(self):
         self.tags_by_asset = {}
 
