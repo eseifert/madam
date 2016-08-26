@@ -378,12 +378,23 @@ class Processor(metaclass=abc.ABCMeta):
 
 
 class MetadataProcessor(metaclass=abc.ABCMeta):
+    """
+    Represents an entity that can manipulate metadata.
+    """
     def __init__(self):
+        """
+        Initializes a new MetadataProcessor.
+        """
         metadata_processors_by_format[self.format] = self
 
     @property
     @abc.abstractmethod
     def format(self):
+        """
+        The metadata format which is supported.
+        :return: supported metadata format
+        :rtype: str
+        """
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -401,6 +412,13 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def strip(self, file):
+        """
+        Removes all metadata of the supported type from the specified file.
+
+        :param file: file-like that should get stripped of the metadata
+        :return: file-like object without metadata
+        :rtype: io.BytesIO
+        """
         raise NotImplementedError()
 
     @abc.abstractmethod
