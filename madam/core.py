@@ -154,11 +154,11 @@ class Asset:
     Assets should not be instantiated directly. Instead, use :func:`~madam.core.read` to retrieve an Asset
     representing your content.
 
-    :param essence: The essence of the asset as a byte string
+    :param essence: The essence of the asset as a file-like object
     :param metadata: The metadata describing the essence
     """
     def __init__(self, essence, **metadata):
-        self.essence_data = essence
+        self.essence_data = essence.read()
         if 'mime_type' not in metadata:
             metadata['mime_type'] = None
         self.metadata = _freeze_dict(metadata)
@@ -240,7 +240,7 @@ def read(file, mime_type=None):
             metadata = dict(asset.metadata)
             metadata[metadata_format] = metadata_processor.read(file)
             stripped_essence = metadata_processor.strip(asset.essence)
-            clean_asset = Asset(stripped_essence.read(), metadata=_freeze_dict(metadata))
+            clean_asset = Asset(stripped_essence, metadata=_freeze_dict(metadata))
             asset = clean_asset
         except UnsupportedFormatError:
             pass
@@ -256,15 +256,16 @@ def write(asset, file):
 
     :Example:
 
+    >>> import io
     >>> import os
     >>> import madam
     >>> from madam.core import Asset
-    >>> gif_asset = Asset(essence=b'GIF89a\x01\x00\x01\x00\x00\x00\x00;', mime_type='image/gif')
+    >>> gif_asset = Asset(essence=io.BytesIO(b'GIF89a\x01\x00\x01\x00\x00\x00\x00;'), mime_type='image/gif')
     >>> with open(os.devnull, 'wb') as file:
     ...     madam.write(gif_asset, file)
     >>> wav_asset = Asset(
-    ...     essence=b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac'
-    ...             b'\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00',
+    ...     essence=io.BytesIO(b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac'
+    ...             b'\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00'),
     ...     mime_type='video/mp4')
     >>> with open(os.devnull, 'wb') as file:
     ...     madam.write(wav_asset, file)

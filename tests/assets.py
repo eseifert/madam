@@ -52,7 +52,7 @@ def add_exif_to_jpeg(exif, image_data):
 def jpeg_asset(width=4, height=3, transpositions=None, **additional_metadata):
     if not transpositions:
         transpositions = []
-    essence = jpeg_rgb(width=width, height=height, transpositions=transpositions).read()
+    essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
     metadata = dict(
         exif={'0th': {piexif.ImageIFD.Artist: b'Test artist'}},
         width=width,
@@ -68,7 +68,7 @@ def jpeg_asset(width=4, height=3, transpositions=None, **additional_metadata):
 def png_asset():
     width = 4
     height = 3
-    essence = png_rgb(width, height).read()
+    essence = png_rgb(width, height)
     metadata = dict(
         width=width,
         height=height,

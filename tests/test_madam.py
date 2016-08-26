@@ -51,7 +51,7 @@ def test_read_empty_file_raises_error():
 
 
 def test_writes_correct_essence_without_metadata(image_asset):
-    asset = madam.core.Asset(essence=image_asset.essence.read())
+    asset = madam.core.Asset(essence=image_asset.essence)
     file = io.BytesIO()
 
     madam.write(asset, file)

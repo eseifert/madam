@@ -1,3 +1,4 @@
+import io
 import json
 import subprocess
 
@@ -23,4 +24,4 @@ class FFmpegProcessor(Processor):
         return bool(json_obj)
 
     def read(self, file):
-        return Asset(b'', metadata={})
+        return Asset(io.BytesIO(b''))

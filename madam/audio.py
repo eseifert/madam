@@ -19,7 +19,7 @@ class WaveProcessor(Processor):
                 channels=wave_data.getnchannels(),
                 framerate=wave_data.getframerate(),
             )
-            asset = Asset(essence_stream.read(), **metadata)
+            asset = Asset(essence_stream, **metadata)
         return asset
 
     def can_read(self, file):
@@ -43,8 +43,7 @@ class MutagenProcessor(Processor):
             mp3.tags.delete(copy_path)
 
             with open(copy_path, 'rb') as mp3_file_copy:
-                essence = mp3_file_copy.read()
-                asset = Asset(essence, **metadata)
+                asset = Asset(essence=mp3_file_copy, **metadata)
         return asset
 
     def can_read(self, file):
