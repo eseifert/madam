@@ -308,10 +308,26 @@ def write(asset, file):
 
 
 class Pipeline:
+    """
+    Represents a processing pipeline for :class:`~madam.core.Asset` objects.
+
+    The pipeline can be configured to hold a list of asset processing operators, all
+    of which are applied to one or more assets when calling the
+    :func:`~madam.core.Pipeline.process` method.
+    """
     def __init__(self):
+        """
+        Initializes a new pipeline without operators.
+        """
         self.operators = []
 
     def process(self, *assets):
+        """
+        Applies the operators in this pipeline on the specified assets.
+
+        :param assets: Assets to be processed
+        :return: Generator with processed assets
+        """
         for asset in assets:
             processed_asset = asset
             for operator in self.operators:
@@ -319,6 +335,11 @@ class Pipeline:
             yield processed_asset
 
     def add(self, operator):
+        """
+        Appends the specified operator to the processing chain.
+
+        :param operator: Operator to be added
+        """
         self.operators.append(operator)
 
 
