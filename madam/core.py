@@ -10,16 +10,38 @@ from frozendict import frozendict
 
 
 class AssetStorage(metaclass=abc.ABCMeta):
+    """
+    Represents a data store for :class:`~madam.core.Asset` objects.
+
+    The persistence guarantees for stored data may differ based on the
+    respective storage implementation.
+    """
     @abc.abstractmethod
     def add(self, asset, tags=None):
+        """
+        Adds the specified :class:`~madam.core.Asset` to this asset storage.
+
+        An iterable of strings can be passed as an optional argument which describe
+        the tags that apply for the added asset.
+
+        Adding the same asset twice overwrites all tags for the asset.
+
+        :param asset: Asset to be added
+        :param tags: Tags associated with the asset
+        """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def remove(self, asset):
+        """
+        Removes the specified :class:`~madam.core.Asset` from this asset storage.
+
+        :param asset: Asset to be removed
+        """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def __contains__(self, asset_id):
+    def __contains__(self, asset):
         raise NotImplementedError()
 
     @abc.abstractmethod
