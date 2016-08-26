@@ -151,13 +151,20 @@ class Asset:
     """
     Represents a digital asset.
 
+    An :class:`~madam.core.Asset` is an immutable value object whose contents consist
+    of *essence* and *metadata*. Essence represents the actual data of a media file,
+    such as the color values of an image, whereas the metadata describes the essence.
+
     Assets should not be instantiated directly. Instead, use :func:`~madam.core.read` to retrieve an Asset
     representing your content.
-
-    :param essence: The essence of the asset as a file-like object
-    :param metadata: The metadata describing the essence
     """
     def __init__(self, essence, **metadata):
+        """
+        Initializes a new :class:`~madam.core.Asset` with the specified essence and metadata.
+
+        :param essence: The essence of the asset as a file-like object
+        :param metadata: The metadata describing the essence
+        """
         self.essence_data = essence.read()
         if 'mime_type' not in metadata:
             metadata['mime_type'] = None
