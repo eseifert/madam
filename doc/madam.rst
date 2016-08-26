@@ -15,6 +15,3 @@ Module contents
 ---------------
 
 .. automodule:: madam
-    :members:
-    :undoc-members:
-    :show-inheritance:
