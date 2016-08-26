@@ -344,15 +344,36 @@ class Pipeline:
 
 
 class Processor(metaclass=abc.ABCMeta):
+    """
+    Represents an entity that can create :class:`~madam.core.Asset` objects
+    from binary data.
+    """
     def __init__(self):
+        """
+        Initializes a new processor.
+        """
         processors.append(self)
 
     @abc.abstractmethod
     def can_read(self, mime_type):
+        """
+        Returns whether the specified MIME type is supported by this processor.
+
+        :param mime_type: MIME type to be checked
+        :return: whether the specified MIME type is supported or not
+        """
         raise NotImplementedError()
 
     @abc.abstractmethod
     def read(self, file):
+        """
+        Returns an :class:`~madam.core.Asset` object whose essence is identical to
+        the contents of the specified file.
+
+        :param file: file-like object to be read
+        :return: Asset with essence
+        :raises UnsupportedFormatError: if the specified data format is not supported
+        """
         raise NotImplementedError()
 
 
