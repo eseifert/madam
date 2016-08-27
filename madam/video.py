@@ -15,6 +15,7 @@ class FFmpegProcessor(Processor):
         def show_format(self, file):
             with tempfile.NamedTemporaryFile() as tmp:
                 tmp.write(file.read())
+                tmp.flush()
                 command = 'ffprobe -print_format json -loglevel quiet -show_format'.split()
                 command.append(tmp.name)
                 result = subprocess_run(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
