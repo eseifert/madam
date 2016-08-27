@@ -47,3 +47,11 @@ class TestFFmpegProcessor:
 
         with open(video_path, 'rb') as video_file:
             assert asset.essence.read() == video_file.read()
+
+    def test_read_returns_asset_with_duration_metadata(self, processor):
+        video_path = 'tests/resources/bus_qcif_15fps.y4m'
+
+        with open(video_path, 'rb') as video_file:
+            asset = processor.read(video_file)
+
+        assert asset.duration == 5.0

@@ -1,5 +1,6 @@
 import json
 import subprocess
+import tempfile
 
 from madam.core import Asset, Processor
 
@@ -26,4 +27,20 @@ class FFmpegProcessor(Processor):
         return bool(json_obj)
 
     def read(self, file):
-        return Asset(essence=file)
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(file.read())
+            ffprobe_cmd = 'ffprobe -print_format json -show_entries format=duration -loglevel quiet %s' % tmp.name
+            with subprocess.Popen(ffprobe_cmd.split(), stdout=subprocess.PIPE) as process:
+                try:
+                    stdout, stderr = process.communicate(input=file.read())
+                except:
+                    process.kill()
+                    process.wait()
+                    raise ValueError('Error when reading file-like object: %r' % file)
+                retcode = process.wait()
+                if retcode:
+                    return False
+        string_result = stdout.decode('utf-8')
+        json_obj = json.loads(string_result)
+        file.seek(0)
+        return Asset(essence=file, duration=float(json_obj['format']['duration']))
