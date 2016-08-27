@@ -34,7 +34,7 @@ class FFmpegProcessor(Processor):
             'video/x-yuv4mpegpipe': 'yuv4mpegpipe'
         })
 
-    def can_read(self, file):
+    def _can_read(self, file):
         if not file:
             raise ValueError('Error when reading file-like object: %r' % file)
         json_result = self._ffprobe.show_format(file)

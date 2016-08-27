@@ -1,6 +1,4 @@
 import io
-import os
-import unittest.mock
 
 import piexif
 import pytest
@@ -23,31 +21,34 @@ def test_jpeg_asset_essence_does_not_contain_exif_metadata():
         assert not ifd_data
 
 
-@pytest.mark.parametrize('path, mime_type', [
-    ('tests/resources/1x1-transparent.gif', None),
-    ('tests/resources/16-bit-mono.wav', None),
-])
-def test_read_calls_read_method_for_respective_file_type(path, mime_type):
-    # When
-    with open(path, 'rb') as file:
-        data = file.read()
-    for processor in madam.core.processors:
-        if processor.can_read(io.BytesIO(data)):
-            with unittest.mock.patch.object(processor, 'read') as read_method:
-                # Then
-                madam.read(io.BytesIO(data), mime_type=mime_type)
-            # Assert
-            assert read_method.called
-            break
-    else:
-        pytest.fail('No processor found for %r' % path)
-
-
 def test_read_empty_file_raises_error():
     file_data = io.BytesIO()
 
     with pytest.raises(UnsupportedFormatError):
         madam.read(file_data)
+
+
+def test_read_raises_when_file_is_none():
+    invalid_file = None
+
+    with pytest.raises(TypeError):
+        madam.read(invalid_file)
+
+
+def test_read_raises_error_when_format_is_unknown():
+    random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
+    unknown_file = io.BytesIO(random_data)
+
+    with pytest.raises(UnsupportedFormatError):
+        madam.read(unknown_file)
+
+
+def test_read_returns_asset_when_reading_image_data(image_asset):
+    image_data = image_asset.essence
+
+    asset = madam.read(image_data)
+
+    assert asset is not None
 
 
 def test_writes_correct_essence_without_metadata(image_asset):
