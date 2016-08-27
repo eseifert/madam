@@ -7,7 +7,7 @@ except ImportError:
     _CompletedProcess = collections.namedtuple('_CompletedProcess', ['args', 'retcode', 'stdout', 'stderr'])
 
 
-    def subprocess_run(command, stdin=None, input=None, stdout=None, stderr=None):
+    def subprocess_run(command, stdin=None, input=None, check=False, stdout=None, stderr=None):
         if input is not None:
             if stdin is not None:
                 raise ValueError('stdin and input arguments can not be used at the same time.')
@@ -22,4 +22,8 @@ except ImportError:
                 process.wait()
                 raise
             retcode = process.poll()
-        return _CompletedProcess(args=process.args, retcode=retcode, stdout=stdout, stderr=stderr)
+            if check and retcode:
+                raise subprocess.CalledProcessError(retcode, process.args,
+                                                    output=stdout, stderr=stderr)
+        return _CompletedProcess(args=process.args, retcode=retcode,
+                                 stdout=stdout, stderr=stderr)
