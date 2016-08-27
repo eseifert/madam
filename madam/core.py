@@ -244,8 +244,8 @@ class UnsupportedFormatError(ValueError):
     pass
 
 mimetypes.init()
-processors = []
-metadata_processors_by_format = {}
+_processors = []
+_metadata_processors_by_format = {}
 
 
 def read(file, mime_type=None):
@@ -264,12 +264,12 @@ def read(file, mime_type=None):
     >>> with open('path/to/file.jpg', 'rb') as file:
     ...     madam.read(file)
     """
-    processors_supporting_type = (processor for processor in processors if processor.can_read(file))
+    processors_supporting_type = (processor for processor in _processors if processor.can_read(file))
     processor = next(processors_supporting_type, None)
     if not processor:
         raise UnsupportedFormatError()
     asset = processor.read(file)
-    for metadata_format, metadata_processor in metadata_processors_by_format.items():
+    for metadata_format, metadata_processor in _metadata_processors_by_format.items():
         file.seek(0)
         try:
             metadata = dict(asset.metadata)
@@ -306,7 +306,7 @@ def write(asset, file):
     ...     madam.write(wav_asset, file)
     """
     essence_with_metadata = asset.essence
-    for metadata_format, processor in metadata_processors_by_format.items():
+    for metadata_format, processor in _metadata_processors_by_format.items():
         metadata = getattr(asset, metadata_format, None)
         if metadata is not None:
             essence_with_metadata = processor.combine(essence_with_metadata, metadata)
@@ -358,7 +358,7 @@ class Processor(metaclass=abc.ABCMeta):
         """
         Initializes a new processor.
         """
-        processors.append(self)
+        _processors.append(self)
 
     @abc.abstractmethod
     def can_read(self, mime_type):
@@ -391,7 +391,7 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         """
         Initializes a new MetadataProcessor.
         """
-        metadata_processors_by_format[self.format] = self
+        _metadata_processors_by_format[self.format] = self
 
     @property
     @abc.abstractmethod

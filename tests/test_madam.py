@@ -31,7 +31,7 @@ def test_read_calls_read_method_for_respective_file_type(path, mime_type):
     # When
     with open(path, 'rb') as file:
         data = file.read()
-    for processor in madam.core.processors:
+    for processor in madam.core._processors:
         if processor.can_read(io.BytesIO(data)):
             with unittest.mock.patch.object(processor, 'read') as read_method:
                 # Then
