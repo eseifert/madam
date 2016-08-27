@@ -28,6 +28,13 @@ def test_read_empty_file_raises_error():
         madam.read(file_data)
 
 
+def test_read_raises_when_file_is_none():
+    invalid_file = None
+
+    with pytest.raises(TypeError):
+        madam.read(invalid_file)
+
+
 def test_writes_correct_essence_without_metadata(image_asset):
     asset = madam.core.Asset(essence=image_asset.essence)
     file = io.BytesIO()

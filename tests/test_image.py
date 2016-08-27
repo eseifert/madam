@@ -31,11 +31,6 @@ class TestPillowProcessor:
         supports = pillow_processor._can_read(unknown_file)
         assert not supports
 
-    def test_test_fails_with_invalid_file_object(self, pillow_processor):
-        invalid_file = None
-        with pytest.raises(ValueError):
-            pillow_processor._can_read(invalid_file)
-
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
         jpeg_asset_landscape = jpeg_asset(width=width, height=height)

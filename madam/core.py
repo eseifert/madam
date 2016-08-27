@@ -257,6 +257,7 @@ def read(file, mime_type=None):
     :type mime_type: str
     :returns: Asset representing the specified file
     :raises UnsupportedFormatError: if the file format cannot be recognized or is not supported
+    :raises TypeError: if the file is None
 
     :Example:
 
@@ -264,6 +265,8 @@ def read(file, mime_type=None):
     >>> with open('path/to/file.jpg', 'rb') as file:
     ...     madam.read(file)
     """
+    if not file:
+        raise TypeError('Unable to read object of type %s' % type(file))
     processors_supporting_type = (processor for processor in _processors if processor._can_read(file))
     processor = next(processors_supporting_type, None)
     if not processor:
