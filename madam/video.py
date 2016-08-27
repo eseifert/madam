@@ -24,7 +24,7 @@ class FFmpegProcessor(Processor):
                 result = subprocess_run(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             string_result = result.stdout.decode('utf-8')
             json_obj = json.loads(string_result)
-            return json_obj.get('format', None)
+            return json_obj.get('format')
 
     def __init__(self):
         super().__init__()
