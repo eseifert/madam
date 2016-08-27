@@ -38,3 +38,12 @@ class TestFFmpegProcessor:
             asset = processor.read(video_file)
 
         assert asset is not None
+
+    def test_read_returns_asset_with_filled_essence_when_called_with_video_file(self, processor):
+        video_path = 'tests/resources/bus_qcif_15fps.y4m'
+
+        with open(video_path, 'rb') as video_file:
+            asset = processor.read(video_file)
+
+        with open(video_path, 'rb') as video_file:
+            assert asset.essence.read() == video_file.read()
