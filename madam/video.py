@@ -59,9 +59,11 @@ class FFmpegProcessor(Processor):
         """
         ffmpeg_type = self.__mime_type_to_ffmpeg_type[mime_type]
 
-        command = ['ffmpeg', '-loglevel', 'quiet', '-i', 'pipe:', '-f', ffmpeg_type, 'pipe:']
+        command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:', '-f', ffmpeg_type, 'pipe:']
         try:
-            result = subprocess_run(command, input=asset.essence.read(), stdout=subprocess.PIPE, check=True)
+            result = subprocess_run(command, input=asset.essence.read(),
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    check=True)
         except CalledProcessError as e:
             raise IOError('Could not convert video asset: %r' % e.stderr)
 
