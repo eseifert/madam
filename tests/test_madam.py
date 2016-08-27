@@ -1,6 +1,4 @@
 import io
-import os
-import unittest.mock
 
 import piexif
 import pytest
@@ -21,26 +19,6 @@ def test_jpeg_asset_essence_does_not_contain_exif_metadata():
 
     for ifd, ifd_data in essence_exif.items():
         assert not ifd_data
-
-
-@pytest.mark.parametrize('path, mime_type', [
-    ('tests/resources/1x1-transparent.gif', None),
-    ('tests/resources/16-bit-mono.wav', None),
-])
-def test_read_calls_read_method_for_respective_file_type(path, mime_type):
-    # When
-    with open(path, 'rb') as file:
-        data = file.read()
-    for processor in madam.core._processors:
-        if processor.can_read(io.BytesIO(data)):
-            with unittest.mock.patch.object(processor, 'read') as read_method:
-                # Then
-                madam.read(io.BytesIO(data), mime_type=mime_type)
-            # Assert
-            assert read_method.called
-            break
-    else:
-        pytest.fail('No processor found for %r' % path)
 
 
 def test_read_empty_file_raises_error():
