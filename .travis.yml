@@ -3,18 +3,27 @@ dist: trusty
 language: python
 cache: pip
 python:
-  - 3.5
+- 3.5
 install:
-  - pip install -q tox
-  - pip install -q coveralls
+- pip install -q tox
+- pip install -q coveralls
 before_script:
-  - sudo add-apt-repository ppa:mc3man/trusty-media -y
-  - sudo apt-get update -qq
-  - sudo apt-get install ffmpeg -y
+- sudo add-apt-repository ppa:mc3man/trusty-media -y
+- sudo apt-get update -qq
+- sudo apt-get install ffmpeg -y
 env:
-  - TOXENV=py34
-  - TOXENV=py35
+- TOXENV=py34
+- TOXENV=py35
 script:
-  - tox -e $TOXENV
+- tox -e $TOXENV
 after_success:
-  - test $TOXENV = "py35" && coveralls
+- test $TOXENV = "py35" && coveralls
+deploy:
+  provider: pypi
+  user: eseifert
+  password:
+    secure: PE8+gF6Lbrt2EXLFPJN0IFCms6xMqVa8/e+jEObDPndbW4DM0FmPhQGOzrg7nd1YAniiqDsYB0cVI8NctEp1Cws4lxdGBK/6dkZnOd1zmtDXDK13wKbmqcTjWAb1mxWq2t3PSFNVA3WNF1lrTJcl0Ne8K+AAo6wN66vQ/h8bJjXcmQQ/YQsYCdHm8WXTWjfU+IiijbPhoy6Ef3c6s2+7SNVzUtKMFnKmyW2AWmGQDS4zEhB3NqoGYGJSEEemRw5Qpew3K9+L/1XhvqmQYvWoPivi7jOoOPA11q1yCuzzvnibjFKFlK4VUZB8DVGJHLw8tGPN+LlhtQsVKRsAYR+5/RwoH+DSZ0o0bZLjMooKJpPA6BExmglgDxPC5gFnrNcWis89r77chgx7T6/PJNhK1qLJ1UYgEYlJ5Px8KUEELFnAnU8aE2BVv9xnUTINlWdP3q5JZ3bYB9eLVSDjHe7SGqi63AaopoWFtThXZGe9P6l9HaAB0XqzsgJ2ngNKdj7a6nAgDJuoYNG8tjNOCWxSgOQ1UT/2eVrwhFdIhakwfEXSjnvmlk4KdGGWL4AJspHoANYCNKbLo73KxXG/ARBUumA+WeeARUItRkh9vnICcMs8glRY77dgOihDWyC4Rmaf/747+iCOjlMVvRUdd1r0PXVow0z+q2nHA3uHNIykExw=
+  on:
+    tags: true
+    distributions: bdist_wheel
+    repo: eseifert/madam
