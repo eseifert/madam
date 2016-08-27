@@ -1,4 +1,5 @@
 import abc
+import functools
 import io
 import itertools
 import mimetypes
@@ -429,10 +430,38 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def combine(self, file, metadata):
         """
-        Returns a byte stream whose contents represent the specified file where the specified metadata was added.
+        Returns a byte stream whose contents represent the specified file where
+        the specified metadata was added.
 
         :param metadata: Metadata information to be added
         :param file: Container file
         :return: File-like object with combined content
         """
         raise NotImplementedError()
+
+
+def operator(function):
+    """
+    Decorator function for methods that process assets.
+
+    Usually, it will be used with operations in a :class:`~madam.core.Processor`
+    implementation to make the methods configurable before applying the method
+    to an asset.
+
+    Only keyword arguments are allowed for configuration.
+
+    Example for using a decorated :attr:`convert` method:
+
+    .. code:: python
+
+        convert_to_opus = processor.convert(mime_type='audio/opus')
+        convert_to_opus(asset)
+
+    :param function: Method to decorate
+    :return: Configurable method
+    """
+    @functools.wraps(function)
+    def wrapper(self, **kwargs):
+        configured_operator = functools.partial(function, self, **kwargs)
+        return configured_operator
+    return wrapper

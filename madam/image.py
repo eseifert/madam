@@ -1,4 +1,3 @@
-import functools
 import io
 from enum import Enum
 
@@ -7,6 +6,7 @@ import piexif
 import PIL.ExifTags
 import PIL.Image
 
+from madam.core import operator
 from madam.core import Asset, Processor, MetadataProcessor, UnsupportedFormatError
 
 
@@ -59,14 +59,6 @@ class FlipOrientation(Enum):
     HORIZONTAL = 0
     #: Vertical axis
     VERTICAL = 1
-
-
-def operator(function):
-    @functools.wraps(function)
-    def wrapper(self, **kwargs):
-        configured_operator = functools.partial(function, self, **kwargs)
-        return configured_operator
-    return wrapper
 
 
 class PillowProcessor(Processor):
