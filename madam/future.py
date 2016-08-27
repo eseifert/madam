@@ -8,6 +8,11 @@ except ImportError:
 
 
     def subprocess_run(command, stdin=None, input=None, stdout=None, stderr=None):
+        if input is not None:
+            if stdin is not None:
+                raise ValueError('stdin and input arguments can not be used at the same time.')
+            stdin = subprocess.PIPE
+
         with subprocess.Popen(command, stdin=stdin,
                               stdout=stdout, stderr=stderr) as process:
             try:
