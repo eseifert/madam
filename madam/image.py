@@ -83,7 +83,7 @@ class PillowProcessor(Processor):
         asset = Asset(file, **metadata)
         return asset
 
-    def can_read(self, file):
+    def _can_read(self, file):
         try:
             PIL.Image.open(file)
             file.seek(0)

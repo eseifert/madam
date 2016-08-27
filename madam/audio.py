@@ -26,7 +26,7 @@ class WaveProcessor(Processor):
             asset = Asset(essence_stream, **metadata)
         return asset
 
-    def can_read(self, file):
+    def _can_read(self, file):
         try:
             wave.open(file, 'rb')
             return True
@@ -53,7 +53,7 @@ class MutagenProcessor(Processor):
                 asset = Asset(essence=mp3_file_copy, **metadata)
         return asset
 
-    def can_read(self, file):
+    def _can_read(self, file):
         with tempfile.NamedTemporaryFile() as temp_file:
             temp_file.write(file.read())
             if mutagen.File(temp_file.name):

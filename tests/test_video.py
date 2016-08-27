@@ -13,7 +13,7 @@ class TestFFmpegProcessor:
         video_path = 'tests/resources/bus_qcif_15fps.y4m'
 
         with open(video_path, 'rb') as video_file:
-            supported = processor.can_read(video_file)
+            supported = processor._can_read(video_file)
 
         assert supported
 
@@ -21,7 +21,7 @@ class TestFFmpegProcessor:
         random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
         unknown_file = BytesIO(random_data)
 
-        supported = processor.can_read(unknown_file)
+        supported = processor._can_read(unknown_file)
 
         assert not supported
 
@@ -29,7 +29,7 @@ class TestFFmpegProcessor:
         invalid_file = None
 
         with pytest.raises(ValueError):
-            processor.can_read(invalid_file)
+            processor._can_read(invalid_file)
 
     def test_read_returns_asset_when_called_with_video_file(self, processor):
         video_path = 'tests/resources/bus_qcif_15fps.y4m'

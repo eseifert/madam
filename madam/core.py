@@ -264,7 +264,7 @@ def read(file, mime_type=None):
     >>> with open('path/to/file.jpg', 'rb') as file:
     ...     madam.read(file)
     """
-    processors_supporting_type = (processor for processor in _processors if processor.can_read(file))
+    processors_supporting_type = (processor for processor in _processors if processor._can_read(file))
     processor = next(processors_supporting_type, None)
     if not processor:
         raise UnsupportedFormatError()
@@ -361,7 +361,7 @@ class Processor(metaclass=abc.ABCMeta):
         _processors.append(self)
 
     @abc.abstractmethod
-    def can_read(self, mime_type):
+    def _can_read(self, mime_type):
         """
         Returns whether the specified MIME type is supported by this processor.
 
