@@ -144,7 +144,8 @@ class TestPillowProcessor:
 
         converted_asset = conversion_operator(asset)
 
-        assert converted_asset is not asset
+        assert isinstance(converted_asset, madam.core.Asset)
+        assert converted_asset != asset
 
     def test_converted_essence_is_of_specified_type(self, pillow_processor):
         asset = jpeg_asset()
