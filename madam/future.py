@@ -1,0 +1,20 @@
+import collections
+import subprocess
+
+try:
+    from subprocess import run as subprocess_run
+except ImportError:
+    _CompletedProcess = collections.namedtuple('_CompletedProcess', ['args', 'retcode', 'stdout', 'stderr'])
+
+
+    def subprocess_run(command, stdin=None, input=None, stdout=None, stderr=None):
+        with subprocess.Popen(command, stdin=stdin,
+                              stdout=stdout, stderr=stderr) as process:
+            try:
+                stdout, stderr = process.communicate(input=input)
+            except:
+                process.kill()
+                process.wait()
+                raise
+            retcode = process.poll()
+        return _CompletedProcess(args=process.args, retcode=retcode, stdout=stdout, stderr=stderr)
