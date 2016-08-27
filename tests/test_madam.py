@@ -68,3 +68,10 @@ def test_writes_correct_essence_with_metadata(jpeg_asset):
 
     file.seek(0)
     assert file.read() != jpeg_asset.essence.read()
+
+
+def test_config_contains_list_of_all_processors_by_default():
+    assert madam.config['processors'] == [
+        'madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
+        'madam.image.PillowProcessor',
+        'madam.video.FFmpegProcessor']

@@ -243,6 +243,12 @@ class UnsupportedFormatError(ValueError):
     """
     pass
 
+#: Configuration of MADAM as a dict.
+#:
+#: Has a *processors* entry that is a list of all available processors
+config = {'processors': ['madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
+                         'madam.image.PillowProcessor', 'madam.video.FFmpegProcessor']}
+
 mimetypes.init()
 _processors = []
 _metadata_processors_by_format = {}
