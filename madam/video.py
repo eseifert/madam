@@ -38,7 +38,7 @@ class FFmpegProcessor(Processor):
     def read(self, file):
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(file.read())
-            ffprobe = _run(('ffprobe -print_format json -show_entries format=duration -loglevel quiet %s' % tmp.name).split(),
+            ffprobe = _run(('ffprobe -print_format json -show_format -loglevel quiet %s' % tmp.name).split(),
                            stdout=subprocess.PIPE, stdin=subprocess.PIPE, input=file.read())
         string_result = ffprobe.stdout.decode('utf-8')
         json_obj = json.loads(string_result)
