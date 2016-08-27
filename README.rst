@@ -26,19 +26,22 @@ Reading a JPEG image and extracting metadata:
 
 .. code:: pycon
 
+    >>> import madam
     >>> with open('path/to/file.jpg', 'rb') as file:
     ...     asset = madam.read(file)
     >>> asset.mime_type
     'image/jpeg'
+    >>> asset.width
+    800
+    >>> asset.height
+    600
 
 Changing the size of an image asset:
 
 .. code:: pycon
 
-    >>> asset.width
-    800
-    >>> asset.height
-    600
+    >>> from madam.image import PillowProcessor
+    >>> pillow_processor = PillowProcessor()
     >>> make_thumbnail = pillow_processor.resize(width=100, height=100)
     >>> resized_asset = make_thumbnail(asset)
     >>> resized_asset.width
