@@ -96,9 +96,9 @@ def y4m_asset(tmpdir):
         image_file.write_binary(png_asset().essence.read())
 
     image_pattern = tmpdir.join(r'%02d.png')
-    ffmpeg = subprocess_run(
-        ('ffmpeg -framerate 15 -i %s -c:v rawvideo -r 15 -pix_fmt yuv420p -f yuv4mpegpipe pipe:' % image_pattern).split(),
-        stdout=subprocess.PIPE
-    )
+    command = 'ffmpeg -loglevel quiet -framerate 15 -i'.split() + \
+              [str(image_pattern)] + \
+              '-c:v rawvideo -r 15 -pix_fmt yuv420p -f yuv4mpegpipe pipe:'.split()
+    ffmpeg = subprocess_run(command, stdout=subprocess.PIPE)
     asset = madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout))
     return asset
