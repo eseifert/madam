@@ -37,6 +37,6 @@ except ImportError:
             retcode = process.poll()
             if check and retcode:
                 raise CalledProcessError(returncode=retcode, cmd=process.args,
-                                                    output=stdout, stderr=stderr)
+                                         output=stdout, stderr=stderr)
         return _CompletedProcess(args=process.args, retcode=retcode,
                                  stdout=stdout, stderr=stderr)
