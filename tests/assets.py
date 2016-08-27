@@ -1,11 +1,13 @@
 import PIL.Image
 import io
+import subprocess
 
 import piexif
 import PIL.Image
 import pytest
 
 import madam.core
+from madam.future import subprocess_run
 
 
 def image_rgb(width, height, transpositions=None):
@@ -84,3 +86,19 @@ def image_asset(request, jpeg_asset, png_asset):
         return jpeg_asset
     else:
         return png_asset
+
+
+@pytest.fixture
+def y4m_asset(tmpdir):
+    frame_count = 30
+    for frame in range(frame_count):
+        image_file = tmpdir.join('%02d.png' % frame)
+        image_file.write_binary(png_asset().essence.read())
+
+    image_pattern = tmpdir.join(r'%02d.png')
+    ffmpeg = subprocess_run(
+        ('ffmpeg -framerate 15 -i %s -c:v rawvideo -r 15 -pix_fmt yuv420p -f yuv4mpegpipe pipe:' % image_pattern).split(),
+        stdout=subprocess.PIPE
+    )
+    asset = madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout))
+    return asset
