@@ -11,6 +11,8 @@ before_script:
 - sudo add-apt-repository ppa:mc3man/trusty-media -y
 - sudo apt-get update -qq
 - sudo apt-get install ffmpeg -y
+- ffprobe -formats
+- ffprobe -codecs
 env:
 - TOXENV=py34
 - TOXENV=py35
