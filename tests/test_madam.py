@@ -43,6 +43,14 @@ def test_read_raises_error_when_format_is_unknown():
         madam.read(unknown_file)
 
 
+def test_read_returns_asset_when_reading_image_data(image_asset):
+    image_data = image_asset.essence
+
+    asset = madam.read(image_data)
+
+    assert asset is not None
+
+
 def test_writes_correct_essence_without_metadata(image_asset):
     asset = madam.core.Asset(essence=image_asset.essence)
     file = io.BytesIO()

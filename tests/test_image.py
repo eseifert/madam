@@ -20,11 +20,6 @@ class TestPillowProcessor:
     def pillow_processor(self):
         return madam.image.PillowProcessor()
 
-    @pytest.mark.parametrize('image_file', [jpeg_asset().essence, png_asset().essence])
-    def test_can_read_image_files(self, pillow_processor, image_file):
-        supports = pillow_processor._can_read(image_file)
-        assert supports
-
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, pillow_processor, width, height):
         jpeg_asset_landscape = jpeg_asset(width=width, height=height)
