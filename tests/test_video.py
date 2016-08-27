@@ -89,7 +89,7 @@ class TestFFmpegProcessor:
 
         converted_asset = conversion_operator(y4m_asset)
 
-        command = 'ffprobe -print_format json -loglevel quiet -show_format -'.split()
+        command = 'ffprobe -print_format json -loglevel quiet -show_format -i pipe:'.split()
         result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info['format']['format_name'] == 'matroska,webm'

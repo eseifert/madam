@@ -59,7 +59,7 @@ class FFmpegProcessor(Processor):
         """
         ffmpeg_type = self.__mime_type_to_ffmpeg_type[mime_type]
 
-        command = ['ffmpeg', '-loglevel', 'quiet', '-i', '-', '-f', ffmpeg_type, 'pipe:']
+        command = ['ffmpeg', '-loglevel', 'quiet', '-i', 'pipe:', '-f', ffmpeg_type, 'pipe:']
         result = subprocess_run(command, input=asset.essence.read(), stdout=subprocess.PIPE)
         essence = io.BytesIO(result.stdout)
 
