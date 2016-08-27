@@ -18,7 +18,7 @@ setup(
     author_email='mseifert@error-reports.org, dev@erichseifert.de',
     install_requires=['bidict', 'frozendict', 'mutagen', 'piexif', 'pillow'],
     setup_requires=['pytest-runner', 'versioneer'],
-    tests_require=['piexif', 'pillow', 'pytest >=2.8'],
+    tests_require=['piexif', 'pillow', 'pytest >=3.0'],
     extras_require={
         'doc': ['sphinx >=1.3', 'sphinx_rtd_theme']
     },
