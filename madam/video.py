@@ -1,8 +1,11 @@
+import io
 import json
 import subprocess
 import tempfile
 
-from madam.core import Asset, Processor
+from bidict import bidict
+
+from madam.core import Asset, Processor, operator
 from madam.future import subprocess_run
 
 
@@ -26,6 +29,9 @@ class FFmpegProcessor(Processor):
     def __init__(self):
         super().__init__()
         self._ffprobe = self._FFprobe()
+        self.__mime_type_to_ffmpeg_type = bidict({
+            'video/webm': 'webm'
+        })
 
     def can_read(self, file):
         if not file:
@@ -37,3 +43,21 @@ class FFmpegProcessor(Processor):
         json_result = self._ffprobe.show_format(file)
         file.seek(0)
         return Asset(essence=file, duration=float(json_result['duration']))
+
+    @operator
+    def convert(self, asset, mime_type):
+        """
+        Creates a new asset of the specified MIME type from the essence of the
+        specified asset.
+
+        :param asset: Asset whose contents will be converted
+        :param mime_type: Target MIME type
+        :return: New asset with converted essence
+        """
+        ffmpeg_type = self.__mime_type_to_ffmpeg_type[mime_type]
+
+        command = ['ffmpeg', '-loglevel', 'quiet', '-i', '-', '-f', ffmpeg_type, 'pipe:']
+        result = subprocess_run(command, input=asset.essence.read(), stdout=subprocess.PIPE)
+        essence = io.BytesIO(result.stdout)
+
+        return Asset(essence=essence, mime_type=mime_type)

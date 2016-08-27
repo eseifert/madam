@@ -1,7 +1,12 @@
+import json
+import subprocess
 from io import BytesIO
+
 import pytest
 
 import madam.video
+from madam.future import subprocess_run
+from assets import y4m_asset
 
 
 class TestFFmpegProcessor:
@@ -55,3 +60,28 @@ class TestFFmpegProcessor:
             asset = processor.read(video_file)
 
         assert asset.duration == 5.0
+
+    def test_converted_asset_receives_correct_mime_type(self, processor, y4m_asset):
+        conversion_operator = processor.convert(mime_type='video/webm')
+
+        converted_asset = conversion_operator(y4m_asset)
+
+        assert converted_asset.mime_type == 'video/webm'
+
+    def test_convert_creates_new_asset(self, processor, y4m_asset):
+        conversion_operator = processor.convert(mime_type='video/webm')
+
+        converted_asset = conversion_operator(y4m_asset)
+
+        assert isinstance(converted_asset, madam.core.Asset)
+        assert converted_asset != y4m_asset
+
+    def test_converted_essence_is_of_specified_type(self, processor, y4m_asset):
+        conversion_operator = processor.convert(mime_type='video/webm')
+
+        converted_asset = conversion_operator(y4m_asset)
+
+        command = 'ffprobe -print_format json -loglevel quiet -show_format -'.split()
+        result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE)
+        video_info = json.loads(result.stdout.decode('utf-8'))
+        assert video_info['format']['format_name'] == 'matroska,webm'
