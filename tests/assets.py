@@ -102,3 +102,13 @@ def y4m_asset(tmpdir):
     )
     asset = madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout))
     return asset
+
+
+@pytest.fixture(params=['jpeg_asset', 'png_asset', 'y4m_asset'])
+def asset(request, jpeg_asset, png_asset, y4m_asset):
+    if request.param == 'jpeg_asset':
+        return jpeg_asset
+    elif request.param == 'png_asset':
+        return png_asset
+    else:
+        return y4m_asset
