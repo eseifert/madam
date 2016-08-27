@@ -30,7 +30,8 @@ class FFmpegProcessor(Processor):
         super().__init__()
         self._ffprobe = self._FFprobe()
         self.__mime_type_to_ffmpeg_type = bidict({
-            'video/webm': 'webm'
+            'video/webm': 'webm',
+            'video/x-yuv4mpegpipe': 'yuv4mpegpipe'
         })
 
     def can_read(self, file):
@@ -42,7 +43,9 @@ class FFmpegProcessor(Processor):
     def read(self, file):
         json_result = self._ffprobe.show_format(file)
         file.seek(0)
-        return Asset(essence=file, duration=float(json_result['duration']))
+        mime_type = self.__mime_type_to_ffmpeg_type.inv[json_result['format_name']]
+        duration = float(json_result['duration'])
+        return Asset(essence=file, mime_type=mime_type, duration=duration)
 
     @operator
     def convert(self, asset, mime_type):
