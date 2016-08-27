@@ -24,6 +24,7 @@ class FFmpegProcessor(Processor):
             return json_obj.get('format', None)
 
     def __init__(self):
+        super().__init__()
         self._ffprobe = self._FFprobe()
 
     def can_read(self, file):
