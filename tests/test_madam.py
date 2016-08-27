@@ -35,6 +35,14 @@ def test_read_raises_when_file_is_none():
         madam.read(invalid_file)
 
 
+def test_read_raises_error_when_format_is_unknown():
+    random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
+    unknown_file = io.BytesIO(random_data)
+
+    with pytest.raises(UnsupportedFormatError):
+        madam.read(unknown_file)
+
+
 def test_writes_correct_essence_without_metadata(image_asset):
     asset = madam.core.Asset(essence=image_asset.essence)
     file = io.BytesIO()
