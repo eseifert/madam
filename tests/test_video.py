@@ -84,6 +84,14 @@ class TestFFmpegProcessor:
         assert isinstance(converted_asset, madam.core.Asset)
         assert converted_asset != y4m_asset
 
+    def test_convert_raises_error_when_it_fails(self, processor, y4m_asset):
+        del processor._FFmpegProcessor__mime_type_to_ffmpeg_type['video/webm']
+        processor._FFmpegProcessor__mime_type_to_ffmpeg_type['video/webm'] = 'invalid_type'
+        conversion_operator = processor.convert(mime_type='video/webm')
+
+        with pytest.raises(IOError):
+            conversion_operator(y4m_asset)
+
     def test_converted_essence_is_of_specified_type(self, processor, y4m_asset):
         conversion_operator = processor.convert(mime_type='video/webm')
 

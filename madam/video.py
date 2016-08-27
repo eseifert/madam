@@ -6,7 +6,7 @@ import tempfile
 from bidict import bidict
 
 from madam.core import Asset, Processor, operator
-from madam.future import subprocess_run
+from madam.future import CalledProcessError, subprocess_run
 
 
 class FFmpegProcessor(Processor):
@@ -60,7 +60,9 @@ class FFmpegProcessor(Processor):
         ffmpeg_type = self.__mime_type_to_ffmpeg_type[mime_type]
 
         command = ['ffmpeg', '-loglevel', 'quiet', '-i', 'pipe:', '-f', ffmpeg_type, 'pipe:']
-        result = subprocess_run(command, input=asset.essence.read(), stdout=subprocess.PIPE)
-        essence = io.BytesIO(result.stdout)
+        try:
+            result = subprocess_run(command, input=asset.essence.read(), stdout=subprocess.PIPE, check=True)
+        except CalledProcessError as e:
+            raise IOError('Could not convert video asset: %r' % e.stderr)
 
-        return Asset(essence=essence, mime_type=mime_type)
+        return Asset(essence=io.BytesIO(result.stdout), mime_type=mime_type)
