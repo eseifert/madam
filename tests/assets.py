@@ -89,16 +89,9 @@ def image_asset(request, jpeg_asset, png_asset):
 
 
 @pytest.fixture
-def y4m_asset(tmpdir):
-    frame_count = 30
-    for frame in range(frame_count):
-        image_file = tmpdir.join('%02d.png' % frame)
-        image_file.write_binary(png_asset().essence.read())
-
-    image_pattern = tmpdir.join(r'%02d.png')
-    command = 'ffmpeg -loglevel quiet -framerate 15 -i'.split() + \
-              [str(image_pattern)] + \
-              '-c:v rawvideo -r 15 -pix_fmt yuv420p -f yuv4mpegpipe pipe:'.split()
+def y4m_asset():
+    command = 'ffmpeg -loglevel quiet -f lavfi -i color=color=red:duration=1:rate=15 ' \
+              '-c:v rawvideo -pix_fmt yuv420p -f yuv4mpegpipe pipe:'.split()
     ffmpeg = subprocess_run(command, stdout=subprocess.PIPE)
     asset = madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout))
     return asset
