@@ -30,6 +30,12 @@ class Madam:
             processor_module = importlib.import_module(processor_module_path)
             processor_class = getattr(processor_module, processor_class_name)
             self._processors.append(processor_class())
+        for processor_path in self.config['metadata_processors']:
+            processor_module_path, processor_class_name = processor_path.rsplit('.', 1)
+            processor_module = importlib.import_module(processor_module_path)
+            processor_class = getattr(processor_module, processor_class_name)
+            processor = processor_class()
+            _metadata_processors_by_format[processor.format] = processor
 
     def read(self, file, mime_type=None):
         """
@@ -404,12 +410,6 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     """
     Represents an entity that can manipulate metadata.
     """
-    def __init__(self):
-        """
-        Initializes a new MetadataProcessor.
-        """
-        _metadata_processors_by_format[self.format] = self
-
     @property
     @abc.abstractmethod
     def format(self):
