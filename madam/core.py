@@ -51,7 +51,7 @@ class Madam:
         return member_class
 
     def read(self, file, mime_type=None):
-        """
+        r"""
         Reads the specified file and returns its contents as an Asset object.
 
         :param file: file-like object to be parsed
@@ -63,10 +63,12 @@ class Madam:
 
         :Example:
 
+        >>> import io
         >>> from madam import Madam
         >>> madam = Madam()
-        >>> with open('path/to/file.jpg', 'rb') as file:
-        ...     asset = madam.read(file)
+        >>> file = io.BytesIO(b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac'
+        ...        b'\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00')
+        >>> asset = madam.read(file)
         """
         if not file:
             raise TypeError('Unable to read object of type %s' % type(file))
