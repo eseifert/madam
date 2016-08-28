@@ -74,6 +74,12 @@ def test_read_jpeg_does_not_alter_the_original_file(madam):
     assert original_image_data == image_data_after_reading
 
 
+def test_read_video_returns_asset_with_duration_metadata(madam, y4m_asset):
+    asset = madam.read(y4m_asset.essence)
+
+    assert asset.duration == y4m_asset.duration
+
+
 def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     image_data = image_asset.essence
 
