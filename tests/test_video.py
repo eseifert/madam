@@ -15,20 +15,6 @@ class TestFFmpegProcessor:
     def ffmpeg_processor(self):
         return madam.video.FFmpegProcessor()
 
-    def test_cannot_read_unknown_file(self, processor):
-        random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
-        unknown_file = BytesIO(random_data)
-
-        supported = processor._can_read(unknown_file)
-
-        assert not supported
-
-    def test_fails_with_invalid_file_object(self, processor):
-        invalid_file = None
-
-        with pytest.raises(ValueError):
-            processor._can_read(invalid_file)
-
     def test_read_returns_asset_when_called_with_video_file(self, processor):
         video_path = 'tests/resources/bus_qcif_15fps.y4m'
 
