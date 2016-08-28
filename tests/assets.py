@@ -90,11 +90,12 @@ def image_asset(request, jpeg_asset, png_asset):
 
 @pytest.fixture
 def y4m_asset():
-    command = 'ffmpeg -loglevel error -f lavfi -i color=color=red:duration=0.1:rate=15 ' \
+    command = 'ffmpeg -loglevel error -f lavfi -i color=color=red:duration=0.2:rate=15 ' \
               '-f yuv4mpegpipe pipe:'.split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout),
-                            mime_type='video/x-yuv4mpegpipe')
+                            mime_type='video/x-yuv4mpegpipe',
+                            duration=0.2)
 
 
 @pytest.fixture(params=['jpeg_asset', 'png_asset', 'y4m_asset'])
