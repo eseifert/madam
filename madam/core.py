@@ -26,18 +26,29 @@ class Madam:
                                       'madam.image.PillowProcessor', 'madam.video.FFmpegProcessor'],
                        'metadata_processors': ['madam.image.ExifProcessor']}
         self._processors = []
-        for processor_path in self.config['processors']:
-            processor_module_path, processor_class_name = processor_path.rsplit('.', 1)
-            processor_module = importlib.import_module(processor_module_path)
-            processor_class = getattr(processor_module, processor_class_name)
-            self._processors.append(processor_class())
         self._metadata_processors_by_format = {}
+
+        # Initialize processors
+        for processor_path in self.config['processors']:
+            processor_class = self._import_from(processor_path)
+            self._processors.append(processor_class())
+        # Initialize metadata processors
         for processor_path in self.config['metadata_processors']:
-            processor_module_path, processor_class_name = processor_path.rsplit('.', 1)
-            processor_module = importlib.import_module(processor_module_path)
-            processor_class = getattr(processor_module, processor_class_name)
+            processor_class = self._import_from(processor_path)
             processor = processor_class()
             self._metadata_processors_by_format[processor.format] = processor
+
+    def _import_from(self, member_path):
+        """
+        Returns the member located at the specified import path.
+
+        :param member_path: Fully qualified name of the member to be imported
+        :return: Member
+        """
+        module_path, member_name = member_path.rsplit('.', 1)
+        module = importlib.import_module(module_path)
+        member_class = getattr(module, member_name)
+        return member_class
 
     def read(self, file, mime_type=None):
         """
