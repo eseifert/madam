@@ -86,7 +86,7 @@ class Madam:
                 metadata = dict(asset.metadata)
                 metadata[metadata_format] = metadata_processor.read(file)
                 stripped_essence = metadata_processor.strip(asset.essence)
-                clean_asset = Asset(stripped_essence, metadata=_freeze_dict(metadata))
+                clean_asset = Asset(stripped_essence, **_freeze_dict(metadata))
                 asset = clean_asset
             except UnsupportedFormatError:
                 pass
