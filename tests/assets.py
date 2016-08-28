@@ -93,7 +93,8 @@ def y4m_asset():
     command = 'ffmpeg -loglevel error -f lavfi -i color=color=red:duration=0.1:rate=15 ' \
               '-f yuv4mpegpipe pipe:'.split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout))
+    return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout),
+                            mime_type='video/x-yuv4mpegpipe')
 
 
 @pytest.fixture(params=['jpeg_asset', 'png_asset', 'y4m_asset'])
