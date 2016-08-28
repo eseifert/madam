@@ -65,6 +65,6 @@ class FFmpegProcessor(Processor):
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     check=True)
         except CalledProcessError as e:
-            raise IOError('Could not convert video asset: %r' % e.stderr)
+            raise IOError('Could not convert video asset: %s' % e.stderr.decode('utf-8'))
 
         return Asset(essence=io.BytesIO(result.stdout), mime_type=mime_type)
