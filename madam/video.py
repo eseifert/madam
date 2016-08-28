@@ -31,6 +31,7 @@ class FFmpegProcessor(Processor):
         super().__init__()
         self._ffprobe = self._FFprobe()
         self.__mime_type_to_ffmpeg_type = bidict({
+            'video/mp4': 'mp4',
             'video/webm': 'webm',
             'video/x-yuv4mpegpipe': 'yuv4mpegpipe'
         })
