@@ -62,6 +62,18 @@ def test_read_image_returns_asset_with_image_mime_type(madam, asset):
     assert read_asset.mime_type == asset.mime_type
 
 
+def test_read_jpeg_does_not_alter_the_original_file(madam):
+    jpeg_data = jpeg_asset().essence
+    original_image_data = jpeg_data.read()
+    jpeg_data.seek(0)
+
+    madam.read(jpeg_data)
+
+    jpeg_data.seek(0)
+    image_data_after_reading = jpeg_data.read()
+    assert original_image_data == image_data_after_reading
+
+
 def test_writes_correct_essence_without_metadata(madam, image_asset):
     asset = Asset(essence=image_asset.essence)
     file = io.BytesIO()

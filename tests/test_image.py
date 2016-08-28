@@ -146,17 +146,6 @@ class TestPillowProcessor:
         image = PIL.Image.open(converted_asset.essence)
         assert image.format == 'PNG'
 
-    def test_read_jpeg_does_not_alter_the_original_file(self, pillow_processor):
-        jpeg_data = jpeg_asset().essence
-        original_image_data = jpeg_data.read()
-        jpeg_data.seek(0)
-
-        pillow_processor._read(jpeg_data)
-
-        jpeg_data.seek(0)
-        image_data_after_reading = jpeg_data.read()
-        assert original_image_data == image_data_after_reading
-
     @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_asset().essence])
     def test_image_asset_essence_is_filled(self, image_data, pillow_processor):
         asset = pillow_processor._read(image_data)
