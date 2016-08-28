@@ -1,6 +1,5 @@
 import json
 import subprocess
-from io import BytesIO
 
 import pytest
 
