@@ -56,6 +56,12 @@ def test_read_returns_asset_when_reading_valid_data(madam, asset):
     assert asset is not None
 
 
+def test_read_image_returns_asset_with_image_mime_type(madam, asset):
+    read_asset = madam.read(asset.essence)
+
+    assert read_asset.mime_type == asset.mime_type
+
+
 def test_writes_correct_essence_without_metadata(madam, image_asset):
     asset = Asset(essence=image_asset.essence)
     file = io.BytesIO()

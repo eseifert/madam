@@ -146,15 +146,6 @@ class TestPillowProcessor:
         image = PIL.Image.open(converted_asset.essence)
         assert image.format == 'PNG'
 
-    @pytest.mark.parametrize('image_data, mime_type', [
-        (jpeg_asset().essence, 'image/jpeg'),
-        (png_asset().essence, 'image/png')
-    ])
-    def test_read_image_returns_asset_with_image_mime_type(self, pillow_processor, image_data, mime_type):
-        asset = pillow_processor._read(image_data)
-
-        assert asset.mime_type == mime_type
-
     def test_read_jpeg_does_not_alter_the_original_file(self, pillow_processor):
         jpeg_data = jpeg_asset().essence
         original_image_data = jpeg_data.read()
