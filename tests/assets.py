@@ -90,8 +90,13 @@ def image_asset(request, jpeg_asset, png_asset):
 
 @pytest.fixture
 def y4m_asset(tmpdir):
-    with open('tests/resources/bus_qcif_15fps.y4m', 'rb') as file:
-        return madam.core.Asset(essence=file)
+    tmpfile = tmpdir.join('asset.y4m')
+    command = 'ffmpeg -loglevel quiet -f lavfi -i color=color=red:duration=1:rate=15 ' \
+              '-c:v rawvideo -pix_fmt yuv420p -f yuv4mpegpipe'.split()
+    command.append(str(tmpfile))
+    subprocess_run(command)
+    asset = madam.core.Asset(essence=tmpfile.open('rb'))
+    return asset
 
 
 @pytest.fixture(params=['jpeg_asset', 'png_asset', 'y4m_asset'])
