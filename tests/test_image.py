@@ -5,8 +5,8 @@ import piexif
 import pytest
 
 import madam.image
-from madam.core import UnsupportedFormatError
-from assets import jpeg_asset, png_asset
+from madam.core import OperatorError, UnsupportedFormatError
+from assets import jpeg_asset, png_asset, unknown_asset
 
 
 def is_equal_in_black_white_space(result_image, expected_image):
@@ -130,6 +130,12 @@ class TestPillowProcessor:
 
         assert isinstance(converted_asset, madam.core.Asset)
         assert converted_asset != asset
+
+    def test_convert_raises_error_when_it_fails(self, pillow_processor, unknown_asset):
+        conversion_operator = pillow_processor.convert(mime_type='image/png')
+
+        with pytest.raises(OperatorError):
+            conversion_operator(unknown_asset)
 
     def test_converted_essence_is_of_specified_type(self, pillow_processor):
         asset = jpeg_asset()

@@ -212,10 +212,10 @@ class PillowProcessor(Processor):
         :param mime_type: Target MIME type
         :return: New asset with converted essence
         """
-        image = PIL.Image.open(asset.essence)
-        converted_essence_data = io.BytesIO()
         pil_format = self.__mime_type_to_pillow_type[mime_type]
         try:
+            image = PIL.Image.open(asset.essence)
+            converted_essence_data = io.BytesIO()
             image.save(converted_essence_data, pil_format)
         except (IOError, KeyError) as pil_error:
             raise OperatorError('Could not convert image: %s', pil_error)
