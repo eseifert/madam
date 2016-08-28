@@ -393,6 +393,8 @@ class Processor(metaclass=abc.ABCMeta):
     """
     Represents an entity that can create :class:`~madam.core.Asset` objects
     from binary data.
+
+    Every Processor needs to have a no-args __init__ method in order to be registered correctly.
     """
 
     @abc.abstractmethod
@@ -421,6 +423,9 @@ class Processor(metaclass=abc.ABCMeta):
 class MetadataProcessor(metaclass=abc.ABCMeta):
     """
     Represents an entity that can manipulate metadata.
+
+
+    Every MetadataProcessor needs to have a no-args __init__ method in order to be registered correctly.
     """
     @property
     @abc.abstractmethod
