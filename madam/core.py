@@ -30,12 +30,13 @@ class Madam:
             processor_module = importlib.import_module(processor_module_path)
             processor_class = getattr(processor_module, processor_class_name)
             self._processors.append(processor_class())
+        self._metadata_processors_by_format = {}
         for processor_path in self.config['metadata_processors']:
             processor_module_path, processor_class_name = processor_path.rsplit('.', 1)
             processor_module = importlib.import_module(processor_module_path)
             processor_class = getattr(processor_module, processor_class_name)
             processor = processor_class()
-            _metadata_processors_by_format[processor.format] = processor
+            self._metadata_processors_by_format[processor.format] = processor
 
     def read(self, file, mime_type=None):
         """
@@ -61,7 +62,7 @@ class Madam:
         if not processor:
             raise UnsupportedFormatError()
         asset = processor.read(file)
-        for metadata_format, metadata_processor in _metadata_processors_by_format.items():
+        for metadata_format, metadata_processor in self._metadata_processors_by_format.items():
             file.seek(0)
             try:
                 metadata = dict(asset.metadata)
@@ -97,7 +98,7 @@ class Madam:
         ...     madam.write(wav_asset, file)
         """
         essence_with_metadata = asset.essence
-        for metadata_format, processor in _metadata_processors_by_format.items():
+        for metadata_format, processor in self._metadata_processors_by_format.items():
             metadata = getattr(asset, metadata_format, None)
             if metadata is not None:
                 essence_with_metadata = processor.combine(essence_with_metadata, metadata)
@@ -338,7 +339,6 @@ class UnsupportedFormatError(ValueError):
     pass
 
 mimetypes.init()
-_metadata_processors_by_format = {}
 
 
 class Pipeline:
