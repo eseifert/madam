@@ -22,7 +22,8 @@ class Madam:
         The default configuration includes a list of all available processors.
         """
         self.config = {'processors': ['madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
-                                      'madam.image.PillowProcessor', 'madam.video.FFmpegProcessor']}
+                                      'madam.image.PillowProcessor', 'madam.video.FFmpegProcessor'],
+                       'metadata_processors': ['madam.image.ExifProcessor']}
         self._processors = []
         for processor_path in self.config['processors']:
             processor_module_path, processor_class_name = processor_path.rsplit('.', 1)
