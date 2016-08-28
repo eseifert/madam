@@ -49,18 +49,53 @@ class FFmpegProcessor(Processor):
         return Asset(essence=file, mime_type=mime_type, duration=duration)
 
     @operator
-    def convert(self, asset, mime_type):
+    def convert(self, asset, mime_type, video=None, audio=None, subtitles=None):
         """
         Creates a new asset of the specified MIME type from the essence of the
         specified asset.
 
+        Additional options can be specified for video, audio, and subtitle streams.
+        Options are passed as dictionary instances and can contain various keys for
+        each stream type.
+
+        Options for video streams:
+
+        ``codec``:
+            Processor-specific name of the video codec as string
+        ``bitrate``:
+            Target bitrate in kBit/s as float number
+
+        Options for audio streams:
+
+        ``codec``:
+            Processor-specific name of the audio codec as string
+        ``bitrate``:
+            Target bitrate in kBit/s as float number
+
+        Options for subtitle streams:
+
+        ``codec``:
+            Processor-specific name of the subtitle format as string
+
         :param asset: Asset whose contents will be converted
-        :param mime_type: Target MIME type
+        :param mime_type: MIME type of the video container
+        :param video: Dictionary with options for video streams.
+        :param audio: Dictionary with options for audio streams.
+        :param subtitles: Dictionary with the options for subtitle streams.
         :return: New asset with converted essence
         """
         ffmpeg_type = self.__mime_type_to_ffmpeg_type[mime_type]
 
-        command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:', '-f', ffmpeg_type, 'pipe:']
+        command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
+        if video is not None:
+            if 'codec' in video: command.extend(['-c:v', video['codec']])
+            if 'bitrate' in video: command.extend(['-b:v', '%dk' % video['bitrate']])
+        if audio is not None:
+            if 'codec' in audio: command.extend(['-c:a', audio['codec']])
+            if 'bitrate' in audio: command.extend(['-b:a', '%dk' % audio['bitrate']])
+        if subtitles is not None:
+            if 'codec' in subtitles: command.extend(['-c:s', subtitles['codec']])
+        command.extend(['-f', ffmpeg_type, 'pipe:'])
         try:
             result = subprocess_run(command, input=asset.essence.read(),
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
