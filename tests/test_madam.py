@@ -120,4 +120,4 @@ def test_config_contains_list_of_all_processors_by_default(madam):
     assert madam.config['processors'] == [
         'madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
         'madam.image.PillowProcessor',
-        'madam.video.FFmpegProcessor']
+        'madam.ffmpeg.FFmpegProcessor']
