@@ -14,22 +14,21 @@ class FFmpegProcessor(Processor):
     Represents a processor that uses FFmpeg to read audio and video data.
     """
 
-    class _FFprobe:
-        def show_format(self, file):
-            with tempfile.NamedTemporaryFile() as tmp:
-                tmp.write(file.read())
-                tmp.flush()
+    @staticmethod
+    def __probe(file):
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(file.read())
+            tmp.flush()
 
-                command = 'ffprobe -print_format json -loglevel quiet -show_format'.split()
-                command.append(tmp.name)
-                result = subprocess_run(command, stdout=subprocess.PIPE)
-            string_result = result.stdout.decode('utf-8')
-            json_obj = json.loads(string_result)
-            return json_obj.get('format')
+            command = 'ffprobe -print_format json -loglevel quiet -show_format'.split()
+            command.append(tmp.name)
+            result = subprocess_run(command, stdout=subprocess.PIPE)
+        string_result = result.stdout.decode('utf-8')
+        json_obj = json.loads(string_result)
+        return json_obj
 
     def __init__(self):
         super().__init__()
-        self._ffprobe = self._FFprobe()
         self.__mime_type_to_ffmpeg_type = bidict({
             'video/mp4': 'mp4',
             'video/webm': 'webm',
@@ -39,14 +38,14 @@ class FFmpegProcessor(Processor):
     def _can_read(self, file):
         if not file:
             raise ValueError('Error when reading file-like object: %r' % file)
-        json_result = self._ffprobe.show_format(file)
-        return bool(json_result)
+        file_info = FFmpegProcessor.__probe(file)
+        return bool(file_info)
 
     def _read(self, file):
-        json_result = self._ffprobe.show_format(file)
+        file_info = FFmpegProcessor.__probe(file)
         file.seek(0)
-        mime_type = self.__mime_type_to_ffmpeg_type.inv[json_result['format_name']]
-        duration = float(json_result['duration'])
+        mime_type = self.__mime_type_to_ffmpeg_type.inv[file_info['format']['format_name']]
+        duration = float(file_info['format']['duration'])
         return Asset(essence=file, mime_type=mime_type, duration=duration)
 
     @operator
