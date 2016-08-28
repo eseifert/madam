@@ -104,3 +104,10 @@ def asset(request, jpeg_asset, png_asset, y4m_asset):
         return png_asset
     else:
         return y4m_asset
+
+
+@pytest.fixture
+def unknown_asset():
+    random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
+    return madam.core.Asset(essence=io.BytesIO(random_data),
+                            mime_type='application/octet-stream')
