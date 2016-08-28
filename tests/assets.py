@@ -91,7 +91,7 @@ def image_asset(request, jpeg_asset, png_asset):
 @pytest.fixture
 def y4m_asset(tmpdir):
     tmpfile = tmpdir.join('asset.y4m')
-    command = 'ffmpeg -loglevel quiet -f lavfi -i color=color=red:duration=1:rate=15 ' \
+    command = 'ffmpeg -loglevel error -f lavfi -i color=color=red:duration=1:rate=15 ' \
               '-c:v rawvideo -pix_fmt yuv420p -f yuv4mpegpipe'.split()
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
