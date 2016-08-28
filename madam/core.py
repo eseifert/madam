@@ -1,6 +1,7 @@
 import abc
 import functools
 import io
+import importlib
 import itertools
 import mimetypes
 import os
@@ -8,6 +9,92 @@ import shelve
 import shutil
 
 from frozendict import frozendict
+
+
+class Madam:
+    """
+    Represents an instance of the library.
+    """
+    def __init__(self):
+        """
+        Initializes a new library instance with default configuration.
+
+        The default configuration includes a list of all available processors.
+        """
+        self.config = {'processors': ['madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
+                                      'madam.image.PillowProcessor', 'madam.video.FFmpegProcessor']}
+        self._processors = []
+        for processor_path in self.config['processors']:
+            processor_module_path, processor_class_name = processor_path.rsplit('.', 1)
+            processor_module = importlib.import_module(processor_module_path)
+            processor_class = getattr(processor_module, processor_class_name)
+            self._processors.append(processor_class())
+
+    def read(self, file, mime_type=None):
+        """
+        Reads the specified file and returns its contents as an Asset object.
+
+        :param file: file-like object to be parsed
+        :param mime_type: MIME type of the specified file
+        :type mime_type: str
+        :returns: Asset representing the specified file
+        :raises UnsupportedFormatError: if the file format cannot be recognized or is not supported
+        :raises TypeError: if the file is None
+
+        :Example:
+
+        >>> import madam
+        >>> with open('path/to/file.jpg', 'rb') as file:
+        ...     madam.read(file)
+        """
+        if not file:
+            raise TypeError('Unable to read object of type %s' % type(file))
+        processors_supporting_type = (processor for processor in self._processors if processor._can_read(file))
+        processor = next(processors_supporting_type, None)
+        if not processor:
+            raise UnsupportedFormatError()
+        asset = processor.read(file)
+        for metadata_format, metadata_processor in _metadata_processors_by_format.items():
+            file.seek(0)
+            try:
+                metadata = dict(asset.metadata)
+                metadata[metadata_format] = metadata_processor.read(file)
+                stripped_essence = metadata_processor.strip(asset.essence)
+                clean_asset = Asset(stripped_essence, metadata=_freeze_dict(metadata))
+                asset = clean_asset
+            except UnsupportedFormatError:
+                pass
+        return asset
+
+    def write(self, asset, file):
+        r"""
+        Write the Asset object to the specified file.
+
+        :param asset: Asset that contains the data to be written
+        :param file: file-like object to be written
+
+        :Example:
+
+        >>> import io
+        >>> import os
+        >>> import madam
+        >>> from madam.core import Asset
+        >>> gif_asset = Asset(essence=io.BytesIO(b'GIF89a\x01\x00\x01\x00\x00\x00\x00;'), mime_type='image/gif')
+        >>> with open(os.devnull, 'wb') as file:
+        ...     madam.write(gif_asset, file)
+        >>> wav_asset = Asset(
+        ...     essence=io.BytesIO(b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac'
+        ...             b'\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00'),
+        ...     mime_type='video/mp4')
+        >>> with open(os.devnull, 'wb') as file:
+        ...     madam.write(wav_asset, file)
+        """
+        essence_with_metadata = asset.essence
+        for metadata_format, processor in _metadata_processors_by_format.items():
+            metadata = getattr(asset, metadata_format, None)
+            if metadata is not None:
+                essence_with_metadata = processor.combine(essence_with_metadata, metadata)
+        shutil.copyfileobj(essence_with_metadata, file)
 
 
 class AssetStorage(metaclass=abc.ABCMeta):
@@ -244,76 +331,7 @@ class UnsupportedFormatError(ValueError):
     pass
 
 mimetypes.init()
-_processors = []
 _metadata_processors_by_format = {}
-
-
-def read(file, mime_type=None):
-    """
-    Reads the specified file and returns its contents as an Asset object.
-
-    :param file: file-like object to be parsed
-    :param mime_type: MIME type of the specified file
-    :type mime_type: str
-    :returns: Asset representing the specified file
-    :raises UnsupportedFormatError: if the file format cannot be recognized or is not supported
-    :raises TypeError: if the file is None
-
-    :Example:
-
-    >>> import madam
-    >>> with open('path/to/file.jpg', 'rb') as file:
-    ...     madam.read(file)
-    """
-    if not file:
-        raise TypeError('Unable to read object of type %s' % type(file))
-    processors_supporting_type = (processor for processor in _processors if processor._can_read(file))
-    processor = next(processors_supporting_type, None)
-    if not processor:
-        raise UnsupportedFormatError()
-    asset = processor.read(file)
-    for metadata_format, metadata_processor in _metadata_processors_by_format.items():
-        file.seek(0)
-        try:
-            metadata = dict(asset.metadata)
-            metadata[metadata_format] = metadata_processor.read(file)
-            stripped_essence = metadata_processor.strip(asset.essence)
-            clean_asset = Asset(stripped_essence, metadata=_freeze_dict(metadata))
-            asset = clean_asset
-        except UnsupportedFormatError:
-            pass
-    return asset
-
-
-def write(asset, file):
-    r"""
-    Write the Asset object to the specified file.
-
-    :param asset: Asset that contains the data to be written
-    :param file: file-like object to be written
-
-    :Example:
-
-    >>> import io
-    >>> import os
-    >>> import madam
-    >>> from madam.core import Asset
-    >>> gif_asset = Asset(essence=io.BytesIO(b'GIF89a\x01\x00\x01\x00\x00\x00\x00;'), mime_type='image/gif')
-    >>> with open(os.devnull, 'wb') as file:
-    ...     madam.write(gif_asset, file)
-    >>> wav_asset = Asset(
-    ...     essence=io.BytesIO(b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac'
-    ...             b'\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00'),
-    ...     mime_type='video/mp4')
-    >>> with open(os.devnull, 'wb') as file:
-    ...     madam.write(wav_asset, file)
-    """
-    essence_with_metadata = asset.essence
-    for metadata_format, processor in _metadata_processors_by_format.items():
-        metadata = getattr(asset, metadata_format, None)
-        if metadata is not None:
-            essence_with_metadata = processor.combine(essence_with_metadata, metadata)
-    shutil.copyfileobj(essence_with_metadata, file)
 
 
 class Pipeline:
@@ -357,11 +375,6 @@ class Processor(metaclass=abc.ABCMeta):
     Represents an entity that can create :class:`~madam.core.Asset` objects
     from binary data.
     """
-    def __init__(self):
-        """
-        Initializes a new processor.
-        """
-        _processors.append(self)
 
     @abc.abstractmethod
     def _can_read(self, mime_type):
