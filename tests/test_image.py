@@ -6,7 +6,7 @@ import pytest
 
 import madam.image
 from madam.core import OperatorError, UnsupportedFormatError
-from assets import jpeg_asset, png_asset, unknown_asset
+from assets import jpeg_asset, png_asset, image_asset, unknown_asset
 
 
 def is_equal_in_black_white_space(result_image, expected_image):
@@ -146,14 +146,15 @@ class TestPillowProcessor:
         image = PIL.Image.open(converted_asset.essence)
         assert image.format == 'PNG'
 
-    @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_asset().essence])
-    def test_image_asset_essence_is_filled(self, image_data, pillow_processor):
+    def test_read_returns_asset_whose_essence_is_filled(self, image_asset, pillow_processor):
+        image_data = image_asset.essence
         asset = pillow_processor._read(image_data)
 
         assert asset.essence.read()
 
-    @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_asset().essence])
-    def test_jpeg_asset_contains_size_information(self, pillow_processor, image_data):
+    def test_read_returns_asset_containing_image_size_metadata(self, pillow_processor, image_asset):
+        image_data = image_asset.essence
+
         asset = pillow_processor._read(image_data)
 
         assert asset.metadata['width'] == 4
