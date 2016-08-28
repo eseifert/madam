@@ -7,7 +7,7 @@ import wave
 import mutagen.mp3
 
 from madam.core import Asset, Processor
-from ffmpeg import FFmpegProcessor
+from madam.ffmpeg import FFmpegProcessor
 
 
 class WaveProcessor(Processor):
