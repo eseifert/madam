@@ -41,7 +41,7 @@ class FFmpegProcessor(Processor):
         json_result = self._ffprobe.show_format(file)
         return bool(json_result)
 
-    def read(self, file):
+    def _read(self, file):
         json_result = self._ffprobe.show_format(file)
         file.seek(0)
         mime_type = self.__mime_type_to_ffmpeg_type.inv[json_result['format_name']]

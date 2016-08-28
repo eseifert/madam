@@ -12,7 +12,7 @@ class WaveProcessor(Processor):
     Represents a processor that uses the *wave* module of the standard library
     to read wave data.
     """
-    def read(self, wave_file):
+    def _read(self, wave_file):
         with wave.open(wave_file) as wave_data:
             essence_bytes = wave_data.readframes(wave_data.getnframes())
             essence_stream = io.BytesIO()
@@ -38,7 +38,7 @@ class MutagenProcessor(Processor):
     """
     Represents a processor that uses *Mutagen* to read audio data.
     """
-    def read(self, mp3_file):
+    def _read(self, mp3_file):
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = mp3_file.name
             filename = os.path.basename(file_path)

@@ -79,7 +79,7 @@ class Madam:
                 break
         if not processor:
             raise UnsupportedFormatError()
-        asset = processor.read(file)
+        asset = processor._read(file)
         for metadata_format, metadata_processor in self._metadata_processors_by_format.items():
             file.seek(0)
             try:
@@ -415,7 +415,7 @@ class Processor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def read(self, file):
+    def _read(self, file):
         """
         Returns an :class:`~madam.core.Asset` object whose essence is identical to
         the contents of the specified file.

@@ -151,7 +151,7 @@ class TestPillowProcessor:
         (png_asset().essence, 'image/png')
     ])
     def test_read_image_returns_asset_with_image_mime_type(self, pillow_processor, image_data, mime_type):
-        asset = pillow_processor.read(image_data)
+        asset = pillow_processor._read(image_data)
 
         assert asset.mime_type == mime_type
 
@@ -160,7 +160,7 @@ class TestPillowProcessor:
         original_image_data = jpeg_data.read()
         jpeg_data.seek(0)
 
-        pillow_processor.read(jpeg_data)
+        pillow_processor._read(jpeg_data)
 
         jpeg_data.seek(0)
         image_data_after_reading = jpeg_data.read()
@@ -168,13 +168,13 @@ class TestPillowProcessor:
 
     @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_asset().essence])
     def test_image_asset_essence_is_filled(self, image_data, pillow_processor):
-        asset = pillow_processor.read(image_data)
+        asset = pillow_processor._read(image_data)
 
         assert asset.essence.read()
 
     @pytest.mark.parametrize('image_data', [jpeg_asset().essence, png_asset().essence])
     def test_jpeg_asset_contains_size_information(self, pillow_processor, image_data):
-        asset = pillow_processor.read(image_data)
+        asset = pillow_processor._read(image_data)
 
         assert asset.metadata['width'] == 4
         assert asset.metadata['height'] == 3

@@ -19,7 +19,7 @@ class TestFFmpegProcessor:
         video_path = 'tests/resources/bus_qcif_15fps.y4m'
 
         with open(video_path, 'rb') as video_file:
-            asset = processor.read(video_file)
+            asset = processor._read(video_file)
 
         assert asset is not None
 
@@ -27,7 +27,7 @@ class TestFFmpegProcessor:
         video_path = 'tests/resources/bus_qcif_15fps.y4m'
 
         with open(video_path, 'rb') as video_file:
-            asset = processor.read(video_file)
+            asset = processor._read(video_file)
 
         with open(video_path, 'rb') as video_file:
             assert asset.essence.read() == video_file.read()
@@ -36,7 +36,7 @@ class TestFFmpegProcessor:
         video_path = 'tests/resources/bus_qcif_15fps.y4m'
 
         with open(video_path, 'rb') as video_file:
-            asset = processor.read(video_file)
+            asset = processor._read(video_file)
 
         assert asset.mime_type == 'video/x-yuv4mpegpipe'
 
@@ -44,7 +44,7 @@ class TestFFmpegProcessor:
         video_path = 'tests/resources/bus_qcif_15fps.y4m'
 
         with open(video_path, 'rb') as video_file:
-            asset = processor.read(video_file)
+            asset = processor._read(video_file)
 
         assert asset.duration == 5.0
 
