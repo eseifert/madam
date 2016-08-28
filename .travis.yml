@@ -17,6 +17,7 @@ env:
 - TOXENV=py35
 script:
 - tox -e $TOXENV
+- py.test --doctest-modules madam
 after_success:
 - test $TOXENV = "py35" && coveralls
 deploy:
