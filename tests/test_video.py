@@ -15,31 +15,6 @@ class TestFFmpegProcessor:
     def ffmpeg_processor(self):
         return madam.video.FFmpegProcessor()
 
-    def test_read_returns_asset_when_called_with_video_file(self, processor):
-        video_path = 'tests/resources/bus_qcif_15fps.y4m'
-
-        with open(video_path, 'rb') as video_file:
-            asset = processor._read(video_file)
-
-        assert asset is not None
-
-    def test_read_returns_asset_with_filled_essence_when_called_with_video_file(self, processor):
-        video_path = 'tests/resources/bus_qcif_15fps.y4m'
-
-        with open(video_path, 'rb') as video_file:
-            asset = processor._read(video_file)
-
-        with open(video_path, 'rb') as video_file:
-            assert asset.essence.read() == video_file.read()
-
-    def test_read_returns_asset_of_correct_type(self, processor):
-        video_path = 'tests/resources/bus_qcif_15fps.y4m'
-
-        with open(video_path, 'rb') as video_file:
-            asset = processor._read(video_file)
-
-        assert asset.mime_type == 'video/x-yuv4mpegpipe'
-
     def test_read_returns_asset_with_duration_metadata(self, processor):
         video_path = 'tests/resources/bus_qcif_15fps.y4m'
 

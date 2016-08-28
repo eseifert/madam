@@ -83,11 +83,12 @@ def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     assert asset.metadata['height'] == 3
 
 
-def test_read_returns_asset_whose_essence_is_filled(madam, image_asset):
-    image_data = image_asset.essence
-    asset = madam.read(image_data)
+def test_read_returns_asset_whose_essence_is_filled(madam, asset):
+    data = asset.essence
 
-    assert asset.essence.read()
+    read_asset = madam.read(data)
+
+    assert read_asset.essence.read()
 
 
 def test_writes_correct_essence_without_metadata(madam, image_asset):
