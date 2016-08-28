@@ -15,12 +15,16 @@ class FFmpegProcessor(Processor):
     """
 
     @staticmethod
-    def __probe(file):
+    def __probe(file, format=True, streams=False):
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(file.read())
             tmp.flush()
 
-            command = 'ffprobe -print_format json -loglevel quiet -show_format'.split()
+            command = 'ffprobe -print_format json -loglevel quiet'.split()
+            if format:
+                command.append('-show_format')
+            if streams:
+                command.append('-show_streams')
             command.append(tmp.name)
             result = subprocess_run(command, stdout=subprocess.PIPE)
         string_result = result.stdout.decode('utf-8')
@@ -42,11 +46,25 @@ class FFmpegProcessor(Processor):
         return bool(file_info)
 
     def _read(self, file):
-        file_info = FFmpegProcessor.__probe(file)
+        file_info = FFmpegProcessor.__probe(file, streams=True)
         file.seek(0)
-        mime_type = self.__mime_type_to_ffmpeg_type.inv[file_info['format']['format_name']]
-        duration = float(file_info['format']['duration'])
-        return Asset(essence=file, mime_type=mime_type, duration=duration)
+
+        metadata = dict(
+            mime_type=self.__mime_type_to_ffmpeg_type.inv[file_info['format']['format_name']],
+            duration=float(file_info['format']['duration'])
+        )
+        for stream in file_info['streams']:
+            if stream.get('codec_type') == 'video':
+                if 'video' not in metadata:
+                    metadata['video'] = {}
+                if 'codec_name' in stream:
+                    metadata['video']['codec'] = stream['codec_name']
+                if 'bitrate' in stream:
+                    metadata['video']['bitrate'] = stream['bitrate']
+                # Only use first stream
+                break
+
+        return Asset(essence=file, **metadata)
 
     @operator
     def convert(self, asset, mime_type, video=None, audio=None, subtitles=None):
