@@ -6,7 +6,7 @@ import piexif
 import PIL.ExifTags
 import PIL.Image
 
-from madam.core import operator
+from madam.core import operator, OperatorError
 from madam.core import Asset, Processor, MetadataProcessor, UnsupportedFormatError
 
 
@@ -198,7 +198,7 @@ class PillowProcessor(Processor):
         elif orientation == 8:
             oriented_asset = self._rotate(asset, PIL.Image.ROTATE_90)
         else:
-            raise ValueError('Unable to correct image orientation with value %s' % orientation)
+            raise OperatorError('Unable to correct image orientation with value %s' % orientation)
 
         return oriented_asset
 
@@ -215,7 +215,10 @@ class PillowProcessor(Processor):
         image = PIL.Image.open(asset.essence)
         converted_essence_data = io.BytesIO()
         pil_format = self.__mime_type_to_pillow_type[mime_type]
-        image.save(converted_essence_data, pil_format)
+        try:
+            image.save(converted_essence_data, pil_format)
+        except (IOError, KeyError) as pil_error:
+            raise OperatorError('Could not convert image: %s', pil_error)
         converted_essence_data.seek(0)
 
         converted_asset = Asset(converted_essence_data, mime_type=mime_type)

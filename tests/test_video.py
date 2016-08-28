@@ -5,6 +5,7 @@ from io import BytesIO
 import pytest
 
 import madam.video
+from madam.core import OperatorError
 from madam.future import subprocess_run
 from assets import y4m_asset, unknown_asset
 
@@ -87,7 +88,7 @@ class TestFFmpegProcessor:
     def test_convert_raises_error_when_it_fails(self, processor, unknown_asset):
         conversion_operator = processor.convert(mime_type='video/webm')
 
-        with pytest.raises(IOError):
+        with pytest.raises(OperatorError):
             conversion_operator(unknown_asset)
 
     def test_converted_essence_is_of_specified_type(self, processor, y4m_asset):

@@ -481,3 +481,10 @@ def operator(function):
         configured_operator = functools.partial(function, self, **kwargs)
         return configured_operator
     return wrapper
+
+
+class OperatorError(Exception):
+    """
+    Represents an error that is raised whenever an error occurs in an :func:`~madam.core.operator`.
+    """
+    pass
