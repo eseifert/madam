@@ -15,13 +15,10 @@ class TestFFmpegProcessor:
     def ffmpeg_processor(self):
         return madam.video.FFmpegProcessor()
 
-    def test_read_returns_asset_with_duration_metadata(self, processor):
-        video_path = 'tests/resources/bus_qcif_15fps.y4m'
+    def test_read_returns_asset_with_duration_metadata(self, processor, y4m_asset):
+        asset = processor._read(y4m_asset.essence)
 
-        with open(video_path, 'rb') as video_file:
-            asset = processor._read(video_file)
-
-        assert asset.duration == 5.0
+        assert asset.duration == y4m_asset.duration
 
     def test_converted_asset_receives_correct_mime_type(self, processor, y4m_asset):
         conversion_operator = processor.convert(mime_type='video/webm')
