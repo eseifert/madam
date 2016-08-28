@@ -152,14 +152,6 @@ class TestPillowProcessor:
 
         assert asset.essence.read()
 
-    def test_read_returns_asset_containing_image_size_metadata(self, pillow_processor, image_asset):
-        image_data = image_asset.essence
-
-        asset = pillow_processor._read(image_data)
-
-        assert asset.metadata['width'] == 4
-        assert asset.metadata['height'] == 3
-
 
 class TestExifProcessor:
     @pytest.fixture

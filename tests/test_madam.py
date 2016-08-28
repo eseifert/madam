@@ -74,6 +74,15 @@ def test_read_jpeg_does_not_alter_the_original_file(madam):
     assert original_image_data == image_data_after_reading
 
 
+def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
+    image_data = image_asset.essence
+
+    asset = madam.read(image_data)
+
+    assert asset.metadata['width'] == 4
+    assert asset.metadata['height'] == 3
+
+
 def test_writes_correct_essence_without_metadata(madam, image_asset):
     asset = Asset(essence=image_asset.essence)
     file = io.BytesIO()
