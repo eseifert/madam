@@ -5,7 +5,7 @@ import pytest
 
 from madam import Madam
 from madam.core import Asset, UnsupportedFormatError
-from assets import jpeg_asset, png_asset, image_asset
+from assets import jpeg_asset, png_asset, image_asset, y4m_asset, asset
 
 
 @pytest.fixture(name='madam')
@@ -48,10 +48,10 @@ def test_read_raises_error_when_format_is_unknown(madam):
         madam.read(unknown_file)
 
 
-def test_read_returns_asset_when_reading_image_data(madam, image_asset):
-    image_data = image_asset.essence
+def test_read_returns_asset_when_reading_valid_data(madam, asset):
+    valid_data = asset.essence
 
-    asset = madam.read(image_data)
+    asset = madam.read(valid_data)
 
     assert asset is not None
 

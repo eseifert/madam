@@ -15,14 +15,6 @@ class TestFFmpegProcessor:
     def ffmpeg_processor(self):
         return madam.video.FFmpegProcessor()
 
-    def test_supports_y4m_file(self, processor):
-        video_path = 'tests/resources/bus_qcif_15fps.y4m'
-
-        with open(video_path, 'rb') as video_file:
-            supported = processor._can_read(video_file)
-
-        assert supported
-
     def test_cannot_read_unknown_file(self, processor):
         random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
         unknown_file = BytesIO(random_data)
