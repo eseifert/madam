@@ -1,6 +1,7 @@
 import abc
 import functools
 import io
+import importlib
 import itertools
 import mimetypes
 import os
@@ -22,6 +23,11 @@ class Madam:
         """
         self.config = {'processors': ['madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
                                       'madam.image.PillowProcessor', 'madam.video.FFmpegProcessor']}
+        for processor_path in self.config['processors']:
+            processor_module_path, processor_class_name = processor_path.rsplit('.', 1)
+            processor_module = importlib.import_module(processor_module_path)
+            processor_class = getattr(processor_module, processor_class_name)
+            _processors.append(processor_class())
 
     def read(self, file, mime_type=None):
         """
@@ -369,11 +375,6 @@ class Processor(metaclass=abc.ABCMeta):
     Represents an entity that can create :class:`~madam.core.Asset` objects
     from binary data.
     """
-    def __init__(self):
-        """
-        Initializes a new processor.
-        """
-        _processors.append(self)
 
     @abc.abstractmethod
     def _can_read(self, mime_type):
