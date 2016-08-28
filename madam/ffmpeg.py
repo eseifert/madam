@@ -34,6 +34,9 @@ class FFmpegProcessor(Processor):
     def __init__(self):
         super().__init__()
         self.__mime_type_to_ffmpeg_type = bidict({
+            'audio/mpeg': 'mp3',
+            'audio/ogg': 'ogg',
+            'audio/wav': 'wav',
             'video/mp4': 'mp4',
             'video/webm': 'webm',
             'video/x-yuv4mpegpipe': 'yuv4mpegpipe'

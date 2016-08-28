@@ -1,10 +1,13 @@
-from madam.core import Asset, Processor
 import io
-import mutagen.mp3
 import os
 import shutil
 import tempfile
 import wave
+
+import mutagen.mp3
+
+from madam.core import Asset, Processor
+from ffmpeg import FFmpegProcessor
 
 
 class WaveProcessor(Processor):

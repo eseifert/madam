@@ -44,3 +44,18 @@ class TestMutagenProcessor:
         with open(mp3_file_path, 'rb') as mp3_file:
             actual_data = mp3_file.read()
         assert expected_data == actual_data
+
+
+class TestFFmpegProcessor:
+    @pytest.fixture(name='processor')
+    def mutagen_processor(self):
+        return madam.audio.FFmpegProcessor()
+
+    def test_create_asset_from_mp3(self, processor):
+        mp3_file_path = 'tests/resources/64kbits.mp3'
+        with open(mp3_file_path, 'rb') as mp3_file:
+            asset = processor._read(mp3_file)
+        assert asset.mime_type == 'audio/mpeg'
+        assert asset.duration > 0
+        assert asset.essence is not None
+        assert asset.essence.read()
