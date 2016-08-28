@@ -1,7 +1,6 @@
 sudo: required
 dist: trusty
 language: python
-cache: pip
 python:
 - 3.5
 install:
