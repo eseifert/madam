@@ -19,7 +19,8 @@ class Madam:
         """
         Initializes a new library instance with default configuration.
 
-        The default configuration includes a list of all available processors.
+        The default configuration includes a list of all available Processor
+        and MetadataProcessor implementations.
         """
         self.config = {'processors': ['madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
                                       'madam.image.PillowProcessor', 'madam.video.FFmpegProcessor'],
