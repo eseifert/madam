@@ -146,12 +146,6 @@ class TestPillowProcessor:
         image = PIL.Image.open(converted_asset.essence)
         assert image.format == 'PNG'
 
-    def test_read_returns_asset_whose_essence_is_filled(self, image_asset, pillow_processor):
-        image_data = image_asset.essence
-        asset = pillow_processor._read(image_data)
-
-        assert asset.essence.read()
-
 
 class TestExifProcessor:
     @pytest.fixture
