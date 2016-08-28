@@ -58,24 +58,19 @@ class FFmpegProcessor(Processor):
         Options are passed as dictionary instances and can contain various keys for
         each stream type.
 
-        Options for video streams:
+        **Options for video streams:**
 
-        ``codec``:
-            Processor-specific name of the video codec as string
-        ``bitrate``:
-            Target bitrate in kBit/s as float number
+        - **codec** – Processor-specific name of the video codec as string
+        - **bitrate** – Target bitrate in kBit/s as float number
 
-        Options for audio streams:
+        **Options for audio streams:**
 
-        ``codec``:
-            Processor-specific name of the audio codec as string
-        ``bitrate``:
-            Target bitrate in kBit/s as float number
+        - **codec** – Processor-specific name of the audio codec as string
+        - **bitrate** – Target bitrate in kBit/s as float number
 
-        Options for subtitle streams:
+        **Options for subtitle streams:**
 
-        ``codec``:
-            Processor-specific name of the subtitle format as string
+        - **codec** – Processor-specific name of the subtitle format as string
 
         :param asset: Asset whose contents will be converted
         :param mime_type: MIME type of the video container
