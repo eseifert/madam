@@ -63,9 +63,10 @@ class Madam:
 
         :Example:
 
-        >>> import madam
+        >>> from madam import Madam
+        >>> madam = Madam()
         >>> with open('path/to/file.jpg', 'rb') as file:
-        ...     madam.read(file)
+        ...     asset = madam.read(file)
         """
         if not file:
             raise TypeError('Unable to read object of type %s' % type(file))
@@ -102,9 +103,10 @@ class Madam:
 
         >>> import io
         >>> import os
-        >>> import madam
+        >>> from madam import Madam
         >>> from madam.core import Asset
         >>> gif_asset = Asset(essence=io.BytesIO(b'GIF89a\x01\x00\x01\x00\x00\x00\x00;'), mime_type='image/gif')
+        >>> madam = Madam()
         >>> with open(os.devnull, 'wb') as file:
         ...     madam.write(gif_asset, file)
         >>> wav_asset = Asset(
