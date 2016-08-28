@@ -22,11 +22,17 @@ storing, organizing, and transforming asset data.
 Usage
 =====
 
+Initialization:
+
+.. code:: pycon
+
+    >>> from madam import Madam
+    >>> madam = Madam()
+
 Reading a JPEG image and extracting metadata:
 
 .. code:: pycon
 
-    >>> import madam
     >>> with open('path/to/file.jpg', 'rb') as file:
     ...     asset = madam.read(file)
     >>> asset.mime_type
