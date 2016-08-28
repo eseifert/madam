@@ -1,5 +1,5 @@
-from .core import Madam
+from madam.core import Madam
 
-from ._version import get_versions
+from madam._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
