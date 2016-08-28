@@ -349,7 +349,7 @@ class Asset:
         return hash(self._essence_data) ^ hash(self.metadata)
 
 
-class UnsupportedFormatError(ValueError):
+class UnsupportedFormatError(Exception):
     """
     Represents an error that is raised whenever file content with unknown type is encountered.
     """
