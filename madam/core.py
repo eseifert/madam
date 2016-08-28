@@ -23,11 +23,12 @@ class Madam:
         """
         self.config = {'processors': ['madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
                                       'madam.image.PillowProcessor', 'madam.video.FFmpegProcessor']}
+        self._processors = []
         for processor_path in self.config['processors']:
             processor_module_path, processor_class_name = processor_path.rsplit('.', 1)
             processor_module = importlib.import_module(processor_module_path)
             processor_class = getattr(processor_module, processor_class_name)
-            _processors.append(processor_class())
+            self._processors.append(processor_class())
 
     def read(self, file, mime_type=None):
         """
@@ -48,7 +49,7 @@ class Madam:
         """
         if not file:
             raise TypeError('Unable to read object of type %s' % type(file))
-        processors_supporting_type = (processor for processor in _processors if processor._can_read(file))
+        processors_supporting_type = (processor for processor in self._processors if processor._can_read(file))
         processor = next(processors_supporting_type, None)
         if not processor:
             raise UnsupportedFormatError()
@@ -330,7 +331,6 @@ class UnsupportedFormatError(ValueError):
     pass
 
 mimetypes.init()
-_processors = []
 _metadata_processors_by_format = {}
 
 
