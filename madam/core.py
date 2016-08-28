@@ -69,8 +69,13 @@ class Madam:
         """
         if not file:
             raise TypeError('Unable to read object of type %s' % type(file))
-        processors_supporting_type = (processor for processor in self._processors if processor._can_read(file))
-        processor = next(processors_supporting_type, None)
+        processor = None
+        for p in self._processors:
+            file.seek(0)
+            if p._can_read(file):
+                processor = p
+                file.seek(0)
+                break
         if not processor:
             raise UnsupportedFormatError()
         asset = processor.read(file)
