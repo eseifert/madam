@@ -16,7 +16,7 @@ env:
 - TOXENV=py34
 - TOXENV=py35
 script:
-- pip install MADAM
+- python setup.py install
 - tox -e $TOXENV
 - py.test --doctest-modules madam
 after_success:
