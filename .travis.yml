@@ -23,6 +23,9 @@ script:
 - sphinx-build -b html doc/ doc/_build/html
 after_success:
 - test $TOXENV = "py35" && coveralls
+before_deploy:
+- pip install wheel
+- python setup.py bdist_wheel
 deploy:
   provider: pypi
   user: eseifert
