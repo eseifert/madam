@@ -22,6 +22,17 @@ class TestFFmpegProcessor:
         assert resized_asset.width == 12
         assert resized_asset.height == 34
 
+    def test_resize_returns_essence_with_same_format(self, processor, y4m_asset):
+        resize = processor.resize(width=12, height=34)
+
+        resized_asset = resize(y4m_asset)
+
+        command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
+        result = subprocess_run(command, input=resized_asset.essence.read(), stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, check=True)
+        video_info = json.loads(result.stdout.decode('utf-8'))
+        assert video_info.get('format', {}).get('format_name') == 'yuv4mpegpipe'
+
     def test_converted_asset_receives_correct_mime_type(self, processor, y4m_asset):
         conversion_operator = processor.convert(mime_type='video/webm')
 
