@@ -42,6 +42,14 @@ def png_rgb(width, height):
     return image_data
 
 
+def gif_rgb(width, height):
+    image = image_rgb(width, height)
+    image_data = io.BytesIO()
+    image.save(image_data, 'GIF')
+    image_data.seek(0)
+    return image_data
+
+
 def add_exif_to_jpeg(exif, image_data):
     exif_bytes = piexif.dump(exif)
     image_with_exif_metadata = io.BytesIO()
@@ -79,12 +87,28 @@ def png_asset():
     return asset
 
 
-@pytest.fixture(params=['jpeg_asset', 'png_asset'])
-def image_asset(request, jpeg_asset, png_asset):
+@pytest.fixture
+def gif_asset():
+    width = 4
+    height = 3
+    essence = gif_rgb(width, height)
+    metadata = dict(
+        width=width,
+        height=height,
+        mime_type='image/gif'
+    )
+    asset = madam.core.Asset(essence, **metadata)
+    return asset
+
+
+@pytest.fixture(params=['jpeg_asset', 'png_asset', 'gif_asset'])
+def image_asset(request, jpeg_asset, png_asset, gif_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
-    else:
+    elif request.param == 'png_asset':
         return png_asset
+    else:
+        return gif_asset
 
 
 @pytest.fixture
@@ -116,11 +140,13 @@ def y4m_asset():
 
 
 @pytest.fixture(params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'y4m_asset'])
-def asset(request, jpeg_asset, png_asset, mp3_asset, wav_asset, y4m_asset):
+def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, y4m_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
     elif request.param == 'png_asset':
         return png_asset
+    elif request.param == 'gif_asset':
+        return gif_asset
     elif request.param == 'mp3_asset':
         return mp3_asset
     elif request.param == 'wav_asset':
