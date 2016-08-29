@@ -5,7 +5,7 @@ import pytest
 
 import madam.audio
 from madam.future import subprocess_run
-from assets import wav_asset
+from assets import audio_asset, mp3_asset, wav_asset
 
 
 class TestMutagenProcessor:
@@ -51,10 +51,10 @@ class TestFFmpegProcessor:
         assert asset.essence is not None
         assert asset.essence.read()
 
-    def test_converted_essence_is_of_specified_type(self, processor, wav_asset):
+    def test_converted_essence_is_of_specified_type(self, processor, audio_asset):
         conversion_operator = processor.convert(mime_type='audio/mpeg')
 
-        converted_asset = conversion_operator(wav_asset)
+        converted_asset = conversion_operator(audio_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
         result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
@@ -62,10 +62,10 @@ class TestFFmpegProcessor:
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('format', {}).get('format_name') == 'mp3'
 
-    def test_converted_essence_stream_has_specified_codec(self, processor, wav_asset):
+    def test_converted_essence_stream_has_specified_codec(self, processor, audio_asset):
         conversion_operator = processor.convert(mime_type='audio/mpeg', audio=dict(codec='mp3'))
 
-        converted_asset = conversion_operator(wav_asset)
+        converted_asset = conversion_operator(audio_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
         result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,

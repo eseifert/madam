@@ -129,6 +129,14 @@ def mp3_asset():
                             duration=0.144)
 
 
+@pytest.fixture(params=['mp3_asset', 'wav_asset'])
+def audio_asset(request, mp3_asset, wav_asset):
+    if request.param == 'mp3_asset':
+        return mp3_asset
+    else:
+        return wav_asset
+
+
 @pytest.fixture
 def y4m_asset():
     command = 'ffmpeg -loglevel error -f lavfi -i color=color=red:duration=0.2:rate=15 ' \
