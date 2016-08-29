@@ -80,7 +80,7 @@ class FFmpegProcessor(Processor):
                 if 'codec_name' in stream:
                     metadata['video']['codec'] = stream['codec_name']
                 if 'bit_rate' in stream:
-                    metadata['video']['bitrate'] = stream['bit_rate']
+                    metadata['video']['bitrate'] = float(stream['bit_rate'])/1000.0
                 # Only use first stream
                 break
 
