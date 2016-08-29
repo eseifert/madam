@@ -74,15 +74,16 @@ class FFmpegProcessor(Processor):
             duration=float(file_info['format']['duration'])
         )
         for stream in file_info['streams']:
-            if stream.get('codec_type') == 'video':
-                if 'video' not in metadata:
-                    metadata['video'] = {}
-                if 'codec_name' in stream:
-                    metadata['video']['codec'] = stream['codec_name']
-                if 'bit_rate' in stream:
-                    metadata['video']['bitrate'] = float(stream['bit_rate'])/1000.0
+            stream_type = stream.get('codec_type')
+            if stream_type in ('audio', 'video'):
                 # Only use first stream
-                break
+                if stream_type in metadata:
+                    break
+                metadata[stream_type] = {}
+            if 'codec_name' in stream:
+                metadata[stream_type]['codec'] = stream['codec_name']
+            if 'bit_rate' in stream:
+                metadata[stream_type]['bitrate'] = float(stream['bit_rate'])/1000.0
 
         return Asset(essence=file, **metadata)
 
