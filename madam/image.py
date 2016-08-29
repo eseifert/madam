@@ -68,6 +68,7 @@ class PillowProcessor(Processor):
     def __init__(self):
         super().__init__()
         self.__mime_type_to_pillow_type = bidict({
+            'image/gif': 'GIF',
             'image/jpeg': 'JPEG',
             'image/png': 'PNG'
         })

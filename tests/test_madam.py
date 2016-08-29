@@ -5,7 +5,7 @@ import pytest
 
 from madam import Madam
 from madam.core import Asset, UnsupportedFormatError
-from assets import jpeg_asset, png_asset, image_asset, mp3_asset, wav_asset, y4m_asset, asset
+from assets import jpeg_asset, png_asset, gif_asset, image_asset, mp3_asset, wav_asset, y4m_asset, asset
 
 
 @pytest.fixture(name='madam')
