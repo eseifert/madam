@@ -22,8 +22,8 @@ class Madam:
         The default configuration includes a list of all available Processor
         and MetadataProcessor implementations.
         """
-        self.config = {'processors': ['madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
-                                      'madam.image.PillowProcessor', 'madam.ffmpeg.FFmpegProcessor'],
+        self.config = {'processors': ['madam.audio.MutagenProcessor', 'madam.image.PillowProcessor',
+                                      'madam.ffmpeg.FFmpegProcessor'],
                        'metadata_processors': ['madam.image.ExifProcessor']}
         self._processors = []
         self._metadata_processors_by_format = {}

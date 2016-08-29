@@ -10,33 +10,6 @@ from madam.core import Asset, Processor
 from madam.ffmpeg import FFmpegProcessor
 
 
-class WaveProcessor(Processor):
-    """
-    Represents a processor that uses the *wave* module of the standard library
-    to read wave data.
-    """
-    def _read(self, wave_file):
-        with wave.open(wave_file) as wave_data:
-            essence_bytes = wave_data.readframes(wave_data.getnframes())
-            essence_stream = io.BytesIO()
-            essence_stream.write(essence_bytes)
-            essence_stream.seek(0)
-            metadata = dict(
-                mime_type='audio/wav',
-                channels=wave_data.getnchannels(),
-                framerate=wave_data.getframerate(),
-            )
-            asset = Asset(essence_stream, **metadata)
-        return asset
-
-    def _can_read(self, file):
-        try:
-            wave.open(file, 'rb')
-            return True
-        except:
-            return False
-
-
 class MutagenProcessor(Processor):
     """
     Represents a processor that uses *Mutagen* to read audio data.

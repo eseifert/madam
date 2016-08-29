@@ -118,6 +118,6 @@ def test_writes_correct_essence_with_metadata(madam, jpeg_asset):
 
 def test_config_contains_list_of_all_processors_by_default(madam):
     assert madam.config['processors'] == [
-        'madam.audio.MutagenProcessor', 'madam.audio.WaveProcessor',
+        'madam.audio.MutagenProcessor',
         'madam.image.PillowProcessor',
         'madam.ffmpeg.FFmpegProcessor']

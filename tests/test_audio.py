@@ -7,19 +7,6 @@ import madam.audio
 from madam.future import subprocess_run
 from assets import wav_asset
 
-class TestWaveProcessor:
-    @pytest.fixture(name='processor')
-    def wave_processor(self):
-        return madam.audio.WaveProcessor()
-
-    def test_create_asset_from_wav(self, processor):
-        asset = processor._read('tests/resources/16-bit-mono.wav')
-        assert asset.mime_type == 'audio/wav'
-        assert asset.framerate == 48000
-        assert asset.channels == 1
-        assert asset.essence is not None
-        assert asset.essence.read()
-
 
 class TestMutagenProcessor:
     @pytest.fixture(name='processor')
