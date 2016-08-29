@@ -14,6 +14,14 @@ class TestFFmpegProcessor:
     def ffmpeg_processor(self):
         return madam.video.FFmpegProcessor()
 
+    def test_resize_returns_asset_with_correct_dimensions(self, processor, y4m_asset):
+        resize = processor.resize(width=12, height=34)
+
+        resized_asset = resize(y4m_asset)
+
+        assert resized_asset.width == 12
+        assert resized_asset.height == 34
+
     def test_converted_asset_receives_correct_mime_type(self, processor, y4m_asset):
         conversion_operator = processor.convert(mime_type='video/webm')
 

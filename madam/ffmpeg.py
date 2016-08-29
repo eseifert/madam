@@ -88,6 +88,10 @@ class FFmpegProcessor(Processor):
         return Asset(essence=file, **metadata)
 
     @operator
+    def resize(self, asset, width, height):
+        return Asset(essence=asset.essence, width=width, height=height)
+
+    @operator
     def convert(self, asset, mime_type, video=None, audio=None, subtitles=None):
         """
         Creates a new asset of the specified MIME type from the essence of the
