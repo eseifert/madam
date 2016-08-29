@@ -69,8 +69,12 @@ class FFmpegProcessor(Processor):
         file_info = FFmpegProcessor.__probe(file, streams=True)
         file.seek(0)
 
+        for format_name in file_info['format']['format_name'].split(','):
+            mime_type = self.__mime_type_to_ffmpeg_type.inv.get(format_name)
+            if mime_type is not None:
+                break
         metadata = dict(
-            mime_type=self.__mime_type_to_ffmpeg_type.inv[file_info['format']['format_name']],
+            mime_type=mime_type,
             duration=float(file_info['format']['duration'])
         )
         for stream in file_info['streams']:
