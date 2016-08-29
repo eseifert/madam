@@ -89,6 +89,8 @@ class FFmpegProcessor(Processor):
 
     @operator
     def resize(self, asset, width, height):
+        if width < 1 or height < 1:
+            raise ValueError('Invalid dimensions: %dx%d' % (width, height))
         try:
             ffmpeg_type = self.__mime_type_to_ffmpeg_type[asset.mime_type]
         except (AttributeError, KeyError) as ffmpeg_error:

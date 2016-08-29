@@ -14,6 +14,12 @@ class TestFFmpegProcessor:
     def ffmpeg_processor(self):
         return madam.video.FFmpegProcessor()
 
+    def test_resize_raises_error_for_invalid_dimensions(self, processor, y4m_asset):
+        resize = processor.resize(width=12, height=-34)
+
+        with pytest.raises(ValueError):
+            resize(y4m_asset)
+
     def test_resize_returns_asset_with_correct_dimensions(self, processor, y4m_asset):
         resize = processor.resize(width=12, height=34)
 
