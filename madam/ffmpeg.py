@@ -5,7 +5,7 @@ import tempfile
 
 from bidict import bidict
 
-from madam.core import Asset, Processor, operator, OperatorError
+from madam.core import Asset, Processor, operator, OperatorError, UnsupportedFormatError
 from madam.future import CalledProcessError, subprocess_run
 
 
@@ -93,9 +93,8 @@ class FFmpegProcessor(Processor):
             raise ValueError('Invalid dimensions: %dx%d' % (width, height))
         try:
             ffmpeg_type = self.__mime_type_to_ffmpeg_type[asset.mime_type]
-        except (AttributeError, KeyError) as ffmpeg_error:
-            error_message = str(ffmpeg_error)
-            raise OperatorError('Invalid asset: %s' % error_message)
+        except KeyError:
+            raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
         command = ['ffmpeg', '-loglevel', 'error', '-f', ffmpeg_type, '-i', 'pipe:',
                    '-filter:v', 'scale=%d:%d' % (width, height),
                    '-f', ffmpeg_type, 'pipe:']

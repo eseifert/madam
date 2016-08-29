@@ -4,7 +4,7 @@ import subprocess
 import pytest
 
 import madam.video
-from madam.core import OperatorError
+from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
 from assets import y4m_asset, unknown_asset
 
@@ -55,7 +55,7 @@ class TestFFmpegProcessor:
     def test_resize_raises_error_for_unknown_formats(self, processor, unknown_asset):
         resize_operator = processor.resize(width=12, height=34)
 
-        with pytest.raises(OperatorError):
+        with pytest.raises(UnsupportedFormatError):
             resize_operator(unknown_asset)
 
     def test_converted_asset_receives_correct_mime_type(self, processor, y4m_asset):
