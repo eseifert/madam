@@ -19,6 +19,7 @@ script:
 - python setup.py install
 - tox -e $TOXENV
 - py.test --doctest-modules madam
+- cd doc && sphinx-build -b html . ./_build/html
 after_success:
 - test $TOXENV = "py35" && coveralls
 deploy:
