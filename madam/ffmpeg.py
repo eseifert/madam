@@ -79,8 +79,8 @@ class FFmpegProcessor(Processor):
                     metadata['video'] = {}
                 if 'codec_name' in stream:
                     metadata['video']['codec'] = stream['codec_name']
-                if 'bitrate' in stream:
-                    metadata['video']['bitrate'] = stream['bitrate']
+                if 'bit_rate' in stream:
+                    metadata['video']['bitrate'] = stream['bit_rate']
                 # Only use first stream
                 break
 
