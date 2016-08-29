@@ -34,6 +34,11 @@ class FFmpegProcessor(Processor):
         return json_obj
 
     def __init__(self):
+        """
+        Initializes a new FFmpegProcessor.
+
+        :raises EnvironmentError: if the installed version of ffprobe does not match the minimum version requirement
+        """
         super().__init__()
 
         self._min_version = '0.9'
