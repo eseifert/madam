@@ -12,6 +12,8 @@ from madam.future import CalledProcessError, subprocess_run
 class FFmpegProcessor(Processor):
     """
     Represents a processor that uses FFmpeg to read audio and video data.
+
+    The minimum version of FFmpeg required is v0.9.
     """
 
     @staticmethod
@@ -33,6 +35,16 @@ class FFmpegProcessor(Processor):
 
     def __init__(self):
         super().__init__()
+
+        self._min_version = '0.9'
+        command = 'ffprobe -version'.split()
+        result = subprocess_run(command, stdout=subprocess.PIPE)
+        string_result = result.stdout.decode('utf-8')
+        version_string = string_result.split()[2]
+        if version_string < self._min_version:
+            raise EnvironmentError('Found ffprobe version %s. Requiring at least version %s.'
+                                   % (version_string, self._min_version))
+
         self.__mime_type_to_ffmpeg_type = bidict({
             'audio/mpeg': 'mp3',
             'audio/ogg': 'ogg',
