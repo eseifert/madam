@@ -19,6 +19,20 @@ of image, audio, and video files by helping out with several tasks, like
 storing, organizing, and transforming asset data.
 
 
+Installation
+============
+MADAM can be installed by grabbing the latest release from PyPI:
+
+.. code:: shell
+
+    pip install MADAM
+
+
+External requirements
+=====================
+The base installation bundles as much functionality as possible. However, support for audio and video data requires FFmpeg v0.9 or higher to be installed on the system.
+
+
 Usage
 =====
 
