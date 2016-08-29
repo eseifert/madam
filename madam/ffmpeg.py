@@ -99,7 +99,7 @@ class FFmpegProcessor(Processor):
                                     check=True)
         except CalledProcessError as ffmpeg_error:
             error_message = ffmpeg_error.stderr.decode('utf-8')
-            raise OperatorError('Could not convert video asset: %s' % error_message)
+            raise OperatorError('Could not resize video asset: %s' % error_message)
         return Asset(essence=io.BytesIO(result.stdout), width=width, height=height)
 
     @operator
