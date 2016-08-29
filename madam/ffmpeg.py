@@ -89,7 +89,18 @@ class FFmpegProcessor(Processor):
 
     @operator
     def resize(self, asset, width, height):
-        return Asset(essence=asset.essence, width=width, height=height)
+        ffmpeg_type = self.__mime_type_to_ffmpeg_type[asset.mime_type]
+        command = ['ffmpeg', '-loglevel', 'error', '-f', ffmpeg_type, '-i', 'pipe:',
+                   '-filter:v', 'scale=%d:%d' % (width, height),
+                   '-f', ffmpeg_type, 'pipe:']
+        try:
+            result = subprocess_run(command, input=asset.essence.read(),
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    check=True)
+        except CalledProcessError as ffmpeg_error:
+            error_message = ffmpeg_error.stderr.decode('utf-8')
+            raise OperatorError('Could not convert video asset: %s' % error_message)
+        return Asset(essence=io.BytesIO(result.stdout), width=width, height=height)
 
     @operator
     def convert(self, asset, mime_type, video=None, audio=None, subtitles=None):
