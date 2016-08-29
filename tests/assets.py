@@ -163,6 +163,14 @@ def y4m_asset():
                             duration=duration)
 
 
+@pytest.fixture(params=['mp4_asset', 'y4m_asset'])
+def video_asset(request, mp4_asset, y4m_asset):
+    if request.param == 'mp4_asset':
+        return mp4_asset
+    else:
+        return y4m_asset
+
+
 @pytest.fixture(params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'mp4_asset', 'y4m_asset'])
 def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, mp4_asset, y4m_asset):
     if request.param == 'jpeg_asset':

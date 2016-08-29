@@ -5,7 +5,10 @@ import pytest
 
 from madam import Madam
 from madam.core import Asset, UnsupportedFormatError
-from assets import jpeg_asset, png_asset, gif_asset, image_asset, mp3_asset, wav_asset, y4m_asset, asset
+from assets import asset
+from assets import image_asset, jpeg_asset, png_asset, gif_asset
+from assets import audio_asset, mp3_asset, wav_asset
+from assets import video_asset, mp4_asset, y4m_asset
 
 
 @pytest.fixture(name='madam')
@@ -74,10 +77,10 @@ def test_read_jpeg_does_not_alter_the_original_file(madam):
     assert original_image_data == image_data_after_reading
 
 
-def test_read_video_returns_asset_with_duration_metadata(madam, y4m_asset):
-    asset = madam.read(y4m_asset.essence)
+def test_read_video_returns_asset_with_duration_metadata(madam, video_asset):
+    asset = madam.read(video_asset.essence)
 
-    assert asset.duration == y4m_asset.duration
+    assert asset.duration == video_asset.duration
 
 
 def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
