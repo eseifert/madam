@@ -95,23 +95,27 @@ class FFmpegProcessor(Processor):
     def resize(self, asset, width, height):
         if width < 1 or height < 1:
             raise ValueError('Invalid dimensions: %dx%d' % (width, height))
+
         try:
             ffmpeg_type = self.__mime_type_to_ffmpeg_type[asset.mime_type]
         except KeyError:
             raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
         if asset.mime_type.split('/')[0] not in ('image', 'video'):
             raise OperatorError('Cannot resize asset of type %s')
-        command = ['ffmpeg', '-loglevel', 'error', '-f', ffmpeg_type, '-i', 'pipe:',
-                   '-filter:v', 'scale=%d:%d' % (width, height),
-                   '-f', ffmpeg_type, 'pipe:']
-        try:
-            result = subprocess_run(command, input=asset.essence.read(),
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    check=True)
-        except CalledProcessError as ffmpeg_error:
-            error_message = ffmpeg_error.stderr.decode('utf-8')
-            raise OperatorError('Could not resize video asset: %s' % error_message)
-        return Asset(essence=io.BytesIO(result.stdout), width=width, height=height)
+
+        with tempfile.NamedTemporaryFile() as tmp:
+            command = ['ffmpeg', '-loglevel', 'error', '-f', ffmpeg_type, '-i', 'pipe:',
+                       '-filter:v', 'scale=%d:%d' % (width, height),
+                       '-f', ffmpeg_type, '-y', tmp.name]
+
+            try:
+                subprocess_run(command, input=asset.essence.read(),
+                               stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not resize video asset: %s' % error_message)
+
+            return Asset(essence=tmp, width=width, height=height)
 
     @operator
     def convert(self, asset, mime_type, video=None, audio=None, subtitles=None):
@@ -155,13 +159,14 @@ class FFmpegProcessor(Processor):
             if 'bitrate' in audio: command.extend(['-b:a', '%dk' % audio['bitrate']])
         if subtitles is not None:
             if 'codec' in subtitles: command.extend(['-c:s', subtitles['codec']])
-        command.extend(['-f', ffmpeg_type, 'pipe:'])
-        try:
-            result = subprocess_run(command, input=asset.essence.read(),
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    check=True)
-        except CalledProcessError as ffmpeg_error:
-            error_message = ffmpeg_error.stderr.decode('utf-8')
-            raise OperatorError('Could not convert video asset: %s' % error_message)
+        with tempfile.NamedTemporaryFile() as tmp:
+            command.extend(['-f', ffmpeg_type, '-y', tmp.name])
 
-        return Asset(essence=io.BytesIO(result.stdout), mime_type=mime_type)
+            try:
+                result = subprocess_run(command, input=asset.essence.read(),
+                                        stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not convert video asset: %s' % error_message)
+
+            return Asset(essence=tmp, mime_type=mime_type)
