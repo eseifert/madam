@@ -1,4 +1,3 @@
-import PIL.Image
 import io
 import subprocess
 
@@ -89,6 +88,24 @@ def image_asset(request, jpeg_asset, png_asset):
 
 
 @pytest.fixture
+def wav_asset():
+    with open('tests/resources/16-bit-mono.wav', 'rb') as file:
+        essence = file.read()
+    return madam.core.Asset(essence=io.BytesIO(essence),
+                            mime_type='audio/wav',
+                            duration=0.1)
+
+
+@pytest.fixture
+def mp3_asset():
+    with open('tests/resources/64kbits.mp3', 'rb') as file:
+        essence = file.read()
+    return madam.core.Asset(essence=io.BytesIO(essence),
+                            mime_type='audio/mpeg',
+                            duration=0.144)
+
+
+@pytest.fixture
 def y4m_asset():
     command = 'ffmpeg -loglevel error -f lavfi -i color=color=red:duration=0.2:rate=15 ' \
               '-f yuv4mpegpipe pipe:'.split()
@@ -98,12 +115,16 @@ def y4m_asset():
                             duration=0.2)
 
 
-@pytest.fixture(params=['jpeg_asset', 'png_asset', 'y4m_asset'])
-def asset(request, jpeg_asset, png_asset, y4m_asset):
+@pytest.fixture(params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'y4m_asset'])
+def asset(request, jpeg_asset, png_asset, mp3_asset, wav_asset, y4m_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
     elif request.param == 'png_asset':
         return png_asset
+    elif request.param == 'mp3_asset':
+        return mp3_asset
+    elif request.param == 'wav_asset':
+        return wav_asset
     else:
         return y4m_asset
 
