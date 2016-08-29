@@ -138,17 +138,33 @@ def audio_asset(request, mp3_asset, wav_asset):
 
 
 @pytest.fixture
+def mp4_asset(tmpdir):
+    duration = 0.2
+    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:duration=%.1f:rate=15 '
+               '-c:v libx264 -preset ultrafast -qp 0 -f mp4' % duration).split()
+    tmpfile = tmpdir.join('lossless.mp4')
+    command.append(str(tmpfile))
+    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
+        essence = file.read()
+    return madam.core.Asset(essence=io.BytesIO(essence),
+                            mime_type='video/mp4',
+                            duration=duration)
+
+
+@pytest.fixture
 def y4m_asset():
-    command = 'ffmpeg -loglevel error -f lavfi -i color=color=red:duration=0.2:rate=15 ' \
-              '-f yuv4mpegpipe pipe:'.split()
+    duration = 0.2
+    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:duration=%.1f:rate=15 '
+               '-f yuv4mpegpipe pipe:' % duration).split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout),
                             mime_type='video/x-yuv4mpegpipe',
-                            duration=0.2)
+                            duration=duration)
 
 
-@pytest.fixture(params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'y4m_asset'])
-def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, y4m_asset):
+@pytest.fixture(params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'mp4_asset', 'y4m_asset'])
+def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, mp4_asset, y4m_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
     elif request.param == 'png_asset':
@@ -159,6 +175,8 @@ def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, y4m_a
         return mp3_asset
     elif request.param == 'wav_asset':
         return wav_asset
+    elif request.param == 'mp4_asset':
+        return mp4_asset
     else:
         return y4m_asset
 
