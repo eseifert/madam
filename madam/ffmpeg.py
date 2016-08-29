@@ -89,7 +89,11 @@ class FFmpegProcessor(Processor):
 
     @operator
     def resize(self, asset, width, height):
-        ffmpeg_type = self.__mime_type_to_ffmpeg_type[asset.mime_type]
+        try:
+            ffmpeg_type = self.__mime_type_to_ffmpeg_type[asset.mime_type]
+        except (AttributeError, KeyError) as ffmpeg_error:
+            error_message = str(ffmpeg_error)
+            raise OperatorError('Invalid asset: %s' % error_message)
         command = ['ffmpeg', '-loglevel', 'error', '-f', ffmpeg_type, '-i', 'pipe:',
                    '-filter:v', 'scale=%d:%d' % (width, height),
                    '-f', ffmpeg_type, 'pipe:']

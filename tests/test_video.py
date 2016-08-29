@@ -34,9 +34,9 @@ class TestFFmpegProcessor:
         assert video_info.get('format', {}).get('format_name') == 'yuv4mpegpipe'
 
     def test_resize_returns_essence_with_correct_dimensions(self, processor, y4m_asset):
-        resize = processor.resize(width=12, height=34)
+        resize_operator = processor.resize(width=12, height=34)
 
-        resized_asset = resize(y4m_asset)
+        resized_asset = resize_operator(y4m_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
         result = subprocess_run(command, input=resized_asset.essence.read(), stdout=subprocess.PIPE,
@@ -45,6 +45,12 @@ class TestFFmpegProcessor:
         first_stream = video_info.get('streams', [{}])[0]
         assert first_stream.get('width') == 12
         assert first_stream.get('height') == 34
+
+    def test_resize_raises_error_for_unknown_formats(self, processor, unknown_asset):
+        resize_operator = processor.resize(width=12, height=34)
+
+        with pytest.raises(OperatorError):
+            resize_operator(unknown_asset)
 
     def test_converted_asset_receives_correct_mime_type(self, processor, y4m_asset):
         conversion_operator = processor.convert(mime_type='video/webm')
