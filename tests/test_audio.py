@@ -4,6 +4,7 @@ import subprocess
 import pytest
 
 import madam.audio
+from madam.core import OperatorError
 from madam.future import subprocess_run
 from assets import audio_asset, mp3_asset, wav_asset
 
@@ -42,14 +43,11 @@ class TestFFmpegProcessor:
     def mutagen_processor(self):
         return madam.audio.FFmpegProcessor()
 
-    def test_create_asset_from_mp3(self, processor):
-        mp3_file_path = 'tests/resources/64kbits.mp3'
-        with open(mp3_file_path, 'rb') as mp3_file:
-            asset = processor._read(mp3_file)
-        assert asset.mime_type == 'audio/mpeg'
-        assert asset.duration > 0
-        assert asset.essence is not None
-        assert asset.essence.read()
+    def test_cannot_resize_audio(self, processor, audio_asset):
+        resize_operator = processor.resize(width=12, height=34)
+
+        with pytest.raises(OperatorError):
+            resize_operator(audio_asset)
 
     def test_converted_essence_is_of_specified_type(self, processor, audio_asset):
         conversion_operator = processor.convert(mime_type='audio/mpeg')

@@ -95,6 +95,8 @@ class FFmpegProcessor(Processor):
             ffmpeg_type = self.__mime_type_to_ffmpeg_type[asset.mime_type]
         except KeyError:
             raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
+        if asset.mime_type.split('/')[0] not in ('image', 'video'):
+            raise OperatorError('Cannot resize asset of type %s')
         command = ['ffmpeg', '-loglevel', 'error', '-f', ffmpeg_type, '-i', 'pipe:',
                    '-filter:v', 'scale=%d:%d' % (width, height),
                    '-f', ffmpeg_type, 'pipe:']
