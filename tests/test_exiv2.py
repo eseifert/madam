@@ -39,3 +39,19 @@ class TestExiv2Processor:
         exif = processor.read(data_without_exif)
 
         assert not exif
+
+    def test_strip_returns_essence_without_metadata(self, processor, jpeg_asset, tmpdir):
+        file = tmpdir.join('asset_with_exif.jpg')
+        file.write(jpeg_asset.essence.read(), 'wb')
+        metadata = pyexiv2.metadata.ImageMetadata(str(file))
+        metadata.read()
+        metadata['Exif.Image.Artist'] = b'Test artist'
+        metadata.write()
+
+        essence = processor.strip(file.open('rb'))
+
+        essence_file = tmpdir.join('essence_without_exif')
+        essence_file.write(essence, 'wb')
+        metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
+        metadata.read()
+        assert not metadata.keys()
