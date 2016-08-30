@@ -75,3 +75,9 @@ class TestExiv2Processor:
         for key in metadata.exif_keys:
             assert metadata[key].value == exif[key]
 
+    def test_combine_raises_error_when_essence_format_is_invalid(self, processor):
+        junk_data = io.BytesIO(b'abc123')
+        exif = {'Exif.Image.Artist': 'Test artist'}
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.combine(junk_data, exif)

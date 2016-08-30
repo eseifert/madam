@@ -45,7 +45,10 @@ class Exiv2Processor:
             tmp.write(essence.read())
             tmp.flush()
             exiv2 = pyexiv2.ImageMetadata(tmp.name)
-            exiv2.read()
+            try:
+                exiv2.read()
+            except OSError:
+                raise UnsupportedFormatError('Unknown essence format.')
             exiv2['Exif.Image.Artist'] = metadata['Exif.Image.Artist']
             exiv2.write()
             tmp.flush()
