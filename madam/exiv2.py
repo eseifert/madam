@@ -49,7 +49,11 @@ class Exiv2Processor:
                 exiv2.read()
             except OSError:
                 raise UnsupportedFormatError('Unknown essence format.')
-            exiv2['Exif.Image.Artist'] = metadata['Exif.Image.Artist']
+            for key in metadata.keys():
+                try:
+                    exiv2[key] = metadata[key]
+                except KeyError:
+                    raise UnsupportedFormatError('Invalid metadata to be combined with essence: %s' % metadata)
             exiv2.write()
             tmp.flush()
             tmp.seek(0)

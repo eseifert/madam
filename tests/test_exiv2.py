@@ -81,3 +81,9 @@ class TestExiv2Processor:
 
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, exif)
+
+    def test_combine_raises_error_when_metadata_format_is_invalid(self, processor, jpeg_asset):
+        exif = {'123abc': 'Test artist'}
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.combine(jpeg_asset.essence, exif)
