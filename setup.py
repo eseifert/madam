@@ -16,7 +16,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     author='Michael Seifert, Erich Seifert',
     author_email='mseifert@error-reports.org, dev@erichseifert.de',
-    install_requires=['bidict', 'frozendict', 'mutagen', 'piexif', 'pillow'],
+    install_requires=['bidict', 'frozendict', 'mutagen', 'piexif', 'pillow', 'py3exiv2'],
     setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['piexif', 'pillow', 'py3exiv2', 'pytest >=3.0'],
     extras_require={
