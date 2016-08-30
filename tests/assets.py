@@ -137,12 +137,12 @@ def audio_asset(request, mp3_asset, wav_asset):
         return wav_asset
 
 
-@pytest.fixture
-def mp4_asset(tmpdir):
+@pytest.fixture(scope='class')
+def mp4_asset(tmpdir_factory):
     duration = 0.2
     command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:duration=%.1f:rate=15 '
                '-c:v libx264 -preset ultrafast -qp 0 -f mp4' % duration).split()
-    tmpfile = tmpdir.join('lossless.mp4')
+    tmpfile = tmpdir_factory.mktemp('mp4_asset').join('lossless.mp4')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
@@ -152,7 +152,7 @@ def mp4_asset(tmpdir):
                             duration=duration)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='class')
 def y4m_asset():
     duration = 0.2
     command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:duration=%.1f:rate=15 '
@@ -163,7 +163,7 @@ def y4m_asset():
                             duration=duration)
 
 
-@pytest.fixture(params=['mp4_asset', 'y4m_asset'])
+@pytest.fixture(scope='class', params=['mp4_asset', 'y4m_asset'])
 def video_asset(request, mp4_asset, y4m_asset):
     if request.param == 'mp4_asset':
         return mp4_asset
