@@ -2,6 +2,7 @@ import io
 import pyexiv2
 import pytest
 
+from core import UnsupportedFormatError
 from assets import jpeg_asset
 from exiv2 import Exiv2Processor
 
@@ -25,3 +26,10 @@ class TestExiv2Processor:
         exif = processor.read(io.BytesIO(file.read('rb')))
 
         assert exif
+
+    def test_read_raises_error_when_file_format_is_invalid(self, processor):
+        junk_data = io.BytesIO(b'abc123')
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.read(junk_data)
+

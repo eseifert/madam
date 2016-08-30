@@ -2,6 +2,7 @@ import tempfile
 
 import pyexiv2
 
+from core import UnsupportedFormatError
 
 class Exiv2Processor:
     """
@@ -16,7 +17,10 @@ class Exiv2Processor:
             tmp.write(file.read())
             tmp.flush()
             metadata = pyexiv2.ImageMetadata(tmp.name)
-            metadata.read()
+            try:
+                metadata.read()
+            except OSError:
+                raise UnsupportedFormatError('Unknown file format.')
         exif = {}
         for key in metadata.exif_keys:
             exif[key] = metadata[key]
