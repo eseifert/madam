@@ -11,7 +11,9 @@ before_script:
 - sudo add-apt-repository ppa:mc3man/trusty-media -y
 - sudo apt-get update -qq
 - sudo apt-get install ffmpeg -y
+# Install system dependencies for py3exiv2
 - sudo apt-get install libexiv2-dev -y
+- sudo apt-get install libboost-python-dev -y
 - ffprobe -formats
 - ffprobe -codecs
 env:
