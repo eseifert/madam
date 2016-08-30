@@ -57,7 +57,7 @@ def add_exif_to_jpeg(exif, image_data):
     return image_with_exif_metadata
 
 
-@pytest.fixture
+@pytest.fixture(scope='class')
 def jpeg_asset(width=4, height=3, transpositions=None, **additional_metadata):
     if not transpositions:
         transpositions = []
@@ -73,7 +73,7 @@ def jpeg_asset(width=4, height=3, transpositions=None, **additional_metadata):
     return asset
 
 
-@pytest.fixture
+@pytest.fixture(scope='class')
 def png_asset():
     width = 4
     height = 3
@@ -87,7 +87,7 @@ def png_asset():
     return asset
 
 
-@pytest.fixture
+@pytest.fixture(scope='class')
 def gif_asset():
     width = 4
     height = 3
@@ -171,7 +171,7 @@ def video_asset(request, mp4_asset, y4m_asset):
         return y4m_asset
 
 
-@pytest.fixture(params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'mp4_asset', 'y4m_asset'])
+@pytest.fixture(scope='class', params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'mp4_asset', 'y4m_asset'])
 def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, mp4_asset, y4m_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
