@@ -11,7 +11,7 @@ from assets import audio_asset, mp3_asset, wav_asset
 from assets import video_asset, mp4_asset, y4m_asset
 
 
-@pytest.fixture(name='madam')
+@pytest.fixture(name='madam', scope='class')
 def madam_instance():
     return Madam()
 
@@ -51,18 +51,22 @@ def test_read_raises_error_when_format_is_unknown(madam):
         madam.read(unknown_file)
 
 
-def test_read_returns_asset_when_reading_valid_data(madam, asset):
-    valid_data = asset.essence
+@pytest.fixture(scope='class')
+def read_asset(madam, asset):
+    return madam.read(asset.essence)
 
-    asset = madam.read(valid_data)
 
-    assert asset is not None
+def test_read_returns_asset_when_reading_valid_data(read_asset):
+    assert read_asset is not None
 
 
 def test_read_image_returns_asset_with_image_mime_type(madam, asset):
     read_asset = madam.read(asset.essence)
-
     assert read_asset.mime_type == asset.mime_type
+
+
+def test_read_returns_asset_whose_essence_is_filled(read_asset):
+    assert read_asset.essence.read()
 
 
 def test_read_jpeg_does_not_alter_the_original_file(madam):
@@ -90,14 +94,6 @@ def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
 
     assert asset.metadata['width'] == 4
     assert asset.metadata['height'] == 3
-
-
-def test_read_returns_asset_whose_essence_is_filled(madam, asset):
-    data = asset.essence
-
-    read_asset = madam.read(data)
-
-    assert read_asset.essence.read()
 
 
 def test_writes_correct_essence_without_metadata(madam, image_asset):
