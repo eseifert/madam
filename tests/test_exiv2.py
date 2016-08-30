@@ -2,9 +2,9 @@ import io
 import pyexiv2
 import pytest
 
-from madam.core import UnsupportedFormatError
 from assets import jpeg_asset
-from exiv2 import Exiv2Processor
+from madam.core import UnsupportedFormatError
+from madam.exiv2 import Exiv2Processor
 
 
 class TestExiv2Processor:
