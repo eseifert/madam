@@ -111,7 +111,7 @@ def image_asset(request, jpeg_asset, png_asset, gif_asset):
         return gif_asset
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def wav_asset():
     with open('tests/resources/16-bit-mono.wav', 'rb') as file:
         essence = file.read()
@@ -120,7 +120,7 @@ def wav_asset():
                             duration=0.1)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def mp3_asset():
     with open('tests/resources/64kbits.mp3', 'rb') as file:
         essence = file.read()
@@ -152,7 +152,7 @@ def mp4_asset(tmpdir):
                             duration=duration)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def y4m_asset():
     duration = 0.2
     command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:duration=%.1f:rate=15 '
