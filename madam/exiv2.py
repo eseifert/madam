@@ -2,7 +2,7 @@ import tempfile
 
 import pyexiv2
 
-from core import UnsupportedFormatError
+from madam.core import UnsupportedFormatError
 
 class Exiv2Processor:
     """
