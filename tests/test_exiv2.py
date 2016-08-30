@@ -33,3 +33,9 @@ class TestExiv2Processor:
         with pytest.raises(UnsupportedFormatError):
             processor.read(junk_data)
 
+    def test_read_returns_empty_dict_when_jpeg_contains_no_exif(self, processor, jpeg_asset):
+        data_without_exif = jpeg_asset.essence
+
+        exif = processor.read(data_without_exif)
+
+        assert not exif
