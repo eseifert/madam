@@ -55,3 +55,9 @@ class TestExiv2Processor:
         metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
         metadata.read()
         assert not metadata.keys()
+
+    def test_strip_raises_error_when_file_format_is_invalid(self, processor):
+        junk_data = io.BytesIO(b'abc123')
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.strip(junk_data)
