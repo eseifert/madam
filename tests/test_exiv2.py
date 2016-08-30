@@ -61,3 +61,17 @@ class TestExiv2Processor:
 
         with pytest.raises(UnsupportedFormatError):
             processor.strip(junk_data)
+
+    def test_combine_returns_essence_with_metadata(self, processor, jpeg_asset, tmpdir):
+        essence = jpeg_asset.essence
+        exif = {'Exif.Image.Artist': 'Test artist'}
+
+        essence_with_exif = processor.combine(essence, exif)
+
+        essence_file = tmpdir.join('essence_with_exif')
+        essence_file.write(essence_with_exif, 'wb')
+        metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
+        metadata.read()
+        for key in metadata.exif_keys:
+            assert metadata[key].value == exif[key]
+

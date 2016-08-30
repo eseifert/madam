@@ -39,3 +39,15 @@ class Exiv2Processor:
             metadata.write()
             tmp.seek(0)
             return tmp.read()
+
+    def combine(self, essence, metadata):
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(essence.read())
+            tmp.flush()
+            exiv2 = pyexiv2.ImageMetadata(tmp.name)
+            exiv2.read()
+            exiv2['Exif.Image.Artist'] = metadata['Exif.Image.Artist']
+            exiv2.write()
+            tmp.flush()
+            tmp.seek(0)
+            return tmp.read()
