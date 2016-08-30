@@ -10,7 +10,7 @@ from assets import video_asset, mp4_asset, y4m_asset, unknown_asset
 
 
 class TestFFmpegProcessor:
-    @pytest.fixture(name='processor')
+    @pytest.fixture(name='processor', scope='class')
     def ffmpeg_processor(self):
         return madam.video.FFmpegProcessor()
 
@@ -58,11 +58,13 @@ class TestFFmpegProcessor:
         with pytest.raises(UnsupportedFormatError):
             resize_operator(unknown_asset)
 
-    def test_converted_asset_receives_correct_mime_type(self, processor, video_asset):
+    @pytest.fixture(scope='class')
+    def converted_asset(self, processor, video_asset):
         conversion_operator = processor.convert(mime_type='video/webm')
-
         converted_asset = conversion_operator(video_asset)
+        return converted_asset
 
+    def test_converted_asset_receives_correct_mime_type(self, converted_asset):
         assert converted_asset.mime_type == 'video/webm'
 
     def test_convert_creates_new_asset(self, processor, video_asset):
@@ -79,22 +81,14 @@ class TestFFmpegProcessor:
         with pytest.raises(OperatorError):
             conversion_operator(unknown_asset)
 
-    def test_converted_essence_is_of_specified_type(self, processor, video_asset):
-        conversion_operator = processor.convert(mime_type='video/webm')
-
-        converted_asset = conversion_operator(video_asset)
-
+    def test_converted_essence_is_of_specified_type(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
         result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('format', {}).get('format_name') == 'matroska,webm'
 
-    def test_converted_essence_stream_has_specified_codec(self, processor, video_asset):
-        conversion_operator = processor.convert(mime_type='video/webm', video=dict(codec='vp9'))
-
-        converted_asset = conversion_operator(video_asset)
-
+    def test_converted_essence_stream_has_specified_codec(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
         result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
