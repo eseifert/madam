@@ -12,12 +12,15 @@ class Exiv2Processor(MetadataProcessor):
     Represents a metadata processor using the exiv2 library.
     """
     __metadata_key_to_exiv2_key = bidict({
+        # Exif
         'Image.Artist': 'Exif.Image.Artist',
+        # IPTC
+        'Caption': 'Iptc.Application2.Caption',
     })
 
     @property
     def formats(self):
-        return 'exif',
+        return 'exif', 'iptc'
 
     def read(self, file):
         with tempfile.NamedTemporaryFile() as tmp:
@@ -60,7 +63,7 @@ class Exiv2Processor(MetadataProcessor):
             for key in metadata.keys():
                 try:
                     exiv2_key = Exiv2Processor.__metadata_key_to_exiv2_key[key]
-                    exiv2_metadata[exiv2_key] = metadata[key]
+                    exiv2_metadata[exiv2_key] = [metadata[key]]
                 except KeyError:
                     raise UnsupportedFormatError('Invalid metadata to be combined with essence: %s' % metadata)
             exiv2_metadata.write()
