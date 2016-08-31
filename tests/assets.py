@@ -1,7 +1,6 @@
 import io
 import subprocess
 
-import piexif
 import PIL.Image
 import pytest
 
@@ -48,13 +47,6 @@ def gif_rgb(width, height):
     image.save(image_data, 'GIF')
     image_data.seek(0)
     return image_data
-
-
-def add_exif_to_jpeg(exif, image_data):
-    exif_bytes = piexif.dump(exif)
-    image_with_exif_metadata = io.BytesIO()
-    piexif.insert(exif_bytes, image_data.read(), image_with_exif_metadata)
-    return image_with_exif_metadata
 
 
 @pytest.fixture(scope='class')
