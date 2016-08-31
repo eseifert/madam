@@ -2,9 +2,10 @@ import tempfile
 
 import pyexiv2
 
-from madam.core import UnsupportedFormatError
+from madam.core import MetadataProcessor, UnsupportedFormatError
 
-class Exiv2Processor:
+
+class Exiv2Processor(MetadataProcessor):
     """
     Represents a metadata processor using the exiv2 library.
     """
