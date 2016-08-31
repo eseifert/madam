@@ -30,16 +30,17 @@ class Madam:
 
         # Initialize processors
         for processor_path in self.config['processors']:
-            processor_class = self._import_from(processor_path)
+            processor_class = Madam._import_from(processor_path)
             self._processors.append(processor_class())
         # Initialize metadata processors
         for processor_path in self.config['metadata_processors']:
-            processor_class = self._import_from(processor_path)
+            processor_class = Madam._import_from(processor_path)
             processor = processor_class()
             for format in list(processor.formats):
                 self._metadata_processors_by_format[format] = processor
 
-    def _import_from(self, member_path):
+    @staticmethod
+    def _import_from(member_path):
         """
         Returns the member located at the specified import path.
 
