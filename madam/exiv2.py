@@ -1,6 +1,7 @@
 import io
 import tempfile
 
+from bidict import bidict
 import pyexiv2
 
 from madam.core import MetadataProcessor, UnsupportedFormatError
@@ -10,6 +11,10 @@ class Exiv2Processor(MetadataProcessor):
     """
     Represents a metadata processor using the exiv2 library.
     """
+    __metadata_key_to_exiv2_key = bidict({
+        'Image.Artist': 'Exif.Image.Artist',
+    })
+
     @property
     def formats(self):
         return 'exif',
@@ -25,7 +30,8 @@ class Exiv2Processor(MetadataProcessor):
                 raise UnsupportedFormatError('Unknown file format.')
         exif = {}
         for key in metadata.exif_keys:
-            exif[Exiv2Processor.__to_madam_key(key)] = metadata[key].value
+            madam_key = Exiv2Processor.__metadata_key_to_exiv2_key.inv[key]
+            exif[madam_key] = metadata[key].value
         return exif
 
     def strip(self, file):
@@ -52,8 +58,8 @@ class Exiv2Processor(MetadataProcessor):
             except OSError:
                 raise UnsupportedFormatError('Unknown essence format.')
             for key in metadata.keys():
-                exiv2_key = Exiv2Processor.__to_exiv2_key(key)
                 try:
+                    exiv2_key = Exiv2Processor.__metadata_key_to_exiv2_key[key]
                     exiv2_metadata[exiv2_key] = metadata[key]
                 except KeyError:
                     raise UnsupportedFormatError('Invalid metadata to be combined with essence: %s' % metadata)
@@ -61,23 +67,3 @@ class Exiv2Processor(MetadataProcessor):
             tmp.flush()
             tmp.seek(0)
             return io.BytesIO(tmp.read())
-
-    @staticmethod
-    def __to_exiv2_key(key):
-        """
-        Converts the specified MADAM key to an Exiv2 key.
-
-        :param key: Tag key to be converted
-        :return: Converted tag key
-        """
-        return 'Exif.' + key
-
-    @staticmethod
-    def __to_madam_key(key):
-        """
-        Converts the specified Exiv2 key to a MADAM key.
-
-        :param key: Tag key to be converted
-        :return: Converted tag key
-        """
-        return key.split('.', 1)[1]
