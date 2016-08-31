@@ -2,41 +2,11 @@ import io
 from enum import Enum
 
 from bidict import bidict
-import piexif
 import PIL.ExifTags
 import PIL.Image
 
 from madam.core import operator, OperatorError
-from madam.core import Asset, Processor, MetadataProcessor, UnsupportedFormatError
-
-
-class ExifProcessor(MetadataProcessor):
-    """
-    Represents a metadata processor that supports Exif data.
-    """
-    @property
-    def format(self):
-        return 'exif'
-
-    def read(self, file):
-        data = file.read()
-        try:
-            exif = piexif.load(data)
-        except ValueError:
-            raise UnsupportedFormatError()
-        exif_stripped_from_empty_entries = {key: value for (key, value) in exif.items() if value}
-        return exif_stripped_from_empty_entries
-
-    def strip(self, file):
-        data = file.read()
-        essence_without_metadata_as_stream = io.BytesIO()
-        piexif.remove(data, essence_without_metadata_as_stream)
-        return essence_without_metadata_as_stream
-
-    def combine(self, file, exif):
-        file_with_exif = io.BytesIO()
-        piexif.insert(piexif.dump(exif), file.read(), new_file=file_with_exif)
-        return file_with_exif
+from madam.core import Asset, Processor
 
 
 class ResizeMode(Enum):

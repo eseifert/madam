@@ -1,7 +1,5 @@
 import PIL.Image
 import PIL.ImageChops
-import io
-import piexif
 import pytest
 
 import madam.image
@@ -145,52 +143,3 @@ class TestPillowProcessor:
 
         image = PIL.Image.open(converted_asset.essence)
         assert image.format == 'PNG'
-
-
-class TestExifProcessor:
-    @pytest.fixture
-    def exif_processor(self):
-        return madam.image.ExifProcessor()
-
-    def test_read_returns_empty_dict_when_jpeg_contains_no_exif(self, exif_processor):
-        data_without_exif = jpeg_asset().essence
-
-        exif = exif_processor.read(data_without_exif)
-
-        assert not exif
-
-    def test_read_returns_exif_dict_when_jpeg_contains_exif(self, exif_processor, jpeg_asset):
-        exif = {'0th': {piexif.ImageIFD.Artist: b'Test Artist'}}
-        data_with_exif = io.BytesIO()
-        piexif.insert(piexif.dump(exif), jpeg_asset.essence.read(), new_file=data_with_exif)
-
-        exif = exif_processor.read(data_with_exif)
-
-        assert exif
-
-    def test_read_raises_error_when_file_format_is_invalid(self, exif_processor):
-        junk_data = io.BytesIO(b'abc123')
-
-        with pytest.raises(UnsupportedFormatError):
-            exif_processor.read(junk_data)
-
-    def test_remove_returns_essence_without_metadata(self, exif_processor):
-        exif = jpeg_asset().metadata['exif']
-        jpeg_data = io.BytesIO()
-        piexif.insert(piexif.dump(exif), jpeg_asset().essence.read(), new_file=jpeg_data)
-        essence = exif_processor.strip(jpeg_data)
-
-        essence_exif = piexif.load(essence.read())
-        essence_exif_stripped_from_empty_entries = {key: value for (key, value) in essence_exif.items() if value}
-
-        assert not essence_exif_stripped_from_empty_entries
-
-    def test_add_returns_essence_with_metadata(self, exif_processor):
-        essence = jpeg_asset().essence
-        exif = {'0th': {piexif.ImageIFD.Artist: b'Test Artist'}}
-
-        essence_with_exif = exif_processor.combine(essence, exif)
-
-        contained_exif = piexif.load(essence_with_exif.read())
-        exif_stripped_from_empty_entries = {key: value for (key, value) in contained_exif.items() if value}
-        assert exif_stripped_from_empty_entries == exif
