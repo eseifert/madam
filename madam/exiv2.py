@@ -64,6 +64,12 @@ class Exiv2Processor(MetadataProcessor):
 
     @staticmethod
     def __to_exiv2_key(key):
+        """
+        Converts the specified MADAM key to an Exiv2 key.
+
+        :param key: Tag key to be converted
+        :return: Converted tag key
+        """
         return 'Exif.' + key
 
     @staticmethod
