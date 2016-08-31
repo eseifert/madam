@@ -3,7 +3,6 @@ import functools
 import io
 import importlib
 import itertools
-import mimetypes
 import os
 import shelve
 import shutil
@@ -361,8 +360,6 @@ class UnsupportedFormatError(Exception):
     Represents an error that is raised whenever file content with unknown type is encountered.
     """
     pass
-
-mimetypes.init()
 
 
 class Pipeline:
