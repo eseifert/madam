@@ -479,7 +479,8 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
 
         :param metadata: Metadata information to be added
         :param file: Container file
-        :return: File-like object with combined content
+        :return: file-like object with combined content
+        :rtype: io.BytesIO
         """
         raise NotImplementedError()
 
