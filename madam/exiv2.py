@@ -13,9 +13,9 @@ class Exiv2Processor(MetadataProcessor):
     """
     __metadata_key_to_exiv2_key = bidict({
         # Exif
-        'Image.Artist': 'Exif.Image.Artist',
+        'image.artist': 'Exif.Image.Artist',
         # IPTC
-        'Caption': 'Iptc.Application2.Caption',
+        'caption': 'Iptc.Application2.Caption',
     })
 
     @property

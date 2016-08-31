@@ -55,8 +55,8 @@ def jpeg_asset(width=4, height=3, transpositions=None, **additional_metadata):
         transpositions = []
     essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
     metadata = dict(
-        exif={'Image.Artist': 'Test artist'},
-        iptc={'Caption': 'A test image.'},
+        exif={'image.artist': 'Test artist'},
+        iptc={'caption': 'A test image.'},
         width=width,
         height=height,
         mime_type='image/jpeg'

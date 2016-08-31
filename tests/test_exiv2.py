@@ -25,7 +25,7 @@ class TestExiv2Processor:
 
         exif = processor.read(io.BytesIO(file.read('rb')))
 
-        assert exif['Image.Artist'] == 'Test artist'
+        assert exif['image.artist'] == 'Test artist'
 
     def test_read_raises_error_when_file_format_is_invalid(self, processor):
         junk_data = io.BytesIO(b'abc123')
@@ -77,7 +77,7 @@ class TestExiv2Processor:
 
     def test_combine_raises_error_when_essence_format_is_invalid(self, processor):
         junk_data = io.BytesIO(b'abc123')
-        exif = {'Image.Artist': 'Test artist'}
+        exif = {'image.artist': 'Test artist'}
 
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, exif)
