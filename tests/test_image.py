@@ -107,7 +107,7 @@ class TestPillowProcessor:
     def test_auto_orient(self, pillow_processor, exif_orientation, image_transpositions):
         reference_asset = jpeg_asset()
         misoriented_asset = jpeg_asset(transpositions=image_transpositions,
-                                       exif={'0th': {piexif.ImageIFD.Orientation: exif_orientation}})
+                                       exif={'Image.Orientation': exif_orientation})
         auto_orient_operator = pillow_processor.auto_orient()
 
         oriented_asset = auto_orient_operator(misoriented_asset)
@@ -159,10 +159,10 @@ class TestExifProcessor:
 
         assert not exif
 
-    def test_read_returns_exif_dict_when_jpeg_contains_exif(self, exif_processor):
-        exif = jpeg_asset().metadata['exif']
+    def test_read_returns_exif_dict_when_jpeg_contains_exif(self, exif_processor, jpeg_asset):
+        exif = {'0th': {piexif.ImageIFD.Artist: b'Test Artist'}}
         data_with_exif = io.BytesIO()
-        piexif.insert(piexif.dump(exif), jpeg_asset().essence.read(), new_file=data_with_exif)
+        piexif.insert(piexif.dump(exif), jpeg_asset.essence.read(), new_file=data_with_exif)
 
         exif = exif_processor.read(data_with_exif)
 
@@ -187,7 +187,7 @@ class TestExifProcessor:
 
     def test_add_returns_essence_with_metadata(self, exif_processor):
         essence = jpeg_asset().essence
-        exif = jpeg_asset().metadata['exif']
+        exif = {'0th': {piexif.ImageIFD.Artist: b'Test Artist'}}
 
         essence_with_exif = exif_processor.combine(essence, exif)
 

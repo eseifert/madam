@@ -44,17 +44,22 @@ class Exiv2Processor:
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(essence.read())
             tmp.flush()
-            exiv2 = pyexiv2.ImageMetadata(tmp.name)
+            exiv2_metadata = pyexiv2.ImageMetadata(tmp.name)
             try:
-                exiv2.read()
+                exiv2_metadata.read()
             except OSError:
                 raise UnsupportedFormatError('Unknown essence format.')
             for key in metadata.keys():
+                exiv2_key = Exiv2Processor.__to_exiv2_key(key)
                 try:
-                    exiv2[key] = metadata[key]
+                    exiv2_metadata[exiv2_key] = metadata[key]
                 except KeyError:
                     raise UnsupportedFormatError('Invalid metadata to be combined with essence: %s' % metadata)
-            exiv2.write()
+            exiv2_metadata.write()
             tmp.flush()
             tmp.seek(0)
             return tmp.read()
+
+    @staticmethod
+    def __to_exiv2_key(key):
+        return 'Exif.' + key

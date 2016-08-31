@@ -181,7 +181,7 @@ class PillowProcessor(Processor):
         :param asset: Asset with Exif metadata
         :return: Asset with rotated essence
         """
-        orientation = asset.metadata['exif']['0th'][piexif.ImageIFD.Orientation]
+        orientation = asset.exif['Image.Orientation']
         if orientation == 1:
             oriented_asset = Asset(asset.essence, metadata={})
         elif orientation == 2:
