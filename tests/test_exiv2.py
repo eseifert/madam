@@ -13,7 +13,7 @@ class TestExiv2Processor:
         return Exiv2Processor()
 
     def test_format_is_exif(self, processor):
-        assert processor.format == 'exif'
+        assert processor.formats == ('exif',)
 
     def test_read_returns_exif_dict_when_jpeg_contains_exif(self, processor, jpeg_asset, tmpdir):
         file = tmpdir.join('asset_with_exif.jpg')

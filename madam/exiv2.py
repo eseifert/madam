@@ -11,8 +11,8 @@ class Exiv2Processor(MetadataProcessor):
     Represents a metadata processor using the exiv2 library.
     """
     @property
-    def format(self):
-        return 'exif'
+    def formats(self):
+        return 'exif',
 
     def read(self, file):
         with tempfile.NamedTemporaryFile() as tmp:

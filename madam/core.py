@@ -36,7 +36,8 @@ class Madam:
         for processor_path in self.config['metadata_processors']:
             processor_class = self._import_from(processor_path)
             processor = processor_class()
-            self._metadata_processors_by_format[processor.format] = processor
+            for format in list(processor.formats):
+                self._metadata_processors_by_format[format] = processor
 
     def _import_from(self, member_path):
         """
@@ -439,11 +440,11 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     """
     @property
     @abc.abstractmethod
-    def format(self):
+    def formats(self):
         """
-        The metadata format which is supported.
-        :return: supported metadata format
-        :rtype: str
+        The metadata formats which are supported.
+        :return: supported metadata formats
+        :rtype: tuple
         """
         raise NotImplementedError()
 
