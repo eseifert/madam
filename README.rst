@@ -22,16 +22,17 @@ storing, organizing, and transforming asset data.
 
 Installation
 ============
-MADAM can be installed by grabbing the latest release from PyPI:
+MADAM makes use of other software, which needs to be installed on your system. Make sure you have the following packages installed:
+
+    - FFmpeg >=0.9
+    - libexiv2 >=0.20 (with header files)
+    - boost.python >=1.48 (with header files)
+
+After you installed these, MADAM can be installed by grabbing the latest release from PyPI:
 
 .. code:: shell
 
-    pip install MADAM
-
-
-External requirements
-=====================
-The base installation bundles as much functionality as possible. However, support for audio and video data requires FFmpeg v0.9 or higher to be installed on the system.
+    pip install madam
 
 
 Usage
