@@ -23,7 +23,7 @@ def test_read_returns_jpeg_asset_whose_essence_does_not_contain_exif(madam, jpeg
     metadata = pyexiv2.metadata.ImageMetadata(str(file))
     metadata.read()
     for key in exif:
-        metadata['Exif.'+key] = exif[key]
+        metadata['Exif.'+key.title()] = exif[key]
     metadata.write()
 
     asset = madam.read(file.open('rb'))
