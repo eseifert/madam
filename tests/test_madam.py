@@ -1,6 +1,6 @@
 import io
 
-import piexif
+import pyexiv2
 import pytest
 
 from madam import Madam
@@ -16,17 +16,23 @@ def madam_instance():
     return Madam()
 
 
-def test_jpeg_asset_essence_does_not_contain_exif_metadata(madam):
-    exif = jpeg_asset().metadata['exif']
-    data_with_exif = io.BytesIO()
-    piexif.insert(piexif.dump(exif), jpeg_asset().essence.read(), new_file=data_with_exif)
-    asset = madam.read(data_with_exif)
-    essence_bytes = asset.essence.read()
+def test_read_returns_jpeg_asset_whose_essence_does_not_contain_exif(madam, jpeg_asset, tmpdir):
+    exif = jpeg_asset.exif
+    file = tmpdir.join('asset_with_exif.jpg')
+    file.write(jpeg_asset.essence.read(), 'wb')
+    metadata = pyexiv2.metadata.ImageMetadata(str(file))
+    metadata.read()
+    for key in exif:
+        metadata['Exif.'+key] = exif[key]
+    metadata.write()
 
-    essence_exif = piexif.load(essence_bytes)
+    asset = madam.read(file.open('rb'))
 
-    for ifd, ifd_data in essence_exif.items():
-        assert not ifd_data
+    essence_file = tmpdir.join('essence_without_exif.jpg')
+    essence_file.write(asset.essence.read(), 'wb')
+    metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
+    metadata.read()
+    assert not metadata
 
 
 def test_read_empty_file_raises_error(madam):
