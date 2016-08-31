@@ -51,7 +51,7 @@ class TestExiv2Processor:
         essence = processor.strip(file.open('rb'))
 
         essence_file = tmpdir.join('essence_without_exif')
-        essence_file.write(essence, 'wb')
+        essence_file.write(essence.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
         metadata.read()
         assert not metadata.keys()
@@ -69,7 +69,7 @@ class TestExiv2Processor:
         essence_with_exif = processor.combine(essence, exif)
 
         essence_file = tmpdir.join('essence_with_exif')
-        essence_file.write(essence_with_exif, 'wb')
+        essence_file.write(essence_with_exif.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
         metadata.read()
         for key in exif.keys():

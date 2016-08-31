@@ -1,3 +1,4 @@
+import io
 import tempfile
 
 import pyexiv2
@@ -39,7 +40,7 @@ class Exiv2Processor(MetadataProcessor):
             metadata.clear()
             metadata.write()
             tmp.seek(0)
-            return tmp.read()
+            return io.BytesIO(tmp.read())
 
     def combine(self, essence, metadata):
         with tempfile.NamedTemporaryFile() as tmp:
@@ -59,7 +60,7 @@ class Exiv2Processor(MetadataProcessor):
             exiv2_metadata.write()
             tmp.flush()
             tmp.seek(0)
-            return tmp.read()
+            return io.BytesIO(tmp.read())
 
     @staticmethod
     def __to_exiv2_key(key):
