@@ -1,3 +1,4 @@
+import datetime
 import io
 import subprocess
 
@@ -56,7 +57,26 @@ def jpeg_asset(width=4, height=3, transpositions=None, **additional_metadata):
     essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
     metadata = dict(
         exif={'image.artist': 'Test artist'},
-        iptc={'caption': 'A test image.'},
+        iptc={
+            'bylines': ['The', 'Creators'],
+            'byline_titles': ['Dr.', 'Prof.'],
+            'caption': 'A test image.',
+            'contacts': ['Me', 'Myself'],
+            'copyright': 'Nobody',
+            'creation_date': datetime.date(2000, 1, 1),
+            'creation_time': datetime.time(),
+            'credit': 'Devs',
+            'expiration_date': datetime.date(2000, 1, 1),
+            'expiration_time': datetime.time(),
+            'headline': 'Wonderful Test Image',
+            'image_orientation': 'landscape',
+            'keywords': ['test', 'image', 'kws'],
+            'language': 'English',
+            'release_date': datetime.date(2000, 1, 1),
+            'release_time': datetime.time(),
+            'source': 'Test suite',
+            'subjects': ['The', 'topics'],
+        },
         width=width,
         height=height,
         mime_type='image/jpeg'
