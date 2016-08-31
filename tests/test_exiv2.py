@@ -20,12 +20,12 @@ class TestExiv2Processor:
         file.write(jpeg_asset.essence.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(file))
         metadata.read()
-        metadata['Exif.Image.Artist'] = b'Test artist'
+        metadata['Exif.Image.Artist'] = 'Test artist'
         metadata.write()
 
         exif = processor.read(io.BytesIO(file.read('rb')))
 
-        assert exif
+        assert exif['Image.Artist'] == 'Test artist'
 
     def test_read_raises_error_when_file_format_is_invalid(self, processor):
         junk_data = io.BytesIO(b'abc123')

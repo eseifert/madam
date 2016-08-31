@@ -24,8 +24,8 @@ class Exiv2Processor(MetadataProcessor):
                 raise UnsupportedFormatError('Unknown file format.')
         exif = {}
         for key in metadata.exif_keys:
-            exif[key] = metadata[key]
-        return metadata
+            exif[Exiv2Processor.__to_madam_key(key)] = metadata[key].value
+        return exif
 
     def strip(self, file):
         with tempfile.NamedTemporaryFile() as tmp:
@@ -64,3 +64,13 @@ class Exiv2Processor(MetadataProcessor):
     @staticmethod
     def __to_exiv2_key(key):
         return 'Exif.' + key
+
+    @staticmethod
+    def __to_madam_key(key):
+        """
+        Converts the specified Exiv2 key to a MADAM key.
+
+        :param key: Tag key to be converted
+        :return: Converted tag key
+        """
+        return key.split('.', 1)[1]
