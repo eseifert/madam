@@ -60,8 +60,6 @@ class FFmpegProcessor(Processor):
         })
 
     def _can_read(self, file):
-        if not file:
-            raise ValueError('Error when reading file-like object: %r' % file)
         file_info = FFmpegProcessor.__probe(file)
         return bool(file_info)
 
