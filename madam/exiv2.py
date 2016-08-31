@@ -15,7 +15,24 @@ class Exiv2Processor(MetadataProcessor):
         # Exif
         'image.artist': 'Exif.Image.Artist',
         # IPTC
+        'bylines': 'Iptc.Application2.Byline',
+        'byline_titles': 'Iptc.Application2.BylineTitle',
         'caption': 'Iptc.Application2.Caption',
+        'contacts': 'Iptc.Application2.Contact',
+        'copyright': 'Iptc.Application2.Copyright',
+        'creation_date': 'Iptc.Application2.DateCreated',
+        'creation_time': 'Iptc.Application2.TimeCreated',
+        'credit': 'Iptc.Application2.Credit',
+        'expiration_date': 'Iptc.Application2.ExpirationDate',
+        'expiration_time': 'Iptc.Application2.ExpirationTime',
+        'headline': 'Iptc.Application2.Headline',
+        'image_orientation': 'Iptc.Application2.ImageOrientation',
+        'keywords': 'Iptc.Application2.Keywords',
+        'language': 'Iptc.Application2.Language',
+        'release_date': 'Iptc.Application2.ReleaseDate',
+        'release_time': 'Iptc.Application2.ReleaseTime',
+        'source': 'Iptc.Application2.Source',
+        'subjects': 'Iptc.Application2.Subject',
     })
 
     @property
@@ -63,7 +80,8 @@ class Exiv2Processor(MetadataProcessor):
             for key in metadata.keys():
                 try:
                     exiv2_key = Exiv2Processor.__metadata_key_to_exiv2_key[key]
-                    exiv2_metadata[exiv2_key] = [metadata[key]]
+                    value_list = metadata[key] if isinstance(metadata[key], list) else [metadata[key]]
+                    exiv2_metadata[exiv2_key] = value_list
                 except KeyError:
                     raise UnsupportedFormatError('Invalid metadata to be combined with essence: %s' % metadata)
             exiv2_metadata.write()
