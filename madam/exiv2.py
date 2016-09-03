@@ -54,8 +54,8 @@ class Exiv2Processor(MetadataProcessor):
             for key in getattr(metadata, format + '_keys'):
                 madam_key = Exiv2Processor.__metadata_key_to_exiv2_key.inv[key]
                 format_metadata[madam_key] = metadata[key].value
-                if format_metadata:
-                    metadata_by_format[format] = format_metadata
+            if format_metadata:
+                metadata_by_format[format] = format_metadata
         return metadata_by_format
 
     def strip(self, file):
