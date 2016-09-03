@@ -64,16 +64,16 @@ class TestExiv2Processor:
 
     def test_combine_returns_essence_with_metadata(self, processor, jpeg_asset, tmpdir):
         essence = jpeg_asset.essence
-        exif = jpeg_asset.exif
+        metadata = {'exif': jpeg_asset.exif}
 
-        essence_with_exif = processor.combine(essence, exif)
+        essence_with_metadata = processor.combine(essence, metadata)
 
-        essence_file = tmpdir.join('essence_with_exif')
-        essence_file.write(essence_with_exif.read(), 'wb')
-        metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
-        metadata.read()
-        for key in exif.keys():
-            assert metadata['Exif.'+key.title()].value == exif[key]
+        essence_file = tmpdir.join('essence_with_metadata')
+        essence_file.write(essence_with_metadata.read(), 'wb')
+        read_metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
+        read_metadata.read()
+        for key in metadata['exif'].keys():
+            assert read_metadata['Exif.'+key.title()].value == metadata['exif'][key]
 
     def test_combine_raises_error_when_essence_format_is_invalid(self, processor, jpeg_asset):
         junk_data = io.BytesIO(b'abc123')

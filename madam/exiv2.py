@@ -68,7 +68,7 @@ class Exiv2Processor(MetadataProcessor):
             tmp.seek(0)
             return io.BytesIO(tmp.read())
 
-    def combine(self, essence, metadata):
+    def combine(self, essence, metadata_by_type):
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(essence.read())
             tmp.flush()
@@ -77,13 +77,15 @@ class Exiv2Processor(MetadataProcessor):
                 exiv2_metadata.read()
             except OSError:
                 raise UnsupportedFormatError('Unknown essence format.')
-            for key in metadata.keys():
-                try:
-                    exiv2_key = Exiv2Processor.__metadata_key_to_exiv2_key[key]
-                    value_list = metadata[key] if isinstance(metadata[key], list) else [metadata[key]]
-                    exiv2_metadata[exiv2_key] = value_list
-                except KeyError:
-                    raise UnsupportedFormatError('Invalid metadata to be combined with essence: %s' % metadata)
+            for metadata_type, metadata in metadata_by_type.items():
+                for key in metadata:
+                    try:
+                        exiv2_key = Exiv2Processor.__metadata_key_to_exiv2_key[key]
+                        value_list = metadata[key] if isinstance(metadata[key], list) else [metadata[key]]
+                        exiv2_metadata[exiv2_key] = value_list
+                    except KeyError:
+                        raise UnsupportedFormatError('Invalid metadata to be combined with essence: %s=%s' %
+                                                     (metadata_type, metadata))
             exiv2_metadata.write()
             tmp.flush()
             tmp.seek(0)

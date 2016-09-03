@@ -124,7 +124,7 @@ class Madam:
         for metadata_format, processor in self._metadata_processors_by_format.items():
             metadata = getattr(asset, metadata_format, None)
             if metadata is not None:
-                essence_with_metadata = processor.combine(essence_with_metadata, metadata)
+                essence_with_metadata = processor.combine(essence_with_metadata, {metadata_format: metadata})
         shutil.copyfileobj(essence_with_metadata, file)
 
 
@@ -476,7 +476,7 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         Returns a byte stream whose contents represent the specified file where
         the specified metadata was added.
 
-        :param metadata: Metadata information to be added
+        :param metadata: Mapping of the metadata format to the metadata dict
         :param file: Container file
         :return: file-like object with combined content
         :rtype: io.BytesIO
