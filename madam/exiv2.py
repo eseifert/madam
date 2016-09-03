@@ -48,11 +48,15 @@ class Exiv2Processor(MetadataProcessor):
                 metadata.read()
             except OSError:
                 raise UnsupportedFormatError('Unknown file format.')
-        exif = {}
-        for key in metadata.exif_keys:
-            madam_key = Exiv2Processor.__metadata_key_to_exiv2_key.inv[key]
-            exif[madam_key] = metadata[key].value
-        return exif
+        metadata_by_format = {}
+        for format in self.formats:
+            format_metadata = {}
+            for key in metadata.exif_keys:
+                madam_key = Exiv2Processor.__metadata_key_to_exiv2_key.inv[key]
+                format_metadata[madam_key] = metadata[key].value
+                if format_metadata:
+                    metadata_by_format[format] = format_metadata
+        return metadata_by_format
 
     def strip(self, file):
         with tempfile.NamedTemporaryFile() as tmp:

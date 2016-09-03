@@ -15,7 +15,7 @@ class TestExiv2Processor:
     def test_format_is_exif(self, processor):
         assert processor.formats == ('exif', 'iptc')
 
-    def test_read_returns_exif_dict_when_jpeg_contains_exif(self, processor, jpeg_asset, tmpdir):
+    def test_read_returns_exif_dict_when_jpeg_contains_metadata(self, processor, jpeg_asset, tmpdir):
         file = tmpdir.join('asset_with_exif.jpg')
         file.write(jpeg_asset.essence.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(file))
@@ -23,9 +23,9 @@ class TestExiv2Processor:
         metadata['Exif.Image.Artist'] = 'Test artist'
         metadata.write()
 
-        exif = processor.read(io.BytesIO(file.read('rb')))
+        metadata = processor.read(io.BytesIO(file.read('rb')))
 
-        assert exif['image.artist'] == 'Test artist'
+        assert metadata['exif']['image.artist'] == 'Test artist'
 
     def test_read_raises_error_when_file_format_is_invalid(self, processor):
         junk_data = io.BytesIO(b'abc123')
@@ -33,12 +33,12 @@ class TestExiv2Processor:
         with pytest.raises(UnsupportedFormatError):
             processor.read(junk_data)
 
-    def test_read_returns_empty_dict_when_jpeg_contains_no_exif(self, processor, jpeg_asset):
+    def test_read_returns_empty_dict_when_jpeg_contains_no_metadata(self, processor, jpeg_asset):
         data_without_exif = jpeg_asset.essence
 
-        exif = processor.read(data_without_exif)
+        metadata = processor.read(data_without_exif)
 
-        assert not exif
+        assert not metadata
 
     def test_strip_returns_essence_without_metadata(self, processor, jpeg_asset, tmpdir):
         file = tmpdir.join('asset_with_exif.jpg')
