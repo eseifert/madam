@@ -51,7 +51,7 @@ class Exiv2Processor(MetadataProcessor):
         metadata_by_format = {}
         for format in self.formats:
             format_metadata = {}
-            for key in metadata.exif_keys:
+            for key in getattr(metadata, format + '_keys'):
                 madam_key = Exiv2Processor.__metadata_key_to_exiv2_key.inv[key]
                 format_metadata[madam_key] = metadata[key].value
                 if format_metadata:

@@ -26,6 +26,7 @@ class TestExiv2Processor:
         metadata = processor.read(io.BytesIO(file.read('rb')))
 
         assert metadata['exif']['image.artist'] == 'Test artist'
+        assert len(metadata.keys()) == 1
 
     def test_read_raises_error_when_file_format_is_invalid(self, processor):
         junk_data = io.BytesIO(b'abc123')
