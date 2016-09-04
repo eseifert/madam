@@ -20,7 +20,7 @@ env:
 - TOXENV=py34
 - TOXENV=py35
 script:
-- python setup.py install
+- pip install .[exiv2]
 - tox -e $TOXENV
 - py.test --doctest-modules madam
 - sphinx-build -b html doc/ doc/_build/html
