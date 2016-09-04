@@ -33,7 +33,11 @@ class Madam:
             self._processors.append(processor_class())
         # Initialize metadata processors
         for processor_path in self.config['metadata_processors']:
-            processor_class = Madam._import_from(processor_path)
+            try:
+                processor_class = Madam._import_from(processor_path)
+            except ImportError:
+                self.config['metadata_processors'].remove(processor_path)
+                continue
             processor = processor_class()
             for format in list(processor.formats):
                 self._metadata_processors_by_format[format] = processor

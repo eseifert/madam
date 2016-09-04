@@ -1,4 +1,6 @@
 import io
+import sys
+from unittest.mock import patch, MagicMock
 
 import pyexiv2
 import pytest
@@ -130,3 +132,10 @@ def test_config_contains_list_of_all_processors_by_default(madam):
 
 def test_config_contains_list_of_all_metadata_processors_by_default(madam):
     assert madam.config['metadata_processors'] == ['madam.exiv2.Exiv2Processor']
+
+
+def test_config_does_not_contain_metadata_processor_when_it_is_not_installed():
+    with patch.dict(sys.modules, {'madam.exiv2': None}):
+        madam = Madam()
+
+    assert 'madam.exiv2.Exiv2Processor' not in madam.config['metadata_processors']
