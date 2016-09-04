@@ -126,3 +126,7 @@ def test_config_contains_list_of_all_processors_by_default(madam):
         'madam.audio.MutagenProcessor',
         'madam.image.PillowProcessor',
         'madam.ffmpeg.FFmpegProcessor']
+
+
+def test_config_contains_list_of_all_metadata_processors_by_default(madam):
+    assert madam.config['metadata_processors'] == ['madam.exiv2.Exiv2Processor']

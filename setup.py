@@ -20,7 +20,7 @@ setup(
     setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['pillow', 'py3exiv2', 'pytest >=3.0'],
     extras_require={
-        'doc': ['sphinx >=1.3', 'sphinx_rtd_theme']
+        'doc': ['sphinx >=1.3', 'sphinx_rtd_theme'],
     },
     packages=['madam'],
     platforms=['POSIX'],
