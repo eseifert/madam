@@ -176,7 +176,7 @@ class FFmpegMetadataPocessor(MetadataProcessor):
     """
     @property
     def formats(self):
-        return tuple()
+        return 'id3',
 
     def read(self, file):
         pass

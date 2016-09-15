@@ -70,3 +70,12 @@ class TestFFmpegProcessor:
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('streams', [{}])[0].get('codec_name') == 'mp3'
+
+
+class TestFFmpegProcessor:
+    @pytest.fixture(name='processor')
+    def ffmpeg_metadata_processor(self):
+        return madam.audio.FFmpegMetadataPocessor()
+
+    def test_supports_id3(self, processor):
+        assert 'id3' in processor.formats
