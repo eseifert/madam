@@ -23,10 +23,6 @@ class TestMutagenProcessor:
         assert asset.essence is not None
         assert asset.essence.read()
 
-        # Assert that essence was stripped from metadata
-        with open(mp3_file_path, 'rb') as mp3_file:
-            assert asset.essence.read() != mp3_file.read()
-
     def test_mp3_reader_does_not_change_file(self, processor):
         mp3_file_path = 'tests/resources/64kbits.mp3'
         with open(mp3_file_path, 'rb') as mp3_file:
