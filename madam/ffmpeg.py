@@ -256,7 +256,18 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         return 'id3',
 
     def read(self, file):
-        pass
+        command = 'ffmpeg -loglevel error -i pipe: -codec copy -y -f ffmetadata pipe:'.split()
+        try:
+            result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, check=True)
+        except CalledProcessError as ffmpeg_error:
+            error_message = ffmpeg_error.stderr.decode('utf-8')
+            raise OperatorError('Could not read metadata from asset: %s' % error_message)
+
+        parser = FFMetadataParser()
+        data = result.stdout.decode('utf-8')
+        id3metadata = parser.read_string(data)
+        return {'id3': id3metadata[FFMetadataParser.GLOBAL_SECTION]}
 
     def strip(self, file):
         pass
