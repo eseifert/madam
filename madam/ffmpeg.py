@@ -1,5 +1,5 @@
-import io
 import json
+import re
 import subprocess
 import tempfile
 
@@ -161,7 +161,7 @@ class FFmpegProcessor(Processor):
             command.extend(['-f', ffmpeg_type, '-y', tmp.name])
 
             try:
-                result = subprocess_run(command, input=asset.essence.read(),
+                subprocess_run(command, input=asset.essence.read(),
                                         stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
@@ -170,10 +170,87 @@ class FFmpegProcessor(Processor):
             return Asset(essence=tmp, mime_type=mime_type)
 
 
+class FFMetadataParser:
+    """Parses FFmpeg's metadata ini-like file format.
+
+    See https://www.ffmpeg.org/ffmpeg-formats.html#Metadata-1 for a specification.
+    """
+    SUPPORTED_VERSIONS = 1,
+    GLOBAL_SECTION = '__global__'
+    HEADER_PATTERN = re.compile(r'^;FFMETADATA(?P<version>\d+)$')
+    COMMENT_PATTERN = re.compile(r'^[;#]')
+    SECTION_PATTERN = re.compile(r'\[(?P<section_name>[A-Z]+)\]')
+    KEY_VALUE_PATTERN = re.compile(r'^(?P<key>.+)(?<!\\)=(?P<value>.*)$')
+    ESCAPE_PATTERN = re.compile(r'\\(?P<special_character>.)')
+    MISSING_ESCAPE_PATTERN = re.compile(r'(?<!\\)(?P<unescaped_character>[=;#])')
+
+    @staticmethod
+    def __replace_escaping(m):
+        repl_char = m.group('special_character')
+        if repl_char not in r'=;#\\':
+            raise ValueError('Invalid syntax: Character %r cannot be escaped' % repl_char)
+        return repl_char
+
+    @staticmethod
+    def __unescape(string):
+        missing_escaping_match = FFMetadataParser.MISSING_ESCAPE_PATTERN.search(string)
+        if missing_escaping_match:
+            unescaped_char = missing_escaping_match.group('unescaped_character')
+            raise ValueError('Invalid syntax: Character %r must be escaped' % unescaped_char)
+        return FFMetadataParser.ESCAPE_PATTERN.sub(FFMetadataParser.__replace_escaping, string)
+
+    @staticmethod
+    def _read(lines):
+        first_line = next(lines)
+        header_match = FFMetadataParser.HEADER_PATTERN.match(first_line)
+        if not header_match:
+            raise ValueError('Unrecognized file format: Unknown header for FFmpeg metadata: %r' % first_line)
+        version = int(header_match.group('version'))
+        if not header_match or version not in FFMetadataParser.SUPPORTED_VERSIONS:
+            raise ValueError('Unknown file format version: %d' % version)
+        metadata = {}
+        section_name = FFMetadataParser.GLOBAL_SECTION
+        section = {}
+        line_no = 2
+        was_escaped_newline = False
+        previous_line = ''
+        for line in lines:
+            if was_escaped_newline:
+                line = previous_line + line
+                was_escaped_newline = False
+            if line.endswith('\\'):
+                was_escaped_newline = True
+                previous_line = line[:-1]
+                continue
+            if not line or FFMetadataParser.COMMENT_PATTERN.match(line):
+                continue
+            section_match = FFMetadataParser.SECTION_PATTERN.match(line)
+            if section_match:
+                metadata[section_name] = section
+                section_name = section_match.group('section_name')
+                section = {}
+                continue
+            key_value_match = FFMetadataParser.KEY_VALUE_PATTERN.match(line)
+            if key_value_match:
+                key = FFMetadataParser.__unescape(key_value_match.group('key'))
+                value = FFMetadataParser.__unescape(key_value_match.group('value'))
+                section[key] = value
+            else:
+                raise ValueError('Invalid syntax in line %d: %r' % (line_no, line))
+        metadata[section_name] = section
+
+        return metadata
+
+    def read_string(self, string):
+        lines = string.splitlines()
+        return self._read(iter(lines))
+
+
 class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.
     """
+
     @property
     def formats(self):
         return 'id3',
