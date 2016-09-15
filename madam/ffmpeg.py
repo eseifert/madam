@@ -170,7 +170,7 @@ class FFmpegProcessor(Processor):
             return Asset(essence=tmp, mime_type=mime_type)
 
 
-class FFmpegMetadataPocessor(MetadataProcessor):
+class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.
     """

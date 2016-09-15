@@ -75,7 +75,7 @@ class TestFFmpegProcessor:
 class TestFFmpegProcessor:
     @pytest.fixture(name='processor')
     def ffmpeg_metadata_processor(self):
-        return madam.audio.FFmpegMetadataPocessor()
+        return madam.audio.FFmpegMetadataProcessor()
 
     def test_supports_id3(self, processor):
         assert 'id3' in processor.formats
