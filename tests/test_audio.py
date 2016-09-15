@@ -15,11 +15,11 @@ class TestMutagenProcessor:
         return madam.audio.MutagenProcessor()
 
     def test_create_asset_from_mp3(self, processor):
-        mp3_file_path = 'tests/resources/64kbits.mp3'
+        mp3_file_path = 'tests/resources/64kbits_with_id3v2-4.mp3'
         with open(mp3_file_path, 'rb') as mp3_file:
             asset = processor._read(mp3_file)
         assert asset.mime_type == 'audio/mpeg'
-        assert asset.duration == 0.1
+        assert asset.duration == pytest.approx(0.144, abs=0.01)
         assert asset.essence is not None
         assert asset.essence.read()
 
