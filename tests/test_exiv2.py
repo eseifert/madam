@@ -12,8 +12,11 @@ class TestExiv2Processor:
     def exiv2_processor(self):
         return Exiv2Processor()
 
-    def test_format_is_exif(self, processor):
-        assert processor.formats == ('exif', 'iptc')
+    def test_supports_exif(self, processor):
+        assert 'exif' in processor.formats
+
+    def test_supports_iptc(self, processor):
+        assert 'iptc' in processor.formats
 
     def test_read_returns_exif_dict_when_jpeg_contains_metadata(self, processor, jpeg_asset, tmpdir):
         file = tmpdir.join('asset_with_exif.jpg')
