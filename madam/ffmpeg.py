@@ -5,7 +5,7 @@ import tempfile
 
 from bidict import bidict
 
-from madam.core import Asset, Processor, operator, OperatorError, UnsupportedFormatError
+from madam.core import Asset, MetadataProcessor, Processor, operator, OperatorError, UnsupportedFormatError
 from madam.future import CalledProcessError, subprocess_run
 
 
@@ -168,3 +168,21 @@ class FFmpegProcessor(Processor):
                 raise OperatorError('Could not convert video asset: %s' % error_message)
 
             return Asset(essence=tmp, mime_type=mime_type)
+
+
+class FFmpegMetadataPocessor(MetadataProcessor):
+    """
+    Represents a metadata processor that uses FFmpeg.
+    """
+    @property
+    def formats(self):
+        return tuple()
+
+    def read(self, file):
+        pass
+
+    def strip(self, file):
+        pass
+
+    def combine(self, file, metadata):
+        pass
