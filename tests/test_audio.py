@@ -40,7 +40,7 @@ class TestMutagenProcessor:
 
 class TestFFmpegProcessor:
     @pytest.fixture(name='processor')
-    def mutagen_processor(self):
+    def ffmpeg_processor(self):
         return madam.audio.FFmpegProcessor()
 
     def test_cannot_resize_audio(self, processor, audio_asset):
