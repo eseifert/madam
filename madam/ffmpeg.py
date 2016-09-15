@@ -2,6 +2,7 @@ import json
 import re
 import subprocess
 import tempfile
+from collections import MutableMapping
 
 from bidict import bidict
 
@@ -170,7 +171,7 @@ class FFmpegProcessor(Processor):
             return Asset(essence=tmp, mime_type=mime_type)
 
 
-class FFMetadataParser:
+class FFMetadataParser(MutableMapping):
     """Parses FFmpeg's metadata ini-like file format.
 
     See https://www.ffmpeg.org/ffmpeg-formats.html#Metadata-1 for a specification.
@@ -183,6 +184,9 @@ class FFMetadataParser:
     KEY_VALUE_PATTERN = re.compile(r'^(?P<key>.+)(?<!\\)=(?P<value>.*)$')
     ESCAPE_PATTERN = re.compile(r'\\(?P<special_character>.)')
     MISSING_ESCAPE_PATTERN = re.compile(r'(?<!\\)(?P<unescaped_character>[=;#])')
+
+    def __init__(self):
+        self.__metadata = {}
 
     @staticmethod
     def __replace_escaping(m):
@@ -199,8 +203,7 @@ class FFMetadataParser:
             raise ValueError('Invalid syntax: Character %r must be escaped' % unescaped_char)
         return FFMetadataParser.ESCAPE_PATTERN.sub(FFMetadataParser.__replace_escaping, string)
 
-    @staticmethod
-    def _read(lines):
+    def _read(self, lines):
         first_line = next(lines)
         header_match = FFMetadataParser.HEADER_PATTERN.match(first_line)
         if not header_match:
@@ -208,7 +211,7 @@ class FFMetadataParser:
         version = int(header_match.group('version'))
         if not header_match or version not in FFMetadataParser.SUPPORTED_VERSIONS:
             raise ValueError('Unknown file format version: %d' % version)
-        metadata = {}
+        self.__metadata.clear()
         section_name = FFMetadataParser.GLOBAL_SECTION
         section = {}
         line_no = 2
@@ -226,7 +229,7 @@ class FFMetadataParser:
                 continue
             section_match = FFMetadataParser.SECTION_PATTERN.match(line)
             if section_match:
-                metadata[section_name] = section
+                self.__metadata[section_name] = section
                 section_name = section_match.group('section_name')
                 section = {}
                 continue
@@ -237,13 +240,26 @@ class FFMetadataParser:
                 section[key] = value
             else:
                 raise ValueError('Invalid syntax in line %d: %r' % (line_no, line))
-        metadata[section_name] = section
-
-        return metadata
+        self.__metadata[section_name] = section
 
     def read_string(self, string):
         lines = string.splitlines()
         return self._read(iter(lines))
+
+    def __getitem__(self, key):
+        return self.__metadata[key]
+
+    def __setitem__(self, key, value):
+        self.__metadata[key] = value
+
+    def __delitem__(self, key):
+        del self.__metadata[key]
+
+    def __iter__(self):
+        return iter(self.__metadata)
+
+    def __len__(self):
+        return len(self.__metadata)
 
 
 class FFmpegMetadataProcessor(MetadataProcessor):
@@ -264,10 +280,10 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             error_message = ffmpeg_error.stderr.decode('utf-8')
             raise OperatorError('Could not read metadata from asset: %s' % error_message)
 
-        parser = FFMetadataParser()
         data = result.stdout.decode('utf-8')
-        id3metadata = parser.read_string(data)
-        return {'id3': id3metadata[FFMetadataParser.GLOBAL_SECTION]}
+        parser = FFMetadataParser()
+        parser.read_string(data)
+        return {'id3': parser[FFMetadataParser.GLOBAL_SECTION]}
 
     def strip(self, file):
         pass
