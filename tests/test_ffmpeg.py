@@ -1,6 +1,6 @@
 import pytest
 
-from ffmpeg import FFMetadataParser
+from madam.ffmpeg import FFMetadataParser
 
 
 class TestFFMetadataParser:
