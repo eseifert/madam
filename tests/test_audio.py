@@ -82,3 +82,11 @@ class TestFFmpegProcessor:
 
         assert metadata['id3']['artist'] == 'Frédéric Chopin'
         assert len(metadata) == 1
+
+    def test_strip_returns_essence_without_metadata(self, processor):
+        with open('tests/resources/64kbits_with_id3v2-4.mp3', 'rb') as file:
+            essence = file.read()
+            file.seek(0)
+            stripped_essence = processor.strip(file).read()
+
+        assert essence != stripped_essence

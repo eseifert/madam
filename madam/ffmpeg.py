@@ -1,5 +1,7 @@
+import io
 import json
 import re
+import shutil
 import subprocess
 import tempfile
 from collections import MutableMapping
@@ -163,7 +165,7 @@ class FFmpegProcessor(Processor):
 
             try:
                 subprocess_run(command, input=asset.essence.read(),
-                                        stderr=subprocess.PIPE, check=True)
+                               stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not convert video asset: %s' % error_message)
@@ -286,7 +288,40 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         return {'id3': parser[FFMetadataParser.GLOBAL_SECTION]}
 
     def strip(self, file):
-        pass
+        # Determine file format
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(file.read())
+            tmp.flush()
+
+            command = 'ffprobe -loglevel error -print_format json -show_format'.split()
+            command.append(tmp.name)
+            try:
+                result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not strip metadata from asset: %s' % error_message)
+            probe_data = json.loads(result.stdout.decode('utf-8'))
+            ffmpeg_format = probe_data['format']['format_name']
+
+        # Rewind file
+        file.seek(0)
+
+        # Strip metadata
+        with tempfile.NamedTemporaryFile() as tmp:
+            command = 'ffmpeg -loglevel error -i pipe: -map_metadata -1 -codec copy -y -f'.split()
+            command.append(ffmpeg_format)
+            command.append(tmp.name)
+            try:
+                subprocess_run(command, input=file.read(),
+                               stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not strip metadata from asset: %s' % error_message)
+
+            result = io.BytesIO()
+            shutil.copyfileobj(tmp, result)
+            return result
 
     def combine(self, file, metadata):
         pass
