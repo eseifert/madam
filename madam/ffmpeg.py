@@ -268,6 +268,12 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.
     """
+    __DECODER_TO_ENCODER = {
+        'matroska,webm': 'matroska',
+        'mov,mp4,m4a,3gp,3g2,mj2': 'mov',
+        'mp3': 'mp3',
+        'ogg': 'ogg'
+    }
 
     @property
     def formats(self):
@@ -302,15 +308,19 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not strip metadata from asset: %s' % error_message)
             probe_data = json.loads(result.stdout.decode('utf-8'))
-            ffmpeg_format = probe_data['format']['format_name']
+            decoder_name = probe_data['format']['format_name']
 
         # Rewind file
         file.seek(0)
 
+        encoder_name = FFmpegMetadataProcessor.__DECODER_TO_ENCODER.get(decoder_name)
+        if encoder_name is None:
+            return file
+
         # Strip metadata
         with tempfile.NamedTemporaryFile() as tmp:
             command = 'ffmpeg -loglevel error -i pipe: -map_metadata -1 -codec copy -y -f'.split()
-            command.append(ffmpeg_format)
+            command.append(encoder_name)
             command.append(tmp.name)
             try:
                 subprocess_run(command, input=file.read(),
@@ -321,6 +331,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
             result = io.BytesIO()
             shutil.copyfileobj(tmp, result)
+            result.seek(0)
+
             return result
 
     def combine(self, file, metadata):
