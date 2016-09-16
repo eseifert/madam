@@ -68,7 +68,7 @@ class TestFFmpegProcessor:
         assert video_info.get('streams', [{}])[0].get('codec_name') == 'mp3'
 
 
-class TestFFmpegProcessor:
+class TestFFmpegMetadataProcessor:
     @pytest.fixture(name='processor')
     def ffmpeg_metadata_processor(self):
         return madam.audio.FFmpegMetadataProcessor()
