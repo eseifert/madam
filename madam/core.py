@@ -23,7 +23,7 @@ class Madam:
         """
         self.config = {'processors': ['madam.audio.MutagenProcessor', 'madam.image.PillowProcessor',
                                       'madam.ffmpeg.FFmpegProcessor'],
-                       'metadata_processors': ['madam.exiv2.Exiv2Processor']}
+                       'metadata_processors': ['madam.exiv2.Exiv2Processor', 'madam.ffmpeg.FFmpegMetadataProcessor']}
         self._processors = []
         self._metadata_processors_by_format = {}
 

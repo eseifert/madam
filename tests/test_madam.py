@@ -131,7 +131,7 @@ def test_config_contains_list_of_all_processors_by_default(madam):
 
 
 def test_config_contains_list_of_all_metadata_processors_by_default(madam):
-    assert madam.config['metadata_processors'] == ['madam.exiv2.Exiv2Processor']
+    assert madam.config['metadata_processors'] == ['madam.exiv2.Exiv2Processor', 'madam.ffmpeg.FFmpegMetadataProcessor']
 
 
 def test_config_does_not_contain_metadata_processor_when_it_is_not_installed():
