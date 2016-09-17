@@ -84,7 +84,7 @@ class TestFFmpegMetadataProcessor:
         assert metadata['ffmetadata']['artist'] == 'Frédéric Chopin'
         assert len(metadata) == 1
 
-    def test_read_raises_error_when_file_format_is_invalid(self, processor):
+    def test_read_raises_error_when_file_format_is_unsupported(self, processor):
         junk_data = io.BytesIO(b'abc123')
 
         with pytest.raises(UnsupportedFormatError):
@@ -104,3 +104,9 @@ class TestFFmpegMetadataProcessor:
             stripped_essence = processor.strip(file).read()
 
         assert essence != stripped_essence
+
+    def test_strip_raises_error_when_file_format_is_unsupported(self, processor):
+        junk_data = io.BytesIO(b'abc123')
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.strip(junk_data)

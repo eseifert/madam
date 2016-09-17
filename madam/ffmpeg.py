@@ -313,9 +313,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             try:
                 result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Failed to determine file format to strip metadata: %s' % error_message)
+            except CalledProcessError:
+                raise UnsupportedFormatError('Unknown file format.')
             probe_data = json.loads(result.stdout.decode('utf-8'))
             decoder_name = probe_data['format']['format_name']
 
