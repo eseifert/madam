@@ -7,7 +7,7 @@ import pyexiv2
 from madam.core import MetadataProcessor, UnsupportedFormatError
 
 
-class Exiv2Processor(MetadataProcessor):
+class Exiv2MetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor using the exiv2 library.
     """
@@ -52,7 +52,7 @@ class Exiv2Processor(MetadataProcessor):
         for format in self.formats:
             format_metadata = {}
             for key in getattr(metadata, format + '_keys'):
-                madam_key = Exiv2Processor.__metadata_key_to_exiv2_key.inv[key]
+                madam_key = Exiv2MetadataProcessor.__metadata_key_to_exiv2_key.inv[key]
                 format_metadata[madam_key] = metadata[key].value
             if format_metadata:
                 metadata_by_format[format] = format_metadata
@@ -84,7 +84,7 @@ class Exiv2Processor(MetadataProcessor):
             for metadata_type, metadata in metadata_by_type.items():
                 for key in metadata:
                     try:
-                        exiv2_key = Exiv2Processor.__metadata_key_to_exiv2_key[key]
+                        exiv2_key = Exiv2MetadataProcessor.__metadata_key_to_exiv2_key[key]
                         value_list = metadata[key] if isinstance(metadata[key], list) else [metadata[key]]
                         exiv2_metadata[exiv2_key] = value_list
                     except KeyError:

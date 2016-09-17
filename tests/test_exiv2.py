@@ -4,13 +4,13 @@ import pytest
 
 from assets import jpeg_asset
 from madam.core import UnsupportedFormatError
-from madam.exiv2 import Exiv2Processor
+from madam.exiv2 import Exiv2MetadataProcessor
 
 
-class TestExiv2Processor:
+class TestExiv2MetadataProcessor:
     @pytest.fixture(name='processor')
-    def exiv2_processor(self):
-        return Exiv2Processor()
+    def exiv2_metadata_processor(self):
+        return Exiv2MetadataProcessor()
 
     def test_supports_exif(self, processor):
         assert 'exif' in processor.formats
