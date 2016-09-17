@@ -1,10 +1,11 @@
+import io
 import json
 import subprocess
 
 import pytest
 
 import madam.audio
-from madam.core import OperatorError
+from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
 from assets import audio_asset, mp3_asset, wav_asset
 
@@ -82,6 +83,12 @@ class TestFFmpegMetadataProcessor:
 
         assert metadata['ffmetadata']['artist'] == 'Frédéric Chopin'
         assert len(metadata) == 1
+
+    def test_read_raises_error_when_file_format_is_invalid(self, processor):
+        junk_data = io.BytesIO(b'abc123')
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.read(junk_data)
 
     def test_strip_returns_essence_without_metadata(self, processor):
         with open('tests/resources/64kbits_with_id3v2-4.mp3', 'rb') as file:

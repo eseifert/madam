@@ -286,7 +286,10 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                                     stderr=subprocess.PIPE, check=True)
         except CalledProcessError as ffmpeg_error:
             error_message = ffmpeg_error.stderr.decode('utf-8')
-            raise OperatorError('Could not read metadata from asset: %s' % error_message)
+            if 'Invalid data found when processing input' in error_message:
+                raise UnsupportedFormatError('Unknown file format.')
+            else:
+                raise OperatorError('Could not read metadata from asset: %s' % error_message)
 
         data = result.stdout.decode('utf-8')
         parser = FFMetadataParser()
