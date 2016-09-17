@@ -294,6 +294,12 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         data = result.stdout.decode('utf-8')
         parser = FFMetadataParser()
         parser.read_string(data)
+
+        ffmetadata = parser[FFMetadataParser.GLOBAL_SECTION]
+        # FFmpeg always returns the encoder, even when there was no "real" metadata
+        if not ffmetadata or (len(ffmetadata) == 1 and 'encoder' in ffmetadata):
+            return {}
+
         return {'ffmetadata': parser[FFMetadataParser.GLOBAL_SECTION]}
 
     def strip(self, file):

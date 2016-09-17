@@ -90,6 +90,13 @@ class TestFFmpegMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.read(junk_data)
 
+    def test_read_returns_empty_dict_when_mp3_contains_no_metadata(self, processor, mp3_asset):
+        data_without_id3 = mp3_asset.essence
+
+        metadata = processor.read(data_without_id3)
+
+        assert not metadata
+
     def test_strip_returns_essence_without_metadata(self, processor):
         with open('tests/resources/64kbits_with_id3v2-4.mp3', 'rb') as file:
             essence = file.read()
