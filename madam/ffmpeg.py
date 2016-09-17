@@ -306,7 +306,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                                         stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not strip metadata from asset: %s' % error_message)
+                raise OperatorError('Failed to determine file format to strip metadata: %s' % error_message)
             probe_data = json.loads(result.stdout.decode('utf-8'))
             decoder_name = probe_data['format']['format_name']
 
@@ -327,7 +327,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                                stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not strip metadata from asset: %s' % error_message)
+                raise OperatorError('Could not strip metadata: %s' % error_message)
 
             result = io.BytesIO()
             shutil.copyfileobj(tmp, result)
