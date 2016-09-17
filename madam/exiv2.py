@@ -1,8 +1,9 @@
 import io
+import shutil
 import tempfile
 
-from bidict import bidict
 import pyexiv2
+from bidict import bidict
 
 from madam.core import MetadataProcessor, UnsupportedFormatError
 
@@ -59,6 +60,7 @@ class Exiv2MetadataProcessor(MetadataProcessor):
         return metadata_by_format
 
     def strip(self, file):
+        result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(file.read())
             tmp.flush()
@@ -70,9 +72,14 @@ class Exiv2MetadataProcessor(MetadataProcessor):
             metadata.clear()
             metadata.write()
             tmp.seek(0)
-            return io.BytesIO(tmp.read())
+
+            shutil.copyfileobj(tmp, result)
+            result.seek(0)
+
+        return result
 
     def combine(self, essence, metadata_by_type):
+        result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(essence.read())
             tmp.flush()
@@ -93,4 +100,8 @@ class Exiv2MetadataProcessor(MetadataProcessor):
             exiv2_metadata.write()
             tmp.flush()
             tmp.seek(0)
-            return io.BytesIO(tmp.read())
+
+            shutil.copyfileobj(tmp, result)
+            result.seek(0)
+
+        return result

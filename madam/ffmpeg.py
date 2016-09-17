@@ -318,6 +318,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             return file
 
         # Strip metadata
+        result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
             command = 'ffmpeg -loglevel error -i pipe: -map_metadata -1 -codec copy -y -f'.split()
             command.append(encoder_name)
@@ -329,11 +330,10 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not strip metadata: %s' % error_message)
 
-            result = io.BytesIO()
             shutil.copyfileobj(tmp, result)
             result.seek(0)
 
-            return result
+        return result
 
     def combine(self, file, metadata):
         pass
