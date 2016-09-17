@@ -2,6 +2,7 @@ import io
 import json
 import subprocess
 
+import mutagen
 import pytest
 
 import madam.audio
@@ -110,3 +111,19 @@ class TestFFmpegMetadataProcessor:
 
         with pytest.raises(UnsupportedFormatError):
             processor.strip(junk_data)
+
+    def test_combine_returns_essence_with_metadata(self, processor, mp3_asset, tmpdir):
+        essence = mp3_asset.essence
+        metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
+
+        essence_with_metadata = processor.combine(essence, metadata)
+
+        essence_file = tmpdir.join('essence_with_metadata')
+        essence_file.write(essence_with_metadata.read(), 'wb')
+        mp3 = mutagen.mp3.EasyMP3(str(essence_file))
+        for key, actual in metadata['ffmetadata'].items():
+            expected = mp3.tags.get(key)
+            if isinstance(expected, list):
+                assert actual in expected
+            else:
+                assert mp3.tags[key] == actual

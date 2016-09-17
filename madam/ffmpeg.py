@@ -302,8 +302,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         return {'ffmetadata': parser[FFMetadataParser.GLOBAL_SECTION]}
 
-    def strip(self, file):
-        # Determine file format
+    def __get_encoder(self, file):
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(file.read())
             tmp.flush()
@@ -318,10 +317,13 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             probe_data = json.loads(result.stdout.decode('utf-8'))
             decoder_name = probe_data['format']['format_name']
 
-        # Rewind file
         file.seek(0)
 
-        encoder_name = FFmpegMetadataProcessor.__DECODER_TO_ENCODER.get(decoder_name)
+        return FFmpegMetadataProcessor.__DECODER_TO_ENCODER.get(decoder_name)
+
+    def strip(self, file):
+        # Determine encoder for output
+        encoder_name = self.__get_encoder(file)
         if encoder_name is None:
             return file
 
@@ -343,5 +345,33 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         return result
 
-    def combine(self, file, metadata):
-        pass
+    def combine(self, file, metadata_by_type):
+        if 'ffmetadata' not in metadata_by_type:
+            return file
+
+        # Determine encoder for output
+        encoder_name = self.__get_encoder(file)
+        if encoder_name is None:
+            return file
+
+        # Add metadata to file
+        result = io.BytesIO()
+        with tempfile.NamedTemporaryFile() as tmp:
+            command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
+
+            for item in metadata_by_type['ffmetadata'].items():
+                command.append('-metadata')
+                command.append('%s=%s' % item)
+
+            command.extend(['-codec', 'copy', '-y', '-f', encoder_name, tmp.name])
+            try:
+                subprocess_run(command, input=file.read(),
+                               stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not add metadata: %s' % error_message)
+
+            shutil.copyfileobj(tmp, result)
+            result.seek(0)
+
+        return result
