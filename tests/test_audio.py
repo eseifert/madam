@@ -127,3 +127,10 @@ class TestFFmpegMetadataProcessor:
                 assert actual in expected
             else:
                 assert mp3.tags[key] == actual
+
+    def test_combine_raises_error_when_essence_format_is_unsupported(self, processor):
+        junk_data = io.BytesIO(b'abc123')
+        metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.combine(junk_data, metadata)
