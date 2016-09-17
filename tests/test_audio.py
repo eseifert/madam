@@ -134,3 +134,9 @@ class TestFFmpegMetadataProcessor:
 
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, metadata)
+
+    def test_combine_raises_error_when_metadata_format_is_unknown(self, processor, mp3_asset):
+        ffmetadata = {'123abc': 'Test artist'}
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.combine(mp3_asset.essence, ffmetadata)

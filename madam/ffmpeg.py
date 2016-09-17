@@ -346,8 +346,11 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         return result
 
     def combine(self, file, metadata_by_type):
+        if not metadata_by_type:
+            raise ValueError('No metadata provided')
         if 'ffmetadata' not in metadata_by_type:
-            return file
+            raise UnsupportedFormatError('Invalid metadata to be combined with essence: %r' %
+                                         (metadata_by_type.keys(),))
 
         # Determine encoder for output
         encoder_name = self.__get_encoder(file)
