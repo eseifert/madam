@@ -352,17 +352,25 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             raise UnsupportedFormatError('Invalid metadata to be combined with essence: %r' %
                                          (metadata_by_type.keys(),))
 
+        ffmetadata = metadata_by_type['ffmetadata']
+        if not ffmetadata:
+            copy = io.BytesIO()
+            shutil.copyfileobj(file, copy)
+            return copy
+
         # Determine encoder for output
         encoder_name = self.__get_encoder(file)
         if encoder_name is None:
-            return file
+            copy = io.BytesIO()
+            shutil.copyfileobj(file, copy)
+            return copy
 
         # Add metadata to file
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
             command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
 
-            for item in metadata_by_type['ffmetadata'].items():
+            for item in ffmetadata.items():
                 command.append('-metadata')
                 command.append('%s=%s' % item)
 

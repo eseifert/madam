@@ -128,6 +128,14 @@ class TestFFmpegMetadataProcessor:
             else:
                 assert mp3.tags[key] == actual
 
+    def test_combine_does_not_modify_essence_without_metadata(self, processor, mp3_asset):
+        essence = mp3_asset.essence
+        metadata = dict(ffmetadata={})
+
+        essence_with_metadata = processor.combine(essence, metadata)
+
+        assert essence_with_metadata.read() == essence.read()
+
     def test_combine_raises_error_when_essence_format_is_unsupported(self, processor):
         junk_data = io.BytesIO(b'abc123')
         metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
