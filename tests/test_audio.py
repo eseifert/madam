@@ -73,14 +73,14 @@ class TestFFmpegMetadataProcessor:
     def ffmpeg_metadata_processor(self):
         return madam.audio.FFmpegMetadataProcessor()
 
-    def test_supports_id3(self, processor):
-        assert 'id3' in processor.formats
+    def test_supports_ffmetadata(self, processor):
+        assert 'ffmetadata' in processor.formats
 
     def test_read_returns_correct_metadata_dict_for_mp3_with_id3(self, processor):
         with open('tests/resources/64kbits_with_id3v2-4.mp3', 'rb') as file:
             metadata = processor.read(file)
 
-        assert metadata['id3']['artist'] == 'Frédéric Chopin'
+        assert metadata['ffmetadata']['artist'] == 'Frédéric Chopin'
         assert len(metadata) == 1
 
     def test_strip_returns_essence_without_metadata(self, processor):

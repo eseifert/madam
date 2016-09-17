@@ -277,7 +277,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
     @property
     def formats(self):
-        return 'id3',
+        return 'ffmetadata',
 
     def read(self, file):
         command = 'ffmpeg -loglevel error -i pipe: -codec copy -y -f ffmetadata pipe:'.split()
@@ -291,7 +291,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         data = result.stdout.decode('utf-8')
         parser = FFMetadataParser()
         parser.read_string(data)
-        return {'id3': parser[FFMetadataParser.GLOBAL_SECTION]}
+        return {'ffmetadata': parser[FFMetadataParser.GLOBAL_SECTION]}
 
     def strip(self, file):
         # Determine file format
