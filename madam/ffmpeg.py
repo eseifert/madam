@@ -345,6 +345,12 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         return result
 
+    @staticmethod
+    def __copy_bytes(file):
+        clone = io.BytesIO()
+        shutil.copyfileobj(file, clone)
+        return clone
+
     def combine(self, file, metadata_by_type):
         if not metadata_by_type:
             raise ValueError('No metadata provided')
@@ -354,16 +360,12 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         ffmetadata = metadata_by_type['ffmetadata']
         if not ffmetadata:
-            copy = io.BytesIO()
-            shutil.copyfileobj(file, copy)
-            return copy
+            return FFmpegMetadataProcessor.__copy_bytes(file)
 
         # Determine encoder for output
         encoder_name = self.__get_encoder(file)
         if encoder_name is None:
-            copy = io.BytesIO()
-            shutil.copyfileobj(file, copy)
-            return copy
+            return FFmpegMetadataProcessor.__copy_bytes(file)
 
         # Add metadata to file
         result = io.BytesIO()
