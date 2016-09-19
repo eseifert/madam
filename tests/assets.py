@@ -142,6 +142,15 @@ def mp3_asset():
                             duration=0.144)
 
 
+@pytest.fixture(scope='class')
+def nut_audio_asset():
+    with open('tests/resources/sine-440hz-audio.nut', 'rb') as file:
+        essence = file.read()
+    return madam.core.Asset(essence=io.BytesIO(essence),
+                            mime_type='audio/x-nut',
+                            duration=1)
+
+
 @pytest.fixture(params=['mp3_asset', 'wav_asset'])
 def audio_asset(request, mp3_asset, wav_asset):
     if request.param == 'mp3_asset':

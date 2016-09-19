@@ -8,7 +8,7 @@ import pytest
 import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
-from assets import audio_asset, mp3_asset, wav_asset
+from assets import audio_asset, mp3_asset, wav_asset, nut_audio_asset
 
 
 class TestMutagenProcessor:
@@ -106,11 +106,17 @@ class TestFFmpegMetadataProcessor:
 
         assert essence != stripped_essence
 
-    def test_strip_raises_error_when_file_format_is_unsupported(self, processor):
+    def test_strip_raises_error_when_file_format_is_unsupported_by_ffmpeg(self, processor):
         junk_data = io.BytesIO(b'abc123')
 
         with pytest.raises(UnsupportedFormatError):
             processor.strip(junk_data)
+
+    def test_strip_raises_error_when_file_format_is_unsupported_by_metadata_processor(self, processor, nut_audio_asset):
+        essence = nut_audio_asset.essence
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.strip(essence)
 
     def test_combine_returns_essence_with_metadata(self, processor, mp3_asset, tmpdir):
         essence = mp3_asset.essence
@@ -142,12 +148,19 @@ class TestFFmpegMetadataProcessor:
 
         assert essence_with_metadata.read() == essence.read()
 
-    def test_combine_raises_error_when_essence_format_is_unsupported(self, processor):
+    def test_combine_raises_error_when_essence_format_is_unsupported_by_ffmeg(self, processor):
         junk_data = io.BytesIO(b'abc123')
         metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
 
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, metadata)
+
+    def test_combine_raises_error_when_file_format_is_unsupported_by_metadata_processor(self, processor, nut_audio_asset):
+        essence = nut_audio_asset.essence
+        metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.combine(essence, metadata)
 
     def test_combine_raises_error_when_metadata_format_is_unsupported(self, processor, mp3_asset):
         ffmetadata = {'123abc': 'Test artist'}
