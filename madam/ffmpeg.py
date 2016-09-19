@@ -406,14 +406,11 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
-        encoder_name = self.__mime_type_to_ffmpeg_encoder[mime_type]
-        if encoder_name is None:
-            return file
-
         # Strip metadata
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
             command = 'ffmpeg -loglevel error -i pipe: -map_metadata -1 -codec copy -y -f'.split()
+            encoder_name = self.__mime_type_to_ffmpeg_encoder[mime_type]
             command.append(encoder_name)
             command.append(tmp.name)
             try:
