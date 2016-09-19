@@ -8,7 +8,7 @@ import pytest
 import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
-from assets import audio_asset, mp3_asset, opus_asset, wav_asset, nut_audio_asset
+from assets import audio_asset, mp3_asset, opus_asset, wav_asset, nut_audio_asset, unknown_asset
 
 
 class TestMutagenProcessor:
@@ -85,8 +85,8 @@ class TestFFmpegMetadataProcessor:
         assert metadata['ffmetadata']['artist'] == 'Frédéric Chopin'
         assert len(metadata) == 1
 
-    def test_read_raises_error_when_file_format_is_unsupported(self, processor):
-        junk_data = io.BytesIO(b'abc123')
+    def test_read_raises_error_when_file_format_is_unsupported(self, processor, unknown_asset):
+        junk_data = unknown_asset.essence
 
         with pytest.raises(UnsupportedFormatError):
             processor.read(junk_data)
@@ -106,8 +106,8 @@ class TestFFmpegMetadataProcessor:
 
         assert essence != stripped_essence
 
-    def test_strip_raises_error_when_file_format_is_unsupported_by_ffmpeg(self, processor):
-        junk_data = io.BytesIO(b'abc123')
+    def test_strip_raises_error_when_file_format_is_unsupported_by_ffmpeg(self, processor, unknown_asset):
+        junk_data = unknown_asset.essence
 
         with pytest.raises(UnsupportedFormatError):
             processor.strip(junk_data)
@@ -148,8 +148,8 @@ class TestFFmpegMetadataProcessor:
 
         assert essence_with_metadata.read() == essence.read()
 
-    def test_combine_raises_error_when_essence_format_is_unsupported_by_ffmeg(self, processor):
-        junk_data = io.BytesIO(b'abc123')
+    def test_combine_raises_error_when_essence_format_is_unsupported_by_ffmeg(self, processor, unknown_asset):
+        junk_data = unknown_asset.essence
         metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
 
         with pytest.raises(UnsupportedFormatError):
