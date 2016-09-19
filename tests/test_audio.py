@@ -128,6 +128,12 @@ class TestFFmpegMetadataProcessor:
             else:
                 assert mp3.tags[key] == actual
 
+    def test_combine_raises_error_when_no_ffmetadata_dict_is_given(self, processor, mp3_asset):
+        metadata = {}
+
+        with pytest.raises(ValueError):
+            processor.combine(mp3_asset.essence, metadata)
+
     def test_combine_does_not_modify_essence_without_metadata(self, processor, mp3_asset):
         essence = mp3_asset.essence
         metadata = dict(ffmetadata={})
@@ -143,8 +149,14 @@ class TestFFmpegMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, metadata)
 
-    def test_combine_raises_error_when_metadata_format_is_unknown(self, processor, mp3_asset):
+    def test_combine_raises_error_when_metadata_format_is_unsupported(self, processor, mp3_asset):
         ffmetadata = {'123abc': 'Test artist'}
 
         with pytest.raises(UnsupportedFormatError):
             processor.combine(mp3_asset.essence, ffmetadata)
+
+    def test_combine_raises_error_when_metadata_contains_unsupported_keys(self, processor, mp3_asset):
+        metadata = dict(ffmetadata=dict(foo='bar'))
+
+        with pytest.raises(ValueError):
+            processor.combine(mp3_asset.essence, metadata)

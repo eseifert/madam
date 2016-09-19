@@ -271,43 +271,82 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     __ffmpeg_decoder_to_mime_type = {
         'matroska,webm': 'video/x-matroska',
         'mov,mp4,m4a,3gp,3g2,mj2': 'video/quicktime',
-        'mp3': 'audio/mp3',
+        'mp3': 'audio/mpeg',
         'ogg': 'audio/ogg'
     }
 
     __mime_type_to_ffmpeg_encoder = {
         'video/matroska': 'matroska',
         'video/quicktime': 'mov',
-        'audio/mp3': 'mp3',
+        'audio/mpeg': 'mp3',
         'audio/ogg': 'ogg'
+    }
+
+    # See https://wiki.multimedia.cx/index.php?title=FFmpeg_Metadata
+    __metadata_keys_by_mime_type = {
+        'audio/mpeg': bidict({
+            'album': 'album',                   # TALB Album
+            'album_artist': 'album_artist',     # TPE2 Band/orchestra/accompaniment
+            'album_sort': 'album-sort',         # TSOA Album sort order
+            'artist': 'artist',                 # TPE1 Lead performer(s)/Soloist(s)
+            'artist_sort': 'artist-sort',       # TSOP Performer sort order
+            'bpm': 'TBPM',                      # TBPM BPM (beats per minute)
+            'composer': 'composer',             # TCOM Composer
+            'performer': 'performer',           # TPE3 Conductor/performer refinement
+            'content_group': 'TIT1',            # TIT1 Content group description
+            'copyright': 'copyright',           # TCOP (Copyright message)
+            'date': 'date',                     # TDRC Recording time
+            'disc': 'disc',                     # TPOS Part of a set
+            'disc_subtitle': 'TSST',            # TSST Set subtitle
+            'encoded_by': 'encoded_by',         # TENC Encoded by
+            'encoder': 'encoder',               # TSSE Software/Hardware and settings used for encoding
+            'encoding_time': 'TDEN',            # TDEN Encoding time
+            'file_type': 'TFLT',                # TFLT File type
+            'genre': 'genre',                   # TCON (Content type)
+            'isrc': 'TSRC',                     # TSRC ISRC (international standard recording code)
+            'initial_key': 'TKEY',              # TKEY Musical key in which the sound starts
+            'involved_people': 'TIPL',          # TIPL Involved people list
+            'language': 'language',             # TLAN Language(s)
+            'length': 'TLEN',                   # TLEN Length of the audio file in milliseconds
+            'lyricist': 'TEXT',                 # TEXT Lyricist/Text writer
+            'lyrics': 'lyrics',                 # USLT Unsychronized lyric/text transcription
+            'media_type': 'TMED',               # TMED Media type
+            'mood': 'TMOO',                     # TMOO Mood
+            'original_album': 'TOAL',           # TOAL Original album/movie/show title
+            'original_artist': 'TOPE',          # TOPE Original artist(s)/performer(s)
+            'original_date': 'TDOR',            # TDOR Original release time
+            'original_filename': 'TOFN',        # TOFN Original filename
+            'original_lyricist': 'TOLY',        # TOLY Original lyricist(s)/text writer(s)
+            'owner': 'TOWN',                    # TOWN File owner/licensee
+            'credits': 'TMCL',                  # TMCL Musician credits list
+            'playlist_delay': 'TDLY',           # TDLY Playlist delay
+            'produced_by': 'TPRO',              # TPRO Produced notice
+            'publisher': 'publisher',           # TPUB Publisher
+            'radio_station_name': 'TRSN',       # TRSN Internet radio station name
+            'radio_station_owner': 'TRSO',      # TRSO Internet radio station owner
+            'remixed_by': 'TP4',                # TPE4 Interpreted, remixed, or otherwise modified by
+            'tagging_date': 'TDTG',             # TDTG Tagging time
+            'title': 'title',                   # TIT2 Title/songname/content description
+            'title_sort': 'title-sort',         # TSOT Title sort order
+            'track': 'track',                   # TRCK Track number/Position in set
+            'version': 'TIT3',                  # TIT3 Subtitle/Description refinement
+
+            # Release time (TDRL) can be written, but it collides with
+            # recording time (TDRC) when reading;
+
+            # AENC, APIC, ASPI, COMM, COMR, ENCR, EQU2, ETCO, GEOB, GRID, LINK,
+            # MCDI, MLLT, OWNE, PRIV, PCNT, POPM, POSS, RBUF, RVA2, RVRB, SEEK,
+            # SIGN, SYLT, SYTC, UFID, USER, WCOM, WCOP, WOAF, WOAR, WOAS, WORS,
+            # WPAY, WPUB, and WXXX will be written as TXXX tag
+        }),
+        'audio/ogg': bidict({}),
+        'video/matroska': bidict({}),
+        'video/quicktime': bidict({}),
     }
 
     @property
     def formats(self):
         return 'ffmetadata',
-
-    def read(self, file):
-        command = 'ffmpeg -loglevel error -i pipe: -codec copy -y -f ffmetadata pipe:'.split()
-        try:
-            result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, check=True)
-        except CalledProcessError as ffmpeg_error:
-            error_message = ffmpeg_error.stderr.decode('utf-8')
-            if 'Invalid data found when processing input' in error_message:
-                raise UnsupportedFormatError('Unknown file format.')
-            else:
-                raise OperatorError('Could not read metadata from asset: %s' % error_message)
-
-        data = result.stdout.decode('utf-8')
-        parser = FFMetadataParser()
-        parser.read_string(data)
-
-        ffmetadata = parser[FFMetadataParser.GLOBAL_SECTION]
-        # FFmpeg always returns the encoder, even when there was no "real" metadata
-        if not ffmetadata or (len(ffmetadata) == 1 and 'encoder' in ffmetadata):
-            return {}
-
-        return {'ffmetadata': parser[FFMetadataParser.GLOBAL_SECTION]}
 
     def __get_mime_type(self, file):
         decoder_name = None
@@ -328,10 +367,46 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         return self.__ffmpeg_decoder_to_mime_type.get(decoder_name)
 
+    def read(self, file):
+        # Determine allowed metadata fields for the input file format
+        mime_type = self.__get_mime_type(file)
+        if not mime_type:
+            raise UnsupportedFormatError('Unsupported metadata source.')
+
+        command = 'ffmpeg -loglevel error -i pipe: -codec copy -y -f ffmetadata pipe:'.split()
+        try:
+            result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE, check=True)
+        except CalledProcessError as ffmpeg_error:
+            error_message = ffmpeg_error.stderr.decode('utf-8')
+            raise OperatorError('Could not read metadata from asset: %s' % error_message)
+
+        data = result.stdout.decode('utf-8')
+        parser = FFMetadataParser()
+        parser.read_string(data)
+
+        ffmetadata = parser[FFMetadataParser.GLOBAL_SECTION]
+        # FFmpeg always returns the encoder, even when there was no "real" metadata
+        if not ffmetadata or (len(ffmetadata) == 1 and 'encoder' in ffmetadata):
+            return {}
+
+        # Convert FFMetadata items to metadata items
+        metadata = {}
+        metadata_keys = self.__metadata_keys_by_mime_type[mime_type]
+        for ffmetadata_key, value in ffmetadata.items():
+            metadata_key = metadata_keys.inv.get(ffmetadata_key)
+            if metadata_key is not None:
+                metadata[metadata_key] = value
+
+        return {'ffmetadata': metadata}
+
     def strip(self, file):
         # Determine encoder for output
         mime_type = self.__get_mime_type(file)
-        encoder_name = self.__mime_type_to_ffmpeg_encoder.get(mime_type)
+        if not mime_type:
+            raise UnsupportedFormatError('Unsupported metadata source.')
+
+        encoder_name = self.__mime_type_to_ffmpeg_encoder[mime_type]
         if encoder_name is None:
             return file
 
@@ -360,20 +435,21 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         return clone
 
     def combine(self, file, metadata_by_type):
+        mime_type = self.__get_mime_type(file)
+        if not mime_type:
+            raise UnsupportedFormatError('Unsupported metadata source.')
+
+        # Validate provided metadata
         if not metadata_by_type:
             raise ValueError('No metadata provided')
         if 'ffmetadata' not in metadata_by_type:
             raise UnsupportedFormatError('Invalid metadata to be combined with essence: %r' %
                                          (metadata_by_type.keys(),))
 
+        # Return original essence if no metadata is provided
+        # TODO: Is this intended behavior?
         ffmetadata = metadata_by_type['ffmetadata']
         if not ffmetadata:
-            return FFmpegMetadataProcessor.__copy_bytes(file)
-
-        # Determine encoder for output
-        mime_type = self.__get_mime_type(file)
-        encoder_name = self.__mime_type_to_ffmpeg_encoder.get(mime_type)
-        if encoder_name is None:
             return FFmpegMetadataProcessor.__copy_bytes(file)
 
         # Add metadata to file
@@ -381,10 +457,15 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         with tempfile.NamedTemporaryFile() as tmp:
             command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
 
-            for item in ffmetadata.items():
+            metadata_keys = self.__metadata_keys_by_mime_type[mime_type]
+            for metadata_key, value in ffmetadata.items():
+                ffmetadata_key = metadata_keys.get(metadata_key)
+                if ffmetadata_key is None:
+                    raise ValueError('Unsupported metadata key: %r' % metadata_key)
                 command.append('-metadata')
-                command.append('%s=%s' % item)
+                command.append('%s=%s' % (ffmetadata_key, value))
 
+            encoder_name = self.__mime_type_to_ffmpeg_encoder[mime_type]
             command.extend(['-codec', 'copy', '-y', '-f', encoder_name, tmp.name])
             try:
                 subprocess_run(command, input=file.read(),
