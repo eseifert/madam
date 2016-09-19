@@ -268,11 +268,18 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.
     """
-    __DECODER_TO_ENCODER = {
-        'matroska,webm': 'matroska',
-        'mov,mp4,m4a,3gp,3g2,mj2': 'mov',
-        'mp3': 'mp3',
-        'ogg': 'ogg'
+    __ffmpeg_decoder_to_mime_type = {
+        'matroska,webm': 'video/x-matroska',
+        'mov,mp4,m4a,3gp,3g2,mj2': 'video/quicktime',
+        'mp3': 'audio/mp3',
+        'ogg': 'audio/ogg'
+    }
+
+    __mime_type_to_ffmpeg_encoder = {
+        'video/matroska': 'matroska',
+        'video/quicktime': 'mov',
+        'audio/mp3': 'mp3',
+        'audio/ogg': 'ogg'
     }
 
     @property
@@ -302,7 +309,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         return {'ffmetadata': parser[FFMetadataParser.GLOBAL_SECTION]}
 
-    def __get_encoder(self, file):
+    def __get_mime_type(self, file):
+        decoder_name = None
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(file.read())
             tmp.flush()
@@ -316,14 +324,14 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 raise UnsupportedFormatError('Unknown file format.')
             probe_data = json.loads(result.stdout.decode('utf-8'))
             decoder_name = probe_data['format']['format_name']
-
         file.seek(0)
 
-        return FFmpegMetadataProcessor.__DECODER_TO_ENCODER.get(decoder_name)
+        return self.__ffmpeg_decoder_to_mime_type.get(decoder_name)
 
     def strip(self, file):
         # Determine encoder for output
-        encoder_name = self.__get_encoder(file)
+        mime_type = self.__get_mime_type(file)
+        encoder_name = self.__mime_type_to_ffmpeg_encoder.get(mime_type)
         if encoder_name is None:
             return file
 
@@ -363,7 +371,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             return FFmpegMetadataProcessor.__copy_bytes(file)
 
         # Determine encoder for output
-        encoder_name = self.__get_encoder(file)
+        mime_type = self.__get_mime_type(file)
+        encoder_name = self.__mime_type_to_ffmpeg_encoder.get(mime_type)
         if encoder_name is None:
             return FFmpegMetadataProcessor.__copy_bytes(file)
 
