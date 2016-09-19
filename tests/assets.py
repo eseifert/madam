@@ -124,7 +124,7 @@ def image_asset(request, jpeg_asset, png_asset, gif_asset):
         return gif_asset
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='class')
 def wav_asset():
     with open('tests/resources/16-bit-mono.wav', 'rb') as file:
         essence = file.read()
@@ -133,13 +133,22 @@ def wav_asset():
                             duration=0.1)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='class')
 def mp3_asset():
     with open('tests/resources/64kbits.mp3', 'rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence),
                             mime_type='audio/mpeg',
                             duration=0.144)
+
+
+@pytest.fixture(scope='class')
+def opus_asset():
+    with open('tests/resources/sine-440hz-audio.opus', 'rb') as file:
+        essence = file.read()
+    return madam.core.Asset(essence=io.BytesIO(essence),
+                            mime_type='audio/ogg',
+                            duration=1)
 
 
 @pytest.fixture(scope='class')
@@ -151,10 +160,12 @@ def nut_audio_asset():
                             duration=1)
 
 
-@pytest.fixture(params=['mp3_asset', 'wav_asset'])
-def audio_asset(request, mp3_asset, wav_asset):
+@pytest.fixture(params=['mp3_asset', 'opus_asset', 'wav_asset'])
+def audio_asset(request, mp3_asset, opus_asset, wav_asset):
     if request.param == 'mp3_asset':
         return mp3_asset
+    if request.param == 'opus_asset':
+        return opus_asset
     else:
         return wav_asset
 
@@ -203,6 +214,8 @@ def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, mp4_a
         return gif_asset
     elif request.param == 'mp3_asset':
         return mp3_asset
+    elif request.param == 'opus_asset':
+        return opus_asset
     elif request.param == 'wav_asset':
         return wav_asset
     elif request.param == 'mp4_asset':

@@ -8,7 +8,7 @@ import pytest
 import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
-from assets import audio_asset, mp3_asset, wav_asset, nut_audio_asset
+from assets import audio_asset, mp3_asset, opus_asset, wav_asset, nut_audio_asset
 
 
 class TestMutagenProcessor:
