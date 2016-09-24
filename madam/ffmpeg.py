@@ -12,29 +12,62 @@ from madam.core import Asset, MetadataProcessor, Processor, operator, OperatorEr
 from madam.future import CalledProcessError, subprocess_run
 
 
+DECODER_AND_STREAM_TYPE_TO_MIME_TYPE = {
+    ('matroska,webm', 'video'): 'video/x-matroska',
+    ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
+    ('yuv4mpegpipe', 'video'): 'video/x-yuv4mpegpipe',
+    ('mp3', 'audio'): 'audio/mpeg',
+    ('ogg', 'audio'): 'audio/ogg',
+    ('wav', 'audio'): 'audio/wav',
+}
+
+MIME_TYPE_TO_ENCODER = {
+    'video/x-matroska': 'matroska',
+    'video/quicktime': 'mov',
+    'video/x-yuv4mpegpipe': 'yuv4mpegpipe',
+    'audio/mpeg': 'mp3',
+    'audio/ogg': 'ogg',
+    'audio/wav': 'wav',
+}
+
+
+def _probe(file):
+    with tempfile.NamedTemporaryFile() as tmp:
+        shutil.copyfileobj(file, tmp.file)
+        tmp.flush()
+        file.seek(0)
+
+        command = 'ffprobe -loglevel error -print_format json -show_format -show_streams'.split()
+        command.append(tmp.name)
+        result = subprocess_run(command, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, check=True)
+
+    string_result = result.stdout.decode('utf-8')
+    json_obj = json.loads(string_result)
+
+    return json_obj
+
+
+def _get_mime_type(probe_data):
+    decoder_name = probe_data['format']['format_name']
+
+    stream_type = ''
+    for stream in probe_data['streams']:
+        if stream['codec_type'] == 'video':
+            stream_type = 'video'
+            break
+        elif stream['codec_type'] == 'audio':
+            stream_type = 'audio'
+
+    return DECODER_AND_STREAM_TYPE_TO_MIME_TYPE.get((decoder_name, stream_type))
+
+
 class FFmpegProcessor(Processor):
     """
     Represents a processor that uses FFmpeg to read audio and video data.
 
     The minimum version of FFmpeg required is v0.9.
     """
-
-    @staticmethod
-    def __probe(file, format=True, streams=False):
-        with tempfile.NamedTemporaryFile() as tmp:
-            tmp.write(file.read())
-            tmp.flush()
-
-            command = 'ffprobe -print_format json -loglevel quiet'.split()
-            if format:
-                command.append('-show_format')
-            if streams:
-                command.append('-show_streams')
-            command.append(tmp.name)
-            result = subprocess_run(command, stdout=subprocess.PIPE)
-        string_result = result.stdout.decode('utf-8')
-        json_obj = json.loads(string_result)
-        return json_obj
 
     def __init__(self):
         """
@@ -53,32 +86,29 @@ class FFmpegProcessor(Processor):
             raise EnvironmentError('Found ffprobe version %s. Requiring at least version %s.'
                                    % (version_string, self._min_version))
 
-        self.__mime_type_to_ffmpeg_type = bidict({
-            'audio/mpeg': 'mp3',
-            'audio/ogg': 'ogg',
-            'audio/wav': 'wav',
-            'video/mp4': 'mp4',
-            'video/webm': 'webm',
-            'video/x-yuv4mpegpipe': 'yuv4mpegpipe'
-        })
-
     def _can_read(self, file):
-        file_info = FFmpegProcessor.__probe(file)
-        return bool(file_info)
+        try:
+            probe_data = _probe(file)
+            return bool(probe_data)
+        except CalledProcessError:
+            return False
 
     def _read(self, file):
-        file_info = FFmpegProcessor.__probe(file, streams=True)
-        file.seek(0)
+        try:
+            probe_data = _probe(file)
+        except CalledProcessError:
+            raise UnsupportedFormatError('Unsupported file format.')
 
-        for format_name in file_info['format']['format_name'].split(','):
-            mime_type = self.__mime_type_to_ffmpeg_type.inv.get(format_name)
-            if mime_type is not None:
-                break
+        mime_type = _get_mime_type(probe_data)
+        if not mime_type:
+            raise UnsupportedFormatError('Unsupported metadata source.')
+
         metadata = dict(
             mime_type=mime_type,
-            duration=float(file_info['format']['duration'])
+            duration=float(probe_data['format']['duration'])
         )
-        for stream in file_info['streams']:
+
+        for stream in probe_data['streams']:
             stream_type = stream.get('codec_type')
             if stream_type in ('audio', 'video'):
                 # Only use first stream
@@ -98,7 +128,7 @@ class FFmpegProcessor(Processor):
             raise ValueError('Invalid dimensions: %dx%d' % (width, height))
 
         try:
-            ffmpeg_type = self.__mime_type_to_ffmpeg_type[asset.mime_type]
+            ffmpeg_type = MIME_TYPE_TO_ENCODER[asset.mime_type]
         except KeyError:
             raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
         if asset.mime_type.split('/')[0] not in ('image', 'video'):
@@ -149,7 +179,7 @@ class FFmpegProcessor(Processor):
         :param subtitles: Dictionary with the options for subtitle streams.
         :return: New asset with converted essence
         """
-        ffmpeg_type = self.__mime_type_to_ffmpeg_type[mime_type]
+        ffmpeg_type = MIME_TYPE_TO_ENCODER[mime_type]
 
         command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
         if video is not None:
@@ -173,117 +203,16 @@ class FFmpegProcessor(Processor):
             return Asset(essence=tmp, mime_type=mime_type)
 
 
-class FFMetadataParser(MutableMapping):
-    """Parses FFmpeg's metadata ini-like file format.
-
-    See https://www.ffmpeg.org/ffmpeg-formats.html#Metadata-1 for a specification.
-    """
-    SUPPORTED_VERSIONS = 1,
-    GLOBAL_SECTION = '__global__'
-    HEADER_PATTERN = re.compile(r'^;FFMETADATA(?P<version>\d+)$')
-    COMMENT_PATTERN = re.compile(r'^[;#]')
-    SECTION_PATTERN = re.compile(r'\[(?P<section_name>[A-Z]+)\]')
-    KEY_VALUE_PATTERN = re.compile(r'^(?P<key>.+)(?<!\\)=(?P<value>.*)$')
-    ESCAPE_PATTERN = re.compile(r'\\(?P<special_character>.)')
-    MISSING_ESCAPE_PATTERN = re.compile(r'(?<!\\)(?P<unescaped_character>[=;#])')
-
-    def __init__(self):
-        self.__metadata = {}
-
-    @staticmethod
-    def __replace_escaping(m):
-        repl_char = m.group('special_character')
-        if repl_char not in r'=;#\\':
-            raise ValueError('Invalid syntax: Character %r cannot be escaped' % repl_char)
-        return repl_char
-
-    @staticmethod
-    def __unescape(string):
-        missing_escaping_match = FFMetadataParser.MISSING_ESCAPE_PATTERN.search(string)
-        if missing_escaping_match:
-            unescaped_char = missing_escaping_match.group('unescaped_character')
-            raise ValueError('Invalid syntax: Character %r must be escaped' % unescaped_char)
-        return FFMetadataParser.ESCAPE_PATTERN.sub(FFMetadataParser.__replace_escaping, string)
-
-    def _read(self, lines):
-        first_line = next(lines)
-        header_match = FFMetadataParser.HEADER_PATTERN.match(first_line)
-        if not header_match:
-            raise ValueError('Unrecognized file format: Unknown header for FFmpeg metadata: %r' % first_line)
-        version = int(header_match.group('version'))
-        if not header_match or version not in FFMetadataParser.SUPPORTED_VERSIONS:
-            raise ValueError('Unknown file format version: %d' % version)
-        self.__metadata.clear()
-        section_name = FFMetadataParser.GLOBAL_SECTION
-        section = {}
-        line_no = 2
-        was_escaped_newline = False
-        previous_line = ''
-        for line in lines:
-            if was_escaped_newline:
-                line = previous_line + line
-                was_escaped_newline = False
-            if line.endswith('\\'):
-                was_escaped_newline = True
-                previous_line = line[:-1]
-                continue
-            if not line or FFMetadataParser.COMMENT_PATTERN.match(line):
-                continue
-            section_match = FFMetadataParser.SECTION_PATTERN.match(line)
-            if section_match:
-                self.__metadata[section_name] = section
-                section_name = section_match.group('section_name')
-                section = {}
-                continue
-            key_value_match = FFMetadataParser.KEY_VALUE_PATTERN.match(line)
-            if key_value_match:
-                key = FFMetadataParser.__unescape(key_value_match.group('key'))
-                value = FFMetadataParser.__unescape(key_value_match.group('value'))
-                section[key] = value
-            else:
-                raise ValueError('Invalid syntax in line %d: %r' % (line_no, line))
-        self.__metadata[section_name] = section
-
-    def read_string(self, string):
-        lines = string.splitlines()
-        return self._read(iter(lines))
-
-    def __getitem__(self, key):
-        return self.__metadata[key]
-
-    def __setitem__(self, key, value):
-        self.__metadata[key] = value
-
-    def __delitem__(self, key):
-        del self.__metadata[key]
-
-    def __iter__(self):
-        return iter(self.__metadata)
-
-    def __len__(self):
-        return len(self.__metadata)
-
-
 class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.
     """
-    __ffmpeg_decoder_and_stream_type_to_mime_type = {
-        ('matroska,webm', 'video'): 'video/x-matroska',
-        ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
-        ('mp3', 'audio'): 'audio/mpeg',
-        ('ogg', 'audio'): 'audio/ogg'
-    }
-
-    __mime_type_to_ffmpeg_encoder = {
-        'video/x-matroska': 'matroska',
-        'video/quicktime': 'mov',
-        'audio/mpeg': 'mp3',
-        'audio/ogg': 'ogg'
-    }
 
     # See https://wiki.multimedia.cx/index.php?title=FFmpeg_Metadata
     __metadata_keys_by_mime_type = {
+        'video/x-matroska': bidict({}),
+        'video/quicktime': bidict({}),
+        'video/x-yuv4mpegpipe': bidict({}),
         'audio/mpeg': bidict({
             'album': 'album',                   # TALB Album
             'album_artist': 'album_artist',     # TPE2 Band/orchestra/accompaniment
@@ -362,82 +291,27 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             'tracks': 'TRACKTOTAL',             # Total number of track number in a collection or album
             'version': 'VERSION',               # Version of the track (e.g. remix info)
         }),
-        'video/x-matroska': bidict({}),
-        'video/quicktime': bidict({}),
+        'audio/wav': bidict({}),
     }
 
     @property
     def formats(self):
         return 'ffmetadata',
 
-    def __get_mime_type(self, file):
-        decoder_name = None
-        streams_by_type = defaultdict(list)
-        with tempfile.NamedTemporaryFile() as tmp:
-            tmp.write(file.read())
-            tmp.flush()
-
-            command = 'ffprobe -loglevel error -print_format json -show_format -show_streams'.split()
-            command.append(tmp.name)
-            try:
-                result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE, check=True)
-            except CalledProcessError:
-                raise UnsupportedFormatError('Unknown file format.')
-            probe_data = json.loads(result.stdout.decode('utf-8'))
-            decoder_name = probe_data['format']['format_name']
-            for stream in probe_data['streams']:
-                streams_by_type[stream['codec_type']].append(stream)
-
-        file.seek(0)
-
-        mime_category = ''
-        if streams_by_type.get('video'):
-            mime_category = 'video'
-        elif streams_by_type.get('audio'):
-            mime_category = 'audio'
-
-        return self.__ffmpeg_decoder_and_stream_type_to_mime_type.get((decoder_name, mime_category))
-
     def read(self, file):
-        # Determine allowed metadata fields for the input file format
-        mime_type = self.__get_mime_type(file)
+        try:
+            probe_data = _probe(file)
+        except CalledProcessError:
+            raise UnsupportedFormatError('Unsupported file format.')
+
+        mime_type = _get_mime_type(probe_data)
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
-        command = 'ffmpeg -loglevel error -i pipe: -codec copy -y -f ffmetadata pipe:'.split()
-        try:
-            result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, check=True)
-        except CalledProcessError as ffmpeg_error:
-            error_message = ffmpeg_error.stderr.decode('utf-8')
-            raise OperatorError('Could not read metadata from asset: %s' % error_message)
-
-        data = result.stdout.decode('utf-8')
-        parser = FFMetadataParser()
-        parser.read_string(data)
-        ffmetadata = parser[FFMetadataParser.GLOBAL_SECTION]
-        del ffmetadata['encoder']
-
-        # If no metadata was found in container, try to read metadata from streams
-        if not ffmetadata:
-            file.seek(0)
-            command = 'ffmpeg -loglevel error -i pipe: -codec copy -map_metadata 0:s -y -f ffmetadata pipe:'.split()
-            try:
-                result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not read metadata from asset: %s' % error_message)
-
-            data = result.stdout.decode('utf-8')
-            parser = FFMetadataParser()
-            parser.read_string(data)
-            ffmetadata = parser[FFMetadataParser.GLOBAL_SECTION]
-            del ffmetadata['encoder']
-
-        if not ffmetadata:
-            return {}
+        # Extract metadata (tags) from ffprobe information
+        ffmetadata = probe_data['format'].get('tags', {})
+        for stream in probe_data['streams']:
+            ffmetadata.update(stream.get('tags', {}))
 
         # Convert FFMetadata items to metadata items
         metadata = {}
@@ -450,8 +324,12 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         return {'ffmetadata': metadata}
 
     def strip(self, file):
-        # Determine encoder for output
-        mime_type = self.__get_mime_type(file)
+        try:
+            probe_data = _probe(file)
+        except CalledProcessError:
+            raise UnsupportedFormatError('Unsupported file format.')
+
+        mime_type = _get_mime_type(probe_data)
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
@@ -459,7 +337,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
             command = 'ffmpeg -loglevel error -i pipe: -map_metadata -1 -codec copy -y -f'.split()
-            encoder_name = self.__mime_type_to_ffmpeg_encoder[mime_type]
+            encoder_name = MIME_TYPE_TO_ENCODER[mime_type]
             command.append(encoder_name)
             command.append(tmp.name)
             try:
@@ -481,7 +359,12 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         return clone
 
     def combine(self, file, metadata_by_type):
-        mime_type = self.__get_mime_type(file)
+        try:
+            probe_data = _probe(file)
+        except CalledProcessError:
+            raise UnsupportedFormatError('Unsupported file format.')
+
+        mime_type = _get_mime_type(probe_data)
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
@@ -491,18 +374,15 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         if 'ffmetadata' not in metadata_by_type:
             raise UnsupportedFormatError('Invalid metadata to be combined with essence: %r' %
                                          (metadata_by_type.keys(),))
-
-        # Return original essence if no metadata is provided
-        # TODO: Is this intended behavior?
-        ffmetadata = metadata_by_type['ffmetadata']
-        if not ffmetadata:
-            return FFmpegMetadataProcessor.__copy_bytes(file)
+        if not metadata_by_type['ffmetadata']:
+            raise ValueError('No metadata provided')
 
         # Add metadata to file
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
             command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
 
+            ffmetadata = metadata_by_type['ffmetadata']
             metadata_keys = self.__metadata_keys_by_mime_type[mime_type]
             for metadata_key, value in ffmetadata.items():
                 ffmetadata_key = metadata_keys.get(metadata_key)
@@ -511,7 +391,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 command.append('-metadata')
                 command.append('%s=%s' % (ffmetadata_key, value))
 
-            encoder_name = self.__mime_type_to_ffmpeg_encoder[mime_type]
+            encoder_name = MIME_TYPE_TO_ENCODER[mime_type]
             command.extend(['-codec', 'copy', '-y', '-f', encoder_name, tmp.name])
             try:
                 subprocess_run(command, input=file.read(),
