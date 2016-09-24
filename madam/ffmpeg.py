@@ -339,7 +339,29 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             # SIGN, SYLT, SYTC, UFID, USER, WCOM, WCOP, WOAF, WOAR, WOAS, WORS,
             # WPAY, WPUB, and WXXX will be written as TXXX tag
         }),
-        'audio/ogg': bidict({}),
+        'audio/ogg': bidict({
+            'album': 'ALBUM',                   # Collection name
+            'album_artist': 'album_artist',     # Band/orchestra/accompaniment
+            'artist': 'ARTIST',                 # Band or singer, composer, author, etc.
+            'comment': 'comment',               # Short text description of the contents
+            'composer': 'COMPOSER',             # Composer
+            'contact': 'CONTACT',               # Contact information for the creators or distributors
+            'copyright': 'COPYRIGHT',           # Copyright attribution
+            'date': 'DATE',                     # Date the track was recorded
+            'disc': 'disc',                     # Collection number
+            'encoded_by': 'ENCODED-BY',         # Encoded by
+            'encoder': 'ENCODER',               # Software/Hardware and settings used for encoding
+            'genre': 'GENRE',                   # Short text indication of music genre
+            'isrc': 'ISRC',                     # ISRC number
+            'license': 'LICENSE',               # License information
+            'location': 'LOCATION',             # Location where track was recorded
+            'performer': 'PERFORMER',           # Artist(s) who performed the work (conductor, orchestra, etc.)
+            'produced_by': 'ORGANIZATION',      # Organization producing the track (i.e. the 'record label')
+            'title': 'TITLE',                   # Track/Work name
+            'track': 'track',                   # Track number if part of a collection or album
+            'tracks': 'TRACKTOTAL',             # Total number of track number in a collection or album
+            'version': 'VERSION',               # Version of the track (e.g. remix info)
+        }),
         'video/x-matroska': bidict({}),
         'video/quicktime': bidict({}),
     }

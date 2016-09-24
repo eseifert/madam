@@ -2,8 +2,9 @@ import io
 import json
 import subprocess
 
-import mutagen
 import pytest
+from mutagen.mp3 import EasyMP3
+from mutagen.oggopus import OggOpus
 
 import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
@@ -118,7 +119,7 @@ class TestFFmpegMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.strip(essence)
 
-    def test_combine_returns_essence_with_metadata(self, processor, mp3_asset, tmpdir):
+    def test_combine_returns_mp3_with_metadata(self, processor, mp3_asset, tmpdir):
         essence = mp3_asset.essence
         metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
 
@@ -126,13 +127,29 @@ class TestFFmpegMetadataProcessor:
 
         essence_file = tmpdir.join('essence_with_metadata')
         essence_file.write(essence_with_metadata.read(), 'wb')
-        mp3 = mutagen.mp3.EasyMP3(str(essence_file))
+        mp3 = EasyMP3(str(essence_file))
         for key, actual in metadata['ffmetadata'].items():
             expected = mp3.tags.get(key)
             if isinstance(expected, list):
                 assert actual in expected
             else:
                 assert mp3.tags[key] == actual
+
+    def test_combine_returns_opus_with_metadata(self, processor, opus_asset, tmpdir):
+        essence = opus_asset.essence
+        metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
+
+        essence_with_metadata = processor.combine(essence, metadata)
+
+        essence_file = tmpdir.join('essence_with_metadata')
+        essence_file.write(essence_with_metadata.read(), 'wb')
+        ogg = OggOpus(str(essence_file))
+        for key, actual in metadata['ffmetadata'].items():
+            expected = ogg.tags.get(key)
+            if isinstance(expected, list):
+                assert actual in expected
+            else:
+                assert ogg.tags[key] == actual
 
     def test_combine_raises_error_when_no_ffmetadata_dict_is_given(self, processor, mp3_asset):
         metadata = {}
