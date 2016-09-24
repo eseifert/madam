@@ -4,7 +4,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from collections import MutableMapping
+from collections import MutableMapping, defaultdict
 
 from bidict import bidict
 
@@ -268,11 +268,11 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.
     """
-    __ffmpeg_decoder_to_mime_type = {
-        'matroska,webm': 'video/x-matroska',
-        'mov,mp4,m4a,3gp,3g2,mj2': 'video/quicktime',
-        'mp3': 'audio/mpeg',
-        'ogg': 'audio/ogg'
+    __ffmpeg_decoder_and_stream_type_to_mime_type = {
+        ('matroska,webm', 'video'): 'video/x-matroska',
+        ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
+        ('mp3', 'audio'): 'audio/mpeg',
+        ('ogg', 'audio'): 'audio/ogg'
     }
 
     __mime_type_to_ffmpeg_encoder = {
@@ -350,11 +350,12 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
     def __get_mime_type(self, file):
         decoder_name = None
+        streams_by_type = defaultdict(list)
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(file.read())
             tmp.flush()
 
-            command = 'ffprobe -loglevel error -print_format json -show_format'.split()
+            command = 'ffprobe -loglevel error -print_format json -show_format -show_streams'.split()
             command.append(tmp.name)
             try:
                 result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
@@ -363,9 +364,18 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 raise UnsupportedFormatError('Unknown file format.')
             probe_data = json.loads(result.stdout.decode('utf-8'))
             decoder_name = probe_data['format']['format_name']
+            for stream in probe_data['streams']:
+                streams_by_type[stream['codec_type']].append(stream)
+
         file.seek(0)
 
-        return self.__ffmpeg_decoder_to_mime_type.get(decoder_name)
+        mime_category = ''
+        if streams_by_type.get('video'):
+            mime_category = 'video'
+        elif streams_by_type.get('audio'):
+            mime_category = 'audio'
+
+        return self.__ffmpeg_decoder_and_stream_type_to_mime_type.get((decoder_name, mime_category))
 
     def read(self, file):
         # Determine allowed metadata fields for the input file format
