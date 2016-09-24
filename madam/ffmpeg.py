@@ -128,16 +128,16 @@ class FFmpegProcessor(Processor):
             raise ValueError('Invalid dimensions: %dx%d' % (width, height))
 
         try:
-            ffmpeg_type = MIME_TYPE_TO_ENCODER[asset.mime_type]
+            encoder_name = MIME_TYPE_TO_ENCODER[asset.mime_type]
         except KeyError:
             raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
         if asset.mime_type.split('/')[0] not in ('image', 'video'):
             raise OperatorError('Cannot resize asset of type %s')
 
         with tempfile.NamedTemporaryFile() as tmp:
-            command = ['ffmpeg', '-loglevel', 'error', '-f', ffmpeg_type, '-i', 'pipe:',
+            command = ['ffmpeg', '-loglevel', 'error', '-f', encoder_name, '-i', 'pipe:',
                        '-filter:v', 'scale=%d:%d' % (width, height),
-                       '-f', ffmpeg_type, '-y', tmp.name]
+                       '-f', encoder_name, '-y', tmp.name]
 
             try:
                 subprocess_run(command, input=asset.essence.read(),
@@ -336,10 +336,9 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         # Strip metadata
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
-            command = 'ffmpeg -loglevel error -i pipe: -map_metadata -1 -codec copy -y -f'.split()
             encoder_name = MIME_TYPE_TO_ENCODER[mime_type]
-            command.append(encoder_name)
-            command.append(tmp.name)
+            command = ['ffmpeg', '-loglevel', 'error', '-f', encoder_name, '-i', 'pipe:',
+                       '-map_metadata', '-1', '-codec', 'copy', '-y', '-f', encoder_name, tmp.name]
             try:
                 subprocess_run(command, input=file.read(),
                                stderr=subprocess.PIPE, check=True)
@@ -380,7 +379,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         # Add metadata to file
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
-            command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
+            encoder_name = MIME_TYPE_TO_ENCODER[mime_type]
+            command = ['ffmpeg', '-loglevel', 'error', '-f', encoder_name, '-i', 'pipe:']
 
             ffmetadata = metadata_by_type['ffmetadata']
             metadata_keys = self.__metadata_keys_by_mime_type[mime_type]
@@ -391,8 +391,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 command.append('-metadata')
                 command.append('%s=%s' % (ffmetadata_key, value))
 
-            encoder_name = MIME_TYPE_TO_ENCODER[mime_type]
             command.extend(['-codec', 'copy', '-y', '-f', encoder_name, tmp.name])
+
             try:
                 subprocess_run(command, input=file.read(),
                                stderr=subprocess.PIPE, check=True)
