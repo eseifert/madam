@@ -7,7 +7,7 @@ import pytest
 
 from madam import Madam
 from madam.core import Asset, UnsupportedFormatError
-from assets import asset
+from assets import asset, unknown_asset
 from assets import image_asset, jpeg_asset, png_asset, gif_asset
 from assets import audio_asset, mp3_asset, wav_asset
 from assets import video_asset, mp4_asset, y4m_asset
@@ -51,12 +51,9 @@ def test_read_raises_when_file_is_none(madam):
         madam.read(invalid_file)
 
 
-def test_read_raises_error_when_format_is_unknown(madam):
-    random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
-    unknown_file = io.BytesIO(random_data)
-
+def test_read_raises_error_when_format_is_unknown(madam, unknown_asset):
     with pytest.raises(UnsupportedFormatError):
-        madam.read(unknown_file)
+        madam.read(unknown_asset.essence)
 
 
 @pytest.fixture(scope='class')
@@ -68,7 +65,7 @@ def test_read_returns_asset_when_reading_valid_data(read_asset):
     assert read_asset is not None
 
 
-def test_read_image_returns_asset_with_image_mime_type(madam, asset):
+def test_read_returns_asset_with_correct_mime_type(madam, asset):
     read_asset = madam.read(asset.essence)
     assert read_asset.mime_type == asset.mime_type
 
