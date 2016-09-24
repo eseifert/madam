@@ -60,15 +60,17 @@ class TestFFmpegProcessor:
 
     @pytest.fixture(scope='class')
     def converted_asset(self, processor, video_asset):
-        conversion_operator = processor.convert(mime_type='video/webm')
+        conversion_operator = processor.convert(mime_type='video/x-matroska',
+                                                video=dict(codec='vp9'),
+                                                audio=dict(codec='opus'))
         converted_asset = conversion_operator(video_asset)
         return converted_asset
 
     def test_converted_asset_receives_correct_mime_type(self, converted_asset):
-        assert converted_asset.mime_type == 'video/webm'
+        assert converted_asset.mime_type == 'video/x-matroska'
 
     def test_convert_creates_new_asset(self, processor, video_asset):
-        conversion_operator = processor.convert(mime_type='video/webm')
+        conversion_operator = processor.convert(mime_type='video/x-matroska')
 
         converted_asset = conversion_operator(video_asset)
 
@@ -76,7 +78,7 @@ class TestFFmpegProcessor:
         assert converted_asset != video_asset
 
     def test_convert_raises_error_when_it_fails(self, processor, unknown_asset):
-        conversion_operator = processor.convert(mime_type='video/webm')
+        conversion_operator = processor.convert(mime_type='video/x-matroska')
 
         with pytest.raises(OperatorError):
             conversion_operator(unknown_asset)
