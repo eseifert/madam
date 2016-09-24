@@ -104,7 +104,7 @@ class TestFFmpegMetadataProcessor:
 
         metadata = processor.read(data_without_id3)
 
-        assert not metadata
+        assert not metadata['ffmetadata']
 
     def test_strip_returns_essence_without_metadata(self, processor):
         with open('tests/resources/64kbits_with_id3v2-4.mp3', 'rb') as file:
@@ -164,13 +164,12 @@ class TestFFmpegMetadataProcessor:
         with pytest.raises(ValueError):
             processor.combine(mp3_asset.essence, metadata)
 
-    def test_combine_does_not_modify_essence_without_metadata(self, processor, mp3_asset):
+    def test_combine_fails_without_metadata_keys(self, processor, mp3_asset):
         essence = mp3_asset.essence
         metadata = dict(ffmetadata={})
 
-        essence_with_metadata = processor.combine(essence, metadata)
-
-        assert essence_with_metadata.read() == essence.read()
+        with pytest.raises(ValueError):
+            processor.combine(essence, metadata)
 
     def test_combine_raises_error_when_essence_format_is_unsupported_by_ffmeg(self, processor, unknown_asset):
         junk_data = unknown_asset.essence
