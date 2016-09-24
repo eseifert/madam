@@ -181,7 +181,7 @@ def mp4_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence),
-                            mime_type='video/mp4',
+                            mime_type='video/quicktime',
                             duration=duration)
 
 
