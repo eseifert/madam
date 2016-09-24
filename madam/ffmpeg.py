@@ -276,7 +276,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     }
 
     __mime_type_to_ffmpeg_encoder = {
-        'video/matroska': 'matroska',
+        'video/x-matroska': 'matroska',
         'video/quicktime': 'mov',
         'audio/mpeg': 'mp3',
         'audio/ogg': 'ogg'
@@ -340,7 +340,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             # WPAY, WPUB, and WXXX will be written as TXXX tag
         }),
         'audio/ogg': bidict({}),
-        'video/matroska': bidict({}),
+        'video/x-matroska': bidict({}),
         'video/quicktime': bidict({}),
     }
 
