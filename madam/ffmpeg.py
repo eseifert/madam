@@ -416,10 +416,27 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         data = result.stdout.decode('utf-8')
         parser = FFMetadataParser()
         parser.read_string(data)
-
         ffmetadata = parser[FFMetadataParser.GLOBAL_SECTION]
-        # FFmpeg always returns the encoder, even when there was no "real" metadata
-        if not ffmetadata or (len(ffmetadata) == 1 and 'encoder' in ffmetadata):
+        del ffmetadata['encoder']
+
+        # If no metadata was found in container, try to read metadata from streams
+        if not ffmetadata:
+            file.seek(0)
+            command = 'ffmpeg -loglevel error -i pipe: -codec copy -map_metadata 0:s -y -f ffmetadata pipe:'.split()
+            try:
+                result = subprocess_run(command, input=file.read(), stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not read metadata from asset: %s' % error_message)
+
+            data = result.stdout.decode('utf-8')
+            parser = FFMetadataParser()
+            parser.read_string(data)
+            ffmetadata = parser[FFMetadataParser.GLOBAL_SECTION]
+            del ffmetadata['encoder']
+
+        if not ffmetadata:
             return {}
 
         # Convert FFMetadata items to metadata items

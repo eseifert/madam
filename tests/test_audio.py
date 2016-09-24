@@ -86,6 +86,13 @@ class TestFFmpegMetadataProcessor:
         assert metadata['ffmetadata']['artist'] == 'Frédéric Chopin'
         assert len(metadata) == 1
 
+    def test_read_returns_correct_metadata_dict_for_opus_with_comments(self, processor):
+        with open('tests/resources/sine-440hz-audio-with-comments.opus', 'rb') as file:
+            metadata = processor.read(file)
+
+        assert metadata['ffmetadata']['artist'] == 'Frédéric Chopin'
+        assert len(metadata) == 1
+
     def test_read_raises_error_when_file_format_is_unsupported(self, processor, unknown_asset):
         junk_data = unknown_asset.essence
 
