@@ -16,6 +16,7 @@ before_script:
 - sudo apt-get install libboost-python-dev -y
 - ffprobe -formats
 - ffprobe -codecs
+- ffprobe -pix_fmts
 env:
 - TOXENV=py34
 - TOXENV=py35
