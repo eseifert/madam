@@ -104,8 +104,8 @@ def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     assert asset.metadata['height'] == 3
 
 
-def test_writes_correct_essence_without_metadata(madam, image_asset):
-    asset = Asset(essence=image_asset.essence)
+def test_writes_correct_essence_without_metadata(madam, asset):
+    asset = Asset(essence=asset.essence)
     file = io.BytesIO()
 
     madam.write(asset, file)
