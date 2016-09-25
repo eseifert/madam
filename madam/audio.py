@@ -1,8 +1,6 @@
-import io
 import os
 import shutil
 import tempfile
-import wave
 
 import mutagen.mp3
 
