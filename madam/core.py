@@ -23,13 +23,12 @@ class Madam:
         """
         self.config = dict(
             processors=[
-                'madam.audio.MutagenProcessor',
                 'madam.image.PillowProcessor',
-                'madam.ffmpeg.FFmpegProcessor'
+                'madam.ffmpeg.FFmpegProcessor',
             ],
             metadata_processors=[
                 'madam.exiv2.Exiv2MetadataProcessor',
-                'madam.ffmpeg.FFmpegMetadataProcessor'
+                'madam.ffmpeg.FFmpegMetadataProcessor',
             ]
         )
         self._processors = []

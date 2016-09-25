@@ -1,4 +1,3 @@
-import io
 import json
 import subprocess
 
@@ -10,31 +9,6 @@ import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
 from assets import audio_asset, mp3_asset, opus_asset, wav_asset, nut_audio_asset, unknown_asset
-
-
-class TestMutagenProcessor:
-    @pytest.fixture(name='processor')
-    def mutagen_processor(self):
-        return madam.audio.MutagenProcessor()
-
-    def test_create_asset_from_mp3(self, processor):
-        mp3_file_path = 'tests/resources/64kbits_with_id3v2-4.mp3'
-        with open(mp3_file_path, 'rb') as mp3_file:
-            asset = processor._read(mp3_file)
-        assert asset.mime_type == 'audio/mpeg'
-        assert asset.duration == pytest.approx(0.144, abs=0.01)
-        assert asset.essence is not None
-        assert asset.essence.read()
-
-    def test_mp3_reader_does_not_change_file(self, processor):
-        mp3_file_path = 'tests/resources/64kbits.mp3'
-        with open(mp3_file_path, 'rb') as mp3_file:
-            expected_data = mp3_file.read()
-        with open(mp3_file_path, 'rb') as mp3_file:
-            processor._read(mp3_file)
-        with open(mp3_file_path, 'rb') as mp3_file:
-            actual_data = mp3_file.read()
-        assert expected_data == actual_data
 
 
 class TestFFmpegProcessor:

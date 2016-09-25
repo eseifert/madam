@@ -366,12 +366,6 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         return result
 
-    @staticmethod
-    def __copy_bytes(file):
-        clone = io.BytesIO()
-        shutil.copyfileobj(file, clone)
-        return clone
-
     def combine(self, file, metadata_by_type):
         try:
             probe_data = _probe(file)

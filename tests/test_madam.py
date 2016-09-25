@@ -1,6 +1,6 @@
 import io
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pyexiv2
 import pytest
@@ -122,16 +122,15 @@ def test_writes_correct_essence_with_metadata(madam, jpeg_asset):
 
 def test_config_contains_list_of_all_processors_by_default(madam):
     assert madam.config['processors'] == [
-        'madam.audio.MutagenProcessor',
         'madam.image.PillowProcessor',
-        'madam.ffmpeg.FFmpegProcessor'
+        'madam.ffmpeg.FFmpegProcessor',
     ]
 
 
 def test_config_contains_list_of_all_metadata_processors_by_default(madam):
     assert madam.config['metadata_processors'] == [
         'madam.exiv2.Exiv2MetadataProcessor',
-        'madam.ffmpeg.FFmpegMetadataProcessor'
+        'madam.ffmpeg.FFmpegMetadataProcessor',
     ]
 
 
