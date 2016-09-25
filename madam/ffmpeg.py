@@ -10,25 +10,6 @@ from madam.core import Asset, MetadataProcessor, Processor, operator, OperatorEr
 from madam.future import CalledProcessError, subprocess_run
 
 
-DECODER_AND_STREAM_TYPE_TO_MIME_TYPE = {
-    ('matroska,webm', 'video'): 'video/x-matroska',
-    ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
-    ('yuv4mpegpipe', 'video'): 'video/x-yuv4mpegpipe',
-    ('mp3', 'audio'): 'audio/mpeg',
-    ('ogg', 'audio'): 'audio/ogg',
-    ('wav', 'audio'): 'audio/wav',
-}
-
-MIME_TYPE_TO_ENCODER = {
-    'video/x-matroska': 'matroska',
-    'video/quicktime': 'mov',
-    'video/x-yuv4mpegpipe': 'yuv4mpegpipe',
-    'audio/mpeg': 'mp3',
-    'audio/ogg': 'ogg',
-    'audio/wav': 'wav',
-}
-
-
 def _probe(file):
     with tempfile.NamedTemporaryFile() as tmp:
         shutil.copyfileobj(file, tmp.file)
@@ -46,7 +27,7 @@ def _probe(file):
     return json_obj
 
 
-def _get_mime_type(probe_data):
+def _get_decoder_and_stream_type(probe_data):
     decoder_name = probe_data['format']['format_name']
 
     stream_type = ''
@@ -57,7 +38,7 @@ def _get_mime_type(probe_data):
         elif stream['codec_type'] == 'audio':
             stream_type = 'audio'
 
-    return DECODER_AND_STREAM_TYPE_TO_MIME_TYPE.get((decoder_name, stream_type))
+    return decoder_name, stream_type
 
 
 class FFmpegProcessor(Processor):
@@ -66,6 +47,24 @@ class FFmpegProcessor(Processor):
 
     The minimum version of FFmpeg required is v0.9.
     """
+
+    __decoder_and_stream_type_to_mime_type = {
+        ('matroska,webm', 'video'): 'video/x-matroska',
+        ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
+        ('yuv4mpegpipe', 'video'): 'video/x-yuv4mpegpipe',
+        ('mp3', 'audio'): 'audio/mpeg',
+        ('ogg', 'audio'): 'audio/ogg',
+        ('wav', 'audio'): 'audio/wav',
+    }
+
+    __mime_type_to_encoder = {
+        'video/x-matroska': 'matroska',
+        'video/quicktime': 'mov',
+        'video/x-yuv4mpegpipe': 'yuv4mpegpipe',
+        'audio/mpeg': 'mp3',
+        'audio/ogg': 'ogg',
+        'audio/wav': 'wav',
+    }
 
     def __init__(self):
         """
@@ -97,7 +96,8 @@ class FFmpegProcessor(Processor):
         except CalledProcessError:
             raise UnsupportedFormatError('Unsupported file format.')
 
-        mime_type = _get_mime_type(probe_data)
+        decoder_and_stream_type = _get_decoder_and_stream_type(probe_data)
+        mime_type = self.__decoder_and_stream_type_to_mime_type.get(decoder_and_stream_type)
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
@@ -126,7 +126,7 @@ class FFmpegProcessor(Processor):
             raise ValueError('Invalid dimensions: %dx%d' % (width, height))
 
         try:
-            encoder_name = MIME_TYPE_TO_ENCODER[asset.mime_type]
+            encoder_name = self.__mime_type_to_encoder[asset.mime_type]
         except KeyError:
             raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
         if asset.mime_type.split('/')[0] not in ('image', 'video'):
@@ -177,7 +177,7 @@ class FFmpegProcessor(Processor):
         :param subtitles: Dictionary with the options for subtitle streams.
         :return: New asset with converted essence
         """
-        ffmpeg_type = MIME_TYPE_TO_ENCODER[mime_type]
+        ffmpeg_type = self.__mime_type_to_encoder[mime_type]
 
         command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
         if video is not None:
@@ -205,6 +205,21 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.
     """
+    __decoder_and_stream_type_to_mime_type = {
+        ('matroska,webm', 'video'): 'video/x-matroska',
+        ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
+        ('mp3', 'audio'): 'audio/mpeg',
+        ('ogg', 'audio'): 'audio/ogg',
+        ('wav', 'audio'): 'audio/wav',
+    }
+
+    __mime_type_to_encoder = {
+        'video/x-matroska': 'matroska',
+        'video/quicktime': 'mov',
+        'audio/mpeg': 'mp3',
+        'audio/ogg': 'ogg',
+        'audio/wav': 'wav',
+    }
 
     # See https://wiki.multimedia.cx/index.php?title=FFmpeg_Metadata
     __metadata_keys_by_mime_type = {
@@ -302,7 +317,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         except CalledProcessError:
             raise UnsupportedFormatError('Unsupported file format.')
 
-        mime_type = _get_mime_type(probe_data)
+        decoder_and_stream_type = _get_decoder_and_stream_type(probe_data)
+        mime_type = self.__decoder_and_stream_type_to_mime_type.get(decoder_and_stream_type)
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
@@ -327,14 +343,15 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         except CalledProcessError:
             raise UnsupportedFormatError('Unsupported file format.')
 
-        mime_type = _get_mime_type(probe_data)
+        decoder_and_stream_type = _get_decoder_and_stream_type(probe_data)
+        mime_type = self.__decoder_and_stream_type_to_mime_type.get(decoder_and_stream_type)
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
         # Strip metadata
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
-            encoder_name = MIME_TYPE_TO_ENCODER[mime_type]
+            encoder_name = self.__mime_type_to_encoder[mime_type]
             command = ['ffmpeg', '-loglevel', 'error', '-f', encoder_name, '-i', 'pipe:',
                        '-map_metadata', '-1', '-codec', 'copy', '-y', '-f', encoder_name, tmp.name]
             try:
@@ -361,7 +378,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         except CalledProcessError:
             raise UnsupportedFormatError('Unsupported file format.')
 
-        mime_type = _get_mime_type(probe_data)
+        decoder_and_stream_type = _get_decoder_and_stream_type(probe_data)
+        mime_type = self.__decoder_and_stream_type_to_mime_type.get(decoder_and_stream_type)
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
@@ -377,7 +395,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         # Add metadata to file
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
-            encoder_name = MIME_TYPE_TO_ENCODER[mime_type]
+            encoder_name = self.__mime_type_to_encoder[mime_type]
             command = ['ffmpeg', '-loglevel', 'error', '-f', encoder_name, '-i', 'pipe:']
 
             ffmetadata = metadata_by_type['ffmetadata']
