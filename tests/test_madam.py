@@ -7,6 +7,7 @@ import pytest
 
 from madam import Madam
 from madam.core import Asset, UnsupportedFormatError
+from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import asset, unknown_asset
 from assets import image_asset, jpeg_asset, png_asset, gif_asset
 from assets import audio_asset, mp3_asset, wav_asset
@@ -89,14 +90,14 @@ def test_read_jpeg_does_not_alter_the_original_file(madam):
 def test_read_video_returns_asset_with_duration_metadata(madam, video_asset):
     asset = madam.read(video_asset.essence)
 
-    assert asset.duration == video_asset.duration
+    assert asset.duration == pytest.approx(video_asset.duration, rel=1e-5)
 
 
 def test_read_video_returns_asset_containing_video_size_metadata(madam, video_asset):
     asset = madam.read(video_asset.essence)
 
-    assert asset.width == 320
-    assert asset.height == 240
+    assert asset.width == DEFAULT_WIDTH
+    assert asset.height == DEFAULT_HEIGHT
 
 
 def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
@@ -104,8 +105,8 @@ def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
 
     asset = madam.read(image_data)
 
-    assert asset.width == 4
-    assert asset.height == 3
+    assert asset.width == DEFAULT_WIDTH
+    assert asset.height == DEFAULT_HEIGHT
 
 
 def test_writes_correct_essence_without_metadata(madam, asset):

@@ -9,6 +9,11 @@ import madam.core
 from madam.future import subprocess_run
 
 
+DEFAULT_WIDTH = 24
+DEFAULT_HEIGHT = 12
+DEFAULT_DURATION = 0.2
+
+
 def image_rgb(width, height, transpositions=None):
     if not transpositions:
         transpositions = []
@@ -24,7 +29,7 @@ def image_rgb(width, height, transpositions=None):
     return image
 
 
-def jpeg_rgb(width=4, height=3, transpositions=None):
+def jpeg_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None):
     if not transpositions:
         transpositions = []
     image = image_rgb(width=width, height=height, transpositions=transpositions)
@@ -51,7 +56,7 @@ def gif_rgb(width, height):
 
 
 @pytest.fixture(scope='class')
-def jpeg_asset(width=4, height=3, transpositions=None, **additional_metadata):
+def jpeg_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, **additional_metadata):
     if not transpositions:
         transpositions = []
     essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
@@ -88,8 +93,8 @@ def jpeg_asset(width=4, height=3, transpositions=None, **additional_metadata):
 
 @pytest.fixture(scope='class')
 def png_asset():
-    width = 4
-    height = 3
+    width = DEFAULT_WIDTH
+    height = DEFAULT_HEIGHT
     essence = png_rgb(width, height)
     metadata = dict(
         width=width,
@@ -102,8 +107,8 @@ def png_asset():
 
 @pytest.fixture(scope='class')
 def gif_asset():
-    width = 4
-    height = 3
+    width = DEFAULT_WIDTH
+    height = DEFAULT_HEIGHT
     essence = gif_rgb(width, height)
     metadata = dict(
         width=width,
@@ -172,9 +177,9 @@ def audio_asset(request, mp3_asset, opus_asset, wav_asset):
 
 @pytest.fixture(scope='class')
 def mp4_asset(tmpdir_factory):
-    width = 320
-    height = 240
-    duration = 0.2
+    width = DEFAULT_WIDTH
+    height = DEFAULT_HEIGHT
+    duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
                '-c:v libx264 -preset ultrafast -qp 0 -f mp4' % (width, height, duration)).split()
     tmpfile = tmpdir_factory.mktemp('mp4_asset').join('lossless.mp4')
@@ -188,9 +193,9 @@ def mp4_asset(tmpdir_factory):
 
 @pytest.fixture(scope='class')
 def y4m_asset():
-    width = 320
-    height = 240
-    duration = 0.2
+    width = DEFAULT_WIDTH
+    height = DEFAULT_HEIGHT
+    duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
                '-pix_fmt yuv444p -f yuv4mpegpipe pipe:' % (width, height, duration)).split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

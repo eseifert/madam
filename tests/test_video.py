@@ -7,6 +7,7 @@ import pytest
 import madam.video
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
+from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import image_asset, jpeg_asset, png_asset, gif_asset
 from assets import video_asset, mp4_asset, y4m_asset
 from assets import unknown_asset
@@ -101,11 +102,11 @@ class TestFFmpegProcessor:
         assert video_info.get('streams', [{}])[0].get('codec_name') == 'vp9'
 
     def test_converted_essence_stream_has_same_size_as_source(self, converted_asset):
-        assert converted_asset.width == 320
-        assert converted_asset.height == 240
+        assert converted_asset.width == DEFAULT_WIDTH
+        assert converted_asset.height == DEFAULT_HEIGHT
 
     def test_converted_essence_stream_has_same_duration_as_source(self, converted_asset):
-        assert converted_asset.duration == pytest.approx(0.2, rel=1e-2)
+        assert converted_asset.duration == pytest.approx(DEFAULT_DURATION, rel=1e-2)
 
     def test_extract_frame_asset_receives_correct_mime_type(self, processor, video_asset, image_asset):
         image_mime_type = image_asset.mime_type
