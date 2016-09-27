@@ -64,6 +64,15 @@ class FFmpegProcessor(Processor):
         'audio/mpeg': 'mp3',
         'audio/ogg': 'ogg',
         'audio/wav': 'wav',
+        'image/gif': 'gif',
+        'image/jpeg': 'image2',
+        'image/png': 'image2',
+    }
+
+    __mime_type_to_codec = {
+        'image/gif': 'gif',
+        'image/jpeg': 'mjpeg',
+        'image/png': 'png',
     }
 
     def __init__(self):
@@ -202,6 +211,7 @@ class FFmpegProcessor(Processor):
             if 'bitrate' in audio: command.extend(['-b:a', '%dk' % audio['bitrate']])
         if subtitles is not None:
             if 'codec' in subtitles: command.extend(['-c:s', subtitles['codec']])
+        result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
             command.extend(['-f', encoder_name, '-y', tmp.name])
 
@@ -212,7 +222,44 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not convert video asset: %s' % error_message)
 
-            return Asset(essence=tmp, mime_type=mime_type)
+            shutil.copyfileobj(tmp.file, result)
+            result.seek(0)
+
+        return Asset(essence=result, mime_type=mime_type)
+
+    @operator
+    def extract_frame(self, asset, mime_type, seconds=0):
+        """
+        Creates a new image asset of the specified MIME type from the essence
+        of the specified video asset.
+
+        :param asset: Video asset which will serve as the source for the frame
+        :param mime_type: MIME type of the source
+        :type mime_type: str
+        :param seconds: Offset of the frame in seconds
+        :type seconds: float
+        :return: New image asset with converted essence
+        """
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
+        codec_name = self.__mime_type_to_codec.get(mime_type)
+
+        result = io.BytesIO()
+        with tempfile.NamedTemporaryFile() as tmp:
+            command = ['ffmpeg', '-v', 'error', '-ss', str(float(seconds)), '-i', 'pipe:',
+                       '-codec:v', codec_name, '-vframes', '1',
+                       '-f', encoder_name, '-y', tmp.name]
+
+            try:
+                subprocess_run(command, input=asset.essence.read(),
+                               stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not convert video asset: %s' % error_message)
+
+            shutil.copyfileobj(tmp.file, result)
+            result.seek(0)
+
+        return Asset(essence=result, mime_type=mime_type)
 
 
 class FFmpegMetadataProcessor(MetadataProcessor):

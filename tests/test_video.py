@@ -6,6 +6,7 @@ import pytest
 import madam.video
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
+from assets import image_asset, jpeg_asset, png_asset, gif_asset
 from assets import video_asset, mp4_asset, y4m_asset, unknown_asset
 
 
@@ -96,3 +97,11 @@ class TestFFmpegProcessor:
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('streams', [{}])[0].get('codec_name') == 'vp9'
+
+    def test_extract_frame_asset_receives_correct_mime_type(self, processor, video_asset, image_asset):
+        image_mime_type = image_asset.mime_type
+        extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
+
+        extracted_asset = extract_frame_operator(video_asset)
+
+        assert extracted_asset.mime_type == image_mime_type
