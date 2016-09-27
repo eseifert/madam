@@ -105,3 +105,10 @@ class TestFFmpegProcessor:
         extracted_asset = extract_frame_operator(video_asset)
 
         assert extracted_asset.mime_type == image_mime_type
+
+    def test_extract_frame_raises_error_for_unknown_target_format(self, processor, video_asset):
+        image_mime_type = 'application/x-unknown'
+        extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
+
+        with pytest.raises(UnsupportedFormatError):
+            extract_frame_operator(video_asset)
