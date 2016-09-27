@@ -240,10 +240,13 @@ class FFmpegProcessor(Processor):
         :type seconds: float
         :return: New image asset with converted essence
         """
+        if not asset.mime_type.startswith('video/'):
+            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
+
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         codec_name = self.__mime_type_to_codec.get(mime_type)
         if not (encoder_name and codec_name):
-            raise UnsupportedFormatError('Unsupported asset type: %s' % mime_type)
+            raise UnsupportedFormatError('Unsupported target asset type: %s' % mime_type)
 
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
