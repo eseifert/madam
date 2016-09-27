@@ -122,6 +122,19 @@ class FFmpegProcessor(Processor):
 
     @operator
     def resize(self, asset, width, height):
+        """
+        Creates a new image or video asset of the specified width and height
+        from the essence of the specified image or video asset.
+
+        Width and height must be positive numbers.
+
+        :param asset: Video asset that will serve as the source for the frame
+        :param width: Width of the resized asset
+        :type width: int
+        :param height: Height of the resized asset
+        :type height: int
+        :return: New asset with specified width and height
+        """
         if width < 1 or height < 1:
             raise ValueError('Invalid dimensions: %dx%d' % (width, height))
 
