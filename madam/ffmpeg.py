@@ -233,11 +233,11 @@ class FFmpegProcessor(Processor):
         metadata = {
             'mime_type': mime_type
         }
-        mime_category = mime_type.split('/')
+        mime_category = mime_type.split('/')[0]
         if mime_category in ('image', 'video'):
             metadata['width'] = asset.width
             metadata['height'] = asset.height
-        elif mime_category in ('audio', 'video'):
+        if mime_category in ('audio', 'video'):
             metadata['duration'] = asset.duration
 
         return Asset(essence=result, **metadata)

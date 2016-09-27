@@ -100,6 +100,13 @@ class TestFFmpegProcessor:
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('streams', [{}])[0].get('codec_name') == 'vp9'
 
+    def test_converted_essence_stream_has_same_size_as_source(self, converted_asset):
+        assert converted_asset.width == 320
+        assert converted_asset.height == 240
+
+    def test_converted_essence_stream_has_same_duration_as_source(self, converted_asset):
+        assert converted_asset.duration == pytest.approx(0.2, rel=1e-2)
+
     def test_extract_frame_asset_receives_correct_mime_type(self, processor, video_asset, image_asset):
         image_mime_type = image_asset.mime_type
         extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
