@@ -138,9 +138,8 @@ class FFmpegProcessor(Processor):
         if width < 1 or height < 1:
             raise ValueError('Invalid dimensions: %dx%d' % (width, height))
 
-        try:
-            encoder_name = self.__mime_type_to_encoder[asset.mime_type]
-        except KeyError:
+        encoder_name = self.__mime_type_to_encoder.get(asset.mime_type)
+        if not encoder_name:
             raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
         if asset.mime_type.split('/')[0] not in ('image', 'video'):
             raise OperatorError('Cannot resize asset of type %s')
@@ -190,7 +189,9 @@ class FFmpegProcessor(Processor):
         :param subtitles: Dictionary with the options for subtitle streams.
         :return: New asset with converted essence
         """
-        ffmpeg_type = self.__mime_type_to_encoder[mime_type]
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
+        if not encoder_name:
+            raise UnsupportedFormatError('Unsupported asset type: %s' % mime_type)
 
         command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
         if video is not None:
@@ -202,7 +203,7 @@ class FFmpegProcessor(Processor):
         if subtitles is not None:
             if 'codec' in subtitles: command.extend(['-c:s', subtitles['codec']])
         with tempfile.NamedTemporaryFile() as tmp:
-            command.extend(['-f', ffmpeg_type, '-y', tmp.name])
+            command.extend(['-f', encoder_name, '-y', tmp.name])
 
             try:
                 subprocess_run(command, input=asset.essence.read(),
