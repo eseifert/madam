@@ -8,6 +8,7 @@ from mutagen.oggopus import OggOpus
 import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
+from assets import DEFAULT_DURATION
 from assets import audio_asset, mp3_asset, opus_asset, wav_asset, nut_audio_asset
 from assets import unknown_asset
 
@@ -20,7 +21,7 @@ class TestFFmpegProcessor:
     def test_cannot_resize_audio(self, processor, audio_asset):
         resize_operator = processor.resize(width=12, height=34)
 
-        with pytest.raises(OperatorError):
+        with pytest.raises((OperatorError, UnsupportedFormatError)):
             resize_operator(audio_asset)
 
     @pytest.fixture(scope='class')
@@ -42,6 +43,9 @@ class TestFFmpegProcessor:
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('streams', [{}])[0].get('codec_name') == 'mp3'
+
+    def test_converted_essence_stream_has_same_duration_as_source(self, converted_asset):
+        assert converted_asset.duration == pytest.approx(DEFAULT_DURATION, rel=0.5)
 
 
 class TestFFmpegMetadataProcessor:

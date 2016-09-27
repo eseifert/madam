@@ -130,49 +130,72 @@ def image_asset(request, jpeg_asset, png_asset, gif_asset):
 
 
 @pytest.fixture(scope='class')
-def wav_asset():
-    with open('tests/resources/16-bit-mono.wav', 'rb') as file:
+def wav_asset(tmpdir_factory):
+    duration = DEFAULT_DURATION
+    command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
+               '-vn -c:a pcm_s16le -f wav' % duration).split()
+    tmpfile = tmpdir_factory.mktemp('wav_asset').join('without_metadata.wav')
+    command.append(str(tmpfile))
+    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence),
-                            mime_type='audio/wav',
-                            duration=0.1)
+    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/wav',
+                            duration=duration)
 
 
 @pytest.fixture(scope='class')
-def mp3_asset():
-    with open('tests/resources/64kbits.mp3', 'rb') as file:
+def mp3_asset(tmpdir_factory):
+    duration = DEFAULT_DURATION
+    command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
+               '-write_xing 0 -id3v2_version 0 -write_id3v1 0 '
+               '-vn -f mp3' % duration).split()
+    tmpfile = tmpdir_factory.mktemp('mp3_asset').join('without_metadata.mp3')
+    command.append(str(tmpfile))
+    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence),
-                            mime_type='audio/mpeg',
-                            duration=0.144)
+    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/mpeg',
+                            duration=duration)
 
 
 @pytest.fixture(scope='class')
-def opus_asset():
-    with open('tests/resources/sine-440hz-audio.opus', 'rb') as file:
+def opus_asset(tmpdir_factory):
+    duration = DEFAULT_DURATION
+    command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
+               '-vn -f opus' % duration).split()
+    tmpfile = tmpdir_factory.mktemp('opus_asset').join('without_metadata.opus')
+    command.append(str(tmpfile))
+    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence),
-                            mime_type='audio/ogg',
-                            duration=1)
+    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/ogg',
+                            duration=duration)
 
 
 @pytest.fixture(scope='class')
-def nut_audio_asset():
-    with open('tests/resources/sine-440hz-audio.nut', 'rb') as file:
+def nut_audio_asset(tmpdir_factory):
+    duration = DEFAULT_DURATION
+    command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
+               '-vn -f nut' % duration).split()
+    tmpfile = tmpdir_factory.mktemp('nut_asset').join('without_metadata.nut')
+    command.append(str(tmpfile))
+    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence),
-                            mime_type='audio/x-nut',
-                            duration=1)
+    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/x-nut',
+                            duration=duration)
 
 
-@pytest.fixture(scope='class', params=['mp3_asset', 'opus_asset', 'wav_asset'])
-def audio_asset(request, mp3_asset, opus_asset, wav_asset):
+@pytest.fixture(scope='class', params=['mp3_asset', 'opus_asset', 'wav_asset', 'nut_audio_asset'])
+def audio_asset(request, mp3_asset, opus_asset, wav_asset, nut_audio_asset):
     if request.param == 'mp3_asset':
         return mp3_asset
     if request.param == 'opus_asset':
         return opus_asset
-    else:
+    elif request.param == 'wav_asset':
         return wav_asset
+    else:
+        return nut_audio_asset
 
 
 @pytest.fixture(scope='class')
