@@ -1,6 +1,7 @@
 import json
 import subprocess
 
+import PIL.Image
 import pytest
 
 import madam.video
@@ -106,6 +107,18 @@ class TestFFmpegProcessor:
         extracted_asset = extract_frame_operator(video_asset)
 
         assert extracted_asset.mime_type == image_mime_type
+
+    def test_extract_frame_asset_is_image_with_same_size_as_source(self, processor, video_asset, image_asset):
+        image_mime_type = image_asset.mime_type
+        extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
+
+        extracted_asset = extract_frame_operator(video_asset)
+
+        extracted_image = PIL.Image.open(extracted_asset.essence)
+        assert extracted_image.width > 0
+        assert extracted_image.width == video_asset.width
+        assert extracted_image.height > 0
+        assert extracted_image.height == video_asset.height
 
     def test_extract_frame_raises_error_for_unknown_source_format(self, processor, unknown_asset, image_asset):
         image_mime_type = image_asset.mime_type

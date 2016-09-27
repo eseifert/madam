@@ -126,6 +126,10 @@ class FFmpegProcessor(Processor):
                 metadata[stream_type]['codec'] = stream['codec_name']
             if 'bit_rate' in stream:
                 metadata[stream_type]['bitrate'] = float(stream['bit_rate'])/1000.0
+            if 'width' in stream:
+                metadata['width'] = max(stream['width'], metadata.get('width', 0))
+            if 'height' in stream:
+                metadata['height'] = max(stream['height'], metadata.get('height', 0))
 
         return Asset(essence=file, **metadata)
 
@@ -165,7 +169,8 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not resize video asset: %s' % error_message)
 
-            return Asset(essence=tmp, width=width, height=height)
+            return Asset(essence=tmp, mime_type=asset.mime_type,
+                         width=width, height=height, duration=asset.duration)
 
     @operator
     def convert(self, asset, mime_type, video=None, audio=None, subtitles=None):
@@ -225,7 +230,17 @@ class FFmpegProcessor(Processor):
             shutil.copyfileobj(tmp.file, result)
             result.seek(0)
 
-        return Asset(essence=result, mime_type=mime_type)
+        metadata = {
+            'mime_type': mime_type
+        }
+        mime_category = mime_type.split('/')
+        if mime_category in ('image', 'video'):
+            metadata['width'] = asset.width
+            metadata['height'] = asset.height
+        elif mime_category in ('audio', 'video'):
+            metadata['duration'] = asset.duration
+
+        return Asset(essence=result, **metadata)
 
     @operator
     def extract_frame(self, asset, mime_type, seconds=0):
@@ -264,7 +279,8 @@ class FFmpegProcessor(Processor):
             shutil.copyfileobj(tmp.file, result)
             result.seek(0)
 
-        return Asset(essence=result, mime_type=mime_type)
+        return Asset(essence=result, mime_type=mime_type,
+                     width=asset.width, height=asset.height)
 
 
 class FFmpegMetadataProcessor(MetadataProcessor):
