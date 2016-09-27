@@ -172,28 +172,30 @@ def audio_asset(request, mp3_asset, opus_asset, wav_asset):
 
 @pytest.fixture(scope='class')
 def mp4_asset(tmpdir_factory):
+    width = 320
+    height = 240
     duration = 0.2
-    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:duration=%.1f:rate=15 '
-               '-c:v libx264 -preset ultrafast -qp 0 -f mp4' % duration).split()
+    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
+               '-c:v libx264 -preset ultrafast -qp 0 -f mp4' % (width, height, duration)).split()
     tmpfile = tmpdir_factory.mktemp('mp4_asset').join('lossless.mp4')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence),
-                            mime_type='video/quicktime',
-                            duration=duration)
+    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/quicktime',
+                            width=width, height=height, duration=duration)
 
 
 @pytest.fixture(scope='class')
 def y4m_asset():
+    width = 320
+    height = 240
     duration = 0.2
-    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:duration=%.1f:rate=15 '
-               '-pix_fmt yuv444p -f yuv4mpegpipe pipe:' % duration).split()
+    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
+               '-pix_fmt yuv444p -f yuv4mpegpipe pipe:' % (width, height, duration)).split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout),
-                            mime_type='video/x-yuv4mpegpipe',
-                            duration=duration)
+    return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-yuv4mpegpipe',
+                            width=width, height=height, duration=duration)
 
 
 @pytest.fixture(scope='class', params=['mp4_asset', 'y4m_asset'])

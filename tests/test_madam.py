@@ -92,13 +92,20 @@ def test_read_video_returns_asset_with_duration_metadata(madam, video_asset):
     assert asset.duration == video_asset.duration
 
 
+def test_read_video_returns_asset_containing_video_size_metadata(madam, video_asset):
+    asset = madam.read(video_asset.essence)
+
+    assert asset.width == 320
+    assert asset.height == 240
+
+
 def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     image_data = image_asset.essence
 
     asset = madam.read(image_data)
 
-    assert asset.metadata['width'] == 4
-    assert asset.metadata['height'] == 3
+    assert asset.width == 4
+    assert asset.height == 3
 
 
 def test_writes_correct_essence_without_metadata(madam, asset):
