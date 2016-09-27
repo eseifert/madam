@@ -8,11 +8,12 @@ from mutagen.oggopus import OggOpus
 import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
-from assets import audio_asset, mp3_asset, opus_asset, wav_asset, nut_audio_asset, unknown_asset
+from assets import audio_asset, mp3_asset, opus_asset, wav_asset, nut_audio_asset
+from assets import unknown_asset
 
 
 class TestFFmpegProcessor:
-    @pytest.fixture(name='processor')
+    @pytest.fixture(name='processor', scope='class')
     def ffmpeg_processor(self):
         return madam.audio.FFmpegProcessor()
 
@@ -22,22 +23,20 @@ class TestFFmpegProcessor:
         with pytest.raises(OperatorError):
             resize_operator(audio_asset)
 
-    def test_converted_essence_is_of_specified_type(self, processor, audio_asset):
+    @pytest.fixture(scope='class')
+    def converted_asset(self, processor, audio_asset):
         conversion_operator = processor.convert(mime_type='audio/mpeg')
-
         converted_asset = conversion_operator(audio_asset)
+        return converted_asset
 
+    def test_converted_essence_is_of_specified_type(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
         result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('format', {}).get('format_name') == 'mp3'
 
-    def test_converted_essence_stream_has_specified_codec(self, processor, audio_asset):
-        conversion_operator = processor.convert(mime_type='audio/mpeg', audio=dict(codec='mp3'))
-
-        converted_asset = conversion_operator(audio_asset)
-
+    def test_converted_essence_stream_has_specified_codec(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
         result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)

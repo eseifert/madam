@@ -165,7 +165,7 @@ def nut_audio_asset():
                             duration=1)
 
 
-@pytest.fixture(params=['mp3_asset', 'opus_asset', 'wav_asset'])
+@pytest.fixture(scope='class', params=['mp3_asset', 'opus_asset', 'wav_asset'])
 def audio_asset(request, mp3_asset, opus_asset, wav_asset):
     if request.param == 'mp3_asset':
         return mp3_asset
