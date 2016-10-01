@@ -11,13 +11,13 @@ from madam.future import CalledProcessError, subprocess_run
 
 
 def _probe(file):
-    with tempfile.NamedTemporaryFile() as tmp:
-        shutil.copyfileobj(file, tmp.file)
-        tmp.flush()
+    with tempfile.NamedTemporaryFile(mode='wb') as temp_in:
+        shutil.copyfileobj(file, temp_in.file)
+        temp_in.flush()
         file.seek(0)
 
         command = 'ffprobe -loglevel error -print_format json -show_format -show_streams'.split()
-        command.append(tmp.name)
+        command.append(temp_in.name)
         result = subprocess_run(command, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
 
@@ -157,19 +157,22 @@ class FFmpegProcessor(Processor):
         if asset.mime_type.split('/')[0] not in ('image', 'video'):
             raise OperatorError('Cannot resize asset of type %s')
 
-        with tempfile.NamedTemporaryFile() as tmp:
-            command = ['ffmpeg', '-loglevel', 'error', '-f', encoder_name, '-i', 'pipe:',
+        with tempfile.NamedTemporaryFile() as temp_in, tempfile.NamedTemporaryFile() as temp_out:
+            shutil.copyfileobj(asset.essence, temp_in.file)
+            temp_in.flush()
+
+            command = ['ffmpeg', '-loglevel', 'error',
+                       '-f', encoder_name, '-i', temp_in.name,
                        '-filter:v', 'scale=%d:%d' % (width, height),
-                       '-f', encoder_name, '-y', tmp.name]
+                       '-f', encoder_name, '-y', temp_out.name]
 
             try:
-                subprocess_run(command, input=asset.essence.read(),
-                               stderr=subprocess.PIPE, check=True)
+                subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not resize video asset: %s' % error_message)
 
-            return Asset(essence=tmp, mime_type=asset.mime_type,
+            return Asset(essence=temp_out, mime_type=asset.mime_type,
                          width=width, height=height, duration=asset.duration)
 
     @operator
@@ -207,27 +210,31 @@ class FFmpegProcessor(Processor):
         if not encoder_name:
             raise UnsupportedFormatError('Unsupported asset type: %s' % mime_type)
 
-        command = ['ffmpeg', '-loglevel', 'error', '-i', 'pipe:']
-        if video is not None:
-            if 'codec' in video: command.extend(['-c:v', video['codec']])
-            if 'bitrate' in video: command.extend(['-b:v', '%dk' % video['bitrate']])
-        if audio is not None:
-            if 'codec' in audio: command.extend(['-c:a', audio['codec']])
-            if 'bitrate' in audio: command.extend(['-b:a', '%dk' % audio['bitrate']])
-        if subtitles is not None:
-            if 'codec' in subtitles: command.extend(['-c:s', subtitles['codec']])
         result = io.BytesIO()
-        with tempfile.NamedTemporaryFile() as tmp:
-            command.extend(['-f', encoder_name, '-y', tmp.name])
+        with tempfile.NamedTemporaryFile() as temp_in, tempfile.NamedTemporaryFile() as temp_out:
+            shutil.copyfileobj(asset.essence, temp_in.file)
+            temp_in.flush()
+
+            command = ['ffmpeg', '-loglevel', 'error',
+                       '-i', temp_in.name]
+            if video is not None:
+                if 'codec' in video: command.extend(['-c:v', video['codec']])
+                if 'bitrate' in video: command.extend(['-b:v', '%dk' % video['bitrate']])
+            if audio is not None:
+                if 'codec' in audio: command.extend(['-c:a', audio['codec']])
+                if 'bitrate' in audio: command.extend(['-b:a', '%dk' % audio['bitrate']])
+            if subtitles is not None:
+                if 'codec' in subtitles:command.extend(['-c:s', subtitles['codec']])
+
+            command.extend(['-f', encoder_name, '-y', temp_out.name])
 
             try:
-                subprocess_run(command, input=asset.essence.read(),
-                               stderr=subprocess.PIPE, check=True)
+                subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not convert video asset: %s' % error_message)
 
-            shutil.copyfileobj(tmp.file, result)
+            shutil.copyfileobj(temp_out.file, result)
             result.seek(0)
 
         metadata = {
@@ -264,19 +271,22 @@ class FFmpegProcessor(Processor):
             raise UnsupportedFormatError('Unsupported target asset type: %s' % mime_type)
 
         result = io.BytesIO()
-        with tempfile.NamedTemporaryFile() as tmp:
-            command = ['ffmpeg', '-v', 'error', '-ss', str(float(seconds)), '-i', 'pipe:',
+        with tempfile.NamedTemporaryFile() as temp_in, tempfile.NamedTemporaryFile() as temp_out:
+            shutil.copyfileobj(asset.essence, temp_in.file)
+            temp_in.flush()
+
+            command = ['ffmpeg', '-v', 'error', '-ss', str(float(seconds)),
+                       '-i', temp_in.name,
                        '-codec:v', codec_name, '-vframes', '1',
-                       '-f', encoder_name, '-y', tmp.name]
+                       '-f', encoder_name, '-y', temp_out.name]
 
             try:
-                subprocess_run(command, input=asset.essence.read(),
-                               stderr=subprocess.PIPE, check=True)
+                subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not convert video asset: %s' % error_message)
 
-            shutil.copyfileobj(tmp.file, result)
+            shutil.copyfileobj(temp_out.file, result)
             result.seek(0)
 
         return Asset(essence=result, mime_type=mime_type,
@@ -432,18 +442,23 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         # Strip metadata
         result = io.BytesIO()
-        with tempfile.NamedTemporaryFile() as tmp:
+        with tempfile.NamedTemporaryFile() as temp_in, tempfile.NamedTemporaryFile() as temp_out:
+            shutil.copyfileobj(file, temp_in.file)
+            temp_in.flush()
+            file.seek(0)
+
             encoder_name = self.__mime_type_to_encoder[mime_type]
-            command = ['ffmpeg', '-loglevel', 'error', '-f', encoder_name, '-i', 'pipe:',
-                       '-map_metadata', '-1', '-codec', 'copy', '-y', '-f', encoder_name, tmp.name]
+            command = ['ffmpeg', '-loglevel', 'error',
+                       '-i', temp_in.name,
+                       '-map_metadata', '-1', '-codec', 'copy',
+                       '-y', '-f', encoder_name, temp_out.name]
             try:
-                subprocess_run(command, input=file.read(),
-                               stderr=subprocess.PIPE, check=True)
+                subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not strip metadata: %s' % error_message)
 
-            shutil.copyfileobj(tmp, result)
+            shutil.copyfileobj(temp_out, result)
             result.seek(0)
 
         return result
@@ -470,9 +485,14 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         # Add metadata to file
         result = io.BytesIO()
-        with tempfile.NamedTemporaryFile() as tmp:
+        with tempfile.NamedTemporaryFile() as temp_in, tempfile.NamedTemporaryFile() as temp_out:
+            shutil.copyfileobj(file, temp_in.file)
+            temp_in.flush()
+            file.seek(0)
+
             encoder_name = self.__mime_type_to_encoder[mime_type]
-            command = ['ffmpeg', '-loglevel', 'error', '-f', encoder_name, '-i', 'pipe:']
+            command = ['ffmpeg', '-loglevel', 'error',
+                       '-f', encoder_name, '-i', temp_in.name]
 
             ffmetadata = metadata_by_type['ffmetadata']
             metadata_keys = self.__metadata_keys_by_mime_type[mime_type]
@@ -483,16 +503,16 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 command.append('-metadata')
                 command.append('%s=%s' % (ffmetadata_key, value))
 
-            command.extend(['-codec', 'copy', '-y', '-f', encoder_name, tmp.name])
+            command.extend(['-codec', 'copy',
+                            '-y', '-f', encoder_name, temp_out.name])
 
             try:
-                subprocess_run(command, input=file.read(),
-                               stderr=subprocess.PIPE, check=True)
+                subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not add metadata: %s' % error_message)
 
-            shutil.copyfileobj(tmp, result)
+            shutil.copyfileobj(temp_out, result)
             result.seek(0)
 
         return result
