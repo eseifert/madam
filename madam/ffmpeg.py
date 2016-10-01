@@ -1,5 +1,6 @@
 import io
 import json
+import multiprocessing
 import shutil
 import subprocess
 import tempfile
@@ -92,6 +93,8 @@ class FFmpegProcessor(Processor):
             raise EnvironmentError('Found ffprobe version %s. Requiring at least version %s.'
                                    % (version_string, self._min_version))
 
+        self.__threads = multiprocessing.cpu_count()
+
     def _can_read(self, file):
         try:
             probe_data = _probe(file)
@@ -164,6 +167,7 @@ class FFmpegProcessor(Processor):
             command = ['ffmpeg', '-loglevel', 'error',
                        '-f', encoder_name, '-i', temp_in.name,
                        '-filter:v', 'scale=%d:%d' % (width, height),
+                       '-threads', str(self.__threads),
                        '-f', encoder_name, '-y', temp_out.name]
 
             try:
@@ -226,7 +230,8 @@ class FFmpegProcessor(Processor):
             if subtitles is not None:
                 if 'codec' in subtitles:command.extend(['-c:s', subtitles['codec']])
 
-            command.extend(['-f', encoder_name, '-y', temp_out.name])
+            command.extend(['-threads', str(self.__threads),
+                            '-f', encoder_name, '-y', temp_out.name])
 
             try:
                 subprocess_run(command, stderr=subprocess.PIPE, check=True)
