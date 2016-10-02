@@ -303,6 +303,17 @@ class FFmpegProcessor(Processor):
             raise ValueError('Start time must be before end time')
 
         result = io.BytesIO()
+        with _FFmpegContext(asset.essence, result) as ctx:
+            command = ['ffmpeg', '-v', 'error',
+                       '-ss', str(float(from_seconds)), '-t', str(duration),
+                       '-i', ctx.input_path, '-codec', 'copy',
+                       '-f', encoder_name, '-y', ctx.output_path]
+
+            try:
+                subprocess_run(command, stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not convert video asset: %s' % error_message)
 
         return Asset(essence=result, mime_type=asset.mime_type,
                      width=asset.width, height=asset.height, duration=duration)

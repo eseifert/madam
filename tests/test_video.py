@@ -129,13 +129,23 @@ class TestFFmpegProcessor:
         assert trimmed_asset.mime_type == mime_type
 
     def test_trimmed_asset_receives_correct_duration(self, processor, video_asset):
-        from_seconds = 0.0
-        duration = 0.1
-        trim_operator = processor.trim(from_seconds=from_seconds, to_seconds=from_seconds + duration)
+        trim_operator = processor.trim(from_seconds=0.0, to_seconds=0.1)
 
         trimmed_asset = trim_operator(video_asset)
 
-        assert trimmed_asset.duration == duration
+        assert trimmed_asset.duration != video_asset.duration
+        assert trimmed_asset.duration == 0.1
+
+    def test_trimmed_asset_contains_valid_essence(self, processor, video_asset):
+        trim_operator = processor.trim(from_seconds=0, to_seconds=0.1)
+
+        trimmed_asset = trim_operator(video_asset)
+
+        command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
+        result = subprocess_run(command, input=trimmed_asset.essence.read(), stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, check=True)
+        video_info = json.loads(result.stdout.decode('utf-8'))
+        assert bool(video_info.get('format'))
 
     def test_extract_frame_asset_receives_correct_mime_type(self, processor, video_asset, image_asset):
         image_mime_type = image_asset.mime_type
