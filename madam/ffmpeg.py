@@ -160,6 +160,7 @@ class FFmpegProcessor(Processor):
         if asset.mime_type.split('/')[0] not in ('image', 'video'):
             raise OperatorError('Cannot resize asset of type %s')
 
+        result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as temp_in, tempfile.NamedTemporaryFile() as temp_out:
             shutil.copyfileobj(asset.essence, temp_in.file)
             temp_in.flush()
@@ -176,8 +177,11 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not resize video asset: %s' % error_message)
 
-            return Asset(essence=temp_out, mime_type=asset.mime_type,
-                         width=width, height=height, duration=asset.duration)
+            shutil.copyfileobj(temp_out.file, result)
+            result.seek(0)
+
+        return Asset(essence=result, mime_type=asset.mime_type,
+                     width=width, height=height, duration=asset.duration)
 
     @operator
     def convert(self, asset, mime_type, video=None, audio=None, subtitles=None):
