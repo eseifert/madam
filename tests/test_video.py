@@ -120,6 +120,14 @@ class TestFFmpegProcessor:
         with pytest.raises(ValueError):
             trim_operator(video_asset)
 
+    def test_trimmed_asset_receives_correct_mime_type(self, processor, video_asset):
+        mime_type = video_asset.mime_type
+        trim_operator = processor.trim(from_seconds=0, to_seconds=0.1)
+
+        trimmed_asset = trim_operator(video_asset)
+
+        assert trimmed_asset.mime_type == mime_type
+
     def test_extract_frame_asset_receives_correct_mime_type(self, processor, video_asset, image_asset):
         image_mime_type = image_asset.mime_type
         extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)

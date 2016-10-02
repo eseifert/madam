@@ -302,6 +302,11 @@ class FFmpegProcessor(Processor):
         if duration <= 0:
             raise ValueError('Start time must be before end time')
 
+        result = io.BytesIO()
+
+        return Asset(essence=result, mime_type=asset.mime_type,
+                     width=asset.width, height=asset.height, duration=duration)
+
     @operator
     def extract_frame(self, asset, mime_type, seconds=0):
         """
