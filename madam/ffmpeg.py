@@ -278,6 +278,23 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
     @operator
+    def trim(self, asset, from_seconds=0, to_seconds=0):
+        """
+        Creates a trimmed audio or video asset that only contains the data
+        between from_seconds and to_seconds.
+
+        :param asset: Audio or video asset, which will serve as the source
+        :param from_seconds: Start time of the clip in seconds
+        :type from_seconds: float
+        :param to_seconds: End time of the clip in seconds
+        :type to_seconds: float
+        :return: New asset with trimmed essence
+        """
+        encoder_name = self.__mime_type_to_encoder.get(asset.mime_type)
+        if not encoder_name or not (asset.mime_type.startswith('audio/') or asset.mime_type.startswith('video/')):
+            raise UnsupportedFormatError('Unsupported source asset type: %s' % asset.mime_type)
+
+    @operator
     def extract_frame(self, asset, mime_type, seconds=0):
         """
         Creates a new image asset of the specified MIME type from the essence

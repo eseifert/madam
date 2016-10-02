@@ -108,6 +108,12 @@ class TestFFmpegProcessor:
     def test_converted_essence_stream_has_same_duration_as_source(self, converted_asset):
         assert converted_asset.duration == pytest.approx(DEFAULT_DURATION, rel=1e-2)
 
+    def test_trim_fails_for_image_assets(self, processor, image_asset):
+        trim_operator = processor.trim(from_seconds=0, to_seconds=0.1)
+
+        with pytest.raises(UnsupportedFormatError):
+            trim_operator(image_asset)
+
     def test_extract_frame_asset_receives_correct_mime_type(self, processor, video_asset, image_asset):
         image_mime_type = image_asset.mime_type
         extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
