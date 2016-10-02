@@ -294,6 +294,14 @@ class FFmpegProcessor(Processor):
         if not encoder_name or not (asset.mime_type.startswith('audio/') or asset.mime_type.startswith('video/')):
             raise UnsupportedFormatError('Unsupported source asset type: %s' % asset.mime_type)
 
+        if to_seconds <= 0:
+            to_seconds = asset.duration + to_seconds
+
+        duration = float(to_seconds) - float(from_seconds)
+
+        if duration <= 0:
+            raise ValueError('Start time must be before end time')
+
     @operator
     def extract_frame(self, asset, mime_type, seconds=0):
         """
