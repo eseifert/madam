@@ -291,7 +291,7 @@ class FFmpegProcessor(Processor):
         :return: New image asset with converted essence
         """
         if not asset.mime_type.startswith('video/'):
-            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
+            raise UnsupportedFormatError('Unsupported source asset type: %s' % asset.mime_type)
 
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         codec_name = self.__mime_type_to_codec.get(mime_type)
