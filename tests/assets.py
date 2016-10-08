@@ -29,37 +29,14 @@ def image_rgb(width, height, transpositions=None):
     return image
 
 
-def jpeg_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None):
-    if not transpositions:
-        transpositions = []
-    image = image_rgb(width=width, height=height, transpositions=transpositions)
-    image_data = io.BytesIO()
-    image.save(image_data, 'JPEG', quality=100)
-    image_data.seek(0)
-    return image_data
-
-
-def png_rgb(width, height):
-    image = image_rgb(width, height)
-    image_data = io.BytesIO()
-    image.save(image_data, 'PNG')
-    image_data.seek(0)
-    return image_data
-
-
-def gif_rgb(width, height):
-    image = image_rgb(width, height)
-    image_data = io.BytesIO()
-    image.save(image_data, 'GIF')
-    image_data.seek(0)
-    return image_data
-
-
 @pytest.fixture(scope='class')
 def jpeg_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, **additional_metadata):
     if not transpositions:
         transpositions = []
-    essence = jpeg_rgb(width=width, height=height, transpositions=transpositions)
+    image = image_rgb(width=width, height=height, transpositions=transpositions)
+    essence = io.BytesIO()
+    image.save(essence, 'JPEG', quality=100)
+    essence.seek(0)
     metadata = dict(
         exif={'image.artist': 'Test artist'},
         iptc={
@@ -87,36 +64,35 @@ def jpeg_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, 
         mime_type='image/jpeg'
     )
     metadata.update(additional_metadata)
-    asset = madam.core.Asset(essence, **metadata)
-    return asset
+    return madam.core.Asset(essence, **metadata)
 
 
 @pytest.fixture(scope='class')
-def png_asset():
-    width = DEFAULT_WIDTH
-    height = DEFAULT_HEIGHT
-    essence = png_rgb(width, height)
+def png_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_rgb(width=width, height=height)
+    essence = io.BytesIO()
+    image.save(essence, 'PNG')
+    essence.seek(0)
     metadata = dict(
-        width=width,
-        height=height,
+        width=image.width,
+        height=image.height,
         mime_type='image/png'
     )
-    asset = madam.core.Asset(essence, **metadata)
-    return asset
+    return madam.core.Asset(essence, **metadata)
 
 
 @pytest.fixture(scope='class')
-def gif_asset():
-    width = DEFAULT_WIDTH
-    height = DEFAULT_HEIGHT
-    essence = gif_rgb(width, height)
+def gif_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_rgb(width=width, height=height)
+    essence = io.BytesIO()
+    image.save(essence, 'GIF')
+    essence.seek(0)
     metadata = dict(
-        width=width,
-        height=height,
+        width=image.width,
+        height=image.height,
         mime_type='image/gif'
     )
-    asset = madam.core.Asset(essence, **metadata)
-    return asset
+    return madam.core.Asset(essence, **metadata)
 
 
 @pytest.fixture(params=['jpeg_asset', 'png_asset', 'gif_asset'])
