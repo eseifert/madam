@@ -13,7 +13,13 @@ install:
 before_script:
 # Install ffmpeg
 - mkdir -p ffmpeg
-- test -x ffmpeg/ffprobe || (wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz && tar xf ffmpeg-release-64bit-static.tar.xz --strip-components 1 -C ffmpeg)
+- wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz.md5 -O ffmpeg.md5
+- if ! diff -q ffmpeg/ffmpeg.md5 2>/dev/null; then
+    rm -Rf ffmpeg
+    wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz.md5 -O ffmpeg/ffmpeg.md5
+    wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz
+    tar xf ffmpeg-release-64bit-static.tar.xz --strip-components 1 -C ffmpeg
+  fi
 - export PATH=$TRAVIS_BUILD_DIR/ffmpeg:$PATH
 # Install system dependencies for py3exiv2
 - sudo apt-get install libexiv2-dev -y
