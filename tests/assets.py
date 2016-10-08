@@ -197,12 +197,28 @@ def mkv_video_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
                '-c:v vp9 -f matroska' % (width, height, duration)).split()
-    tmpfile = tmpdir_factory.mktemp('mkv_asset').join('lossless.mkv')
+    tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('vp9.mkv')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-matroska',
+                            width=width, height=height, duration=duration)
+
+
+@pytest.fixture(scope='class')
+def ogg_video_asset(tmpdir_factory):
+    width = DEFAULT_WIDTH
+    height = DEFAULT_HEIGHT
+    duration = DEFAULT_DURATION
+    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
+               '-c:v theora -f ogg' % (width, height, duration)).split()
+    tmpfile = tmpdir_factory.mktemp('ogg_video_asset').join('theora.ogg')
+    command.append(str(tmpfile))
+    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
+        essence = file.read()
+    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/ogg',
                             width=width, height=height, duration=duration)
 
 
@@ -230,11 +246,11 @@ def video_asset(request, mp4_asset, mkv_video_asset):
 
 @pytest.fixture(scope='class', params=['jpeg_asset', 'png_asset', 'gif_asset',
                                        'mp3_asset', 'opus_asset', 'wav_asset',
-                                       'mp4_asset', 'mkv_video_asset'])
+                                       'mp4_asset', 'mkv_video_asset', 'ogg_video_asset'])
 def asset(request,
           jpeg_asset, png_asset, gif_asset,
           mp3_asset, opus_asset, wav_asset,
-          mp4_asset, mkv_video_asset):
+          mp4_asset, mkv_video_asset, ogg_video_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
     elif request.param == 'png_asset':
@@ -251,6 +267,8 @@ def asset(request,
         return mp4_asset
     elif request.param == 'mkv_video_asset':
         return mkv_video_asset
+    elif request.param == 'ogg_video_asset':
+        return ogg_video_asset
     else:
         raise ValueError()
 
