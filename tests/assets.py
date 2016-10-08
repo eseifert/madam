@@ -210,8 +210,13 @@ def video_asset(request, mp4_asset, nut_video_asset):
         return nut_video_asset
 
 
-@pytest.fixture(scope='class', params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'mp4_asset', 'nut_video_asset'])
-def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, mp4_asset, nut_video_asset):
+@pytest.fixture(scope='class', params=['jpeg_asset', 'png_asset', 'gif_asset',
+                                       'mp3_asset', 'opus_asset', 'wav_asset', 'nut_audio_asset'
+                                       'mp4_asset', 'nut_video_asset'])
+def asset(request,
+          jpeg_asset, png_asset, gif_asset,
+          mp3_asset, opus_asset, wav_asset, nut_audio_asset,
+          mp4_asset, nut_video_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
     elif request.param == 'png_asset':
@@ -224,6 +229,8 @@ def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, mp4_a
         return opus_asset
     elif request.param == 'wav_asset':
         return wav_asset
+    elif request.param == 'nut_audio_asset':
+        return nut_audio_asset
     elif request.param == 'mp4_asset':
         return mp4_asset
     else:
