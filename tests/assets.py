@@ -176,62 +176,78 @@ def audio_asset(request, mp3_asset, opus_asset, wav_asset):
 
 @pytest.fixture(scope='class')
 def mp4_asset(tmpdir_factory):
-    width = DEFAULT_WIDTH
-    height = DEFAULT_HEIGHT
-    duration = DEFAULT_DURATION
-    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
-               '-c:v libx264 -preset ultrafast -qp 0 -f mp4' % (width, height, duration)).split()
+    ffmpeg_params = dict(
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+    )
+    command = ('ffmpeg -loglevel error '
+               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+               '-c:v h264 -preset ultrafast -qp 0 -c:a libfaac -f mp4' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('mp4_asset').join('lossless.mp4')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/quicktime',
-                            width=width, height=height, duration=duration)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
 @pytest.fixture(scope='class')
 def mkv_video_asset(tmpdir_factory):
-    width = DEFAULT_WIDTH
-    height = DEFAULT_HEIGHT
-    duration = DEFAULT_DURATION
-    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
-               '-c:v vp9 -f matroska' % (width, height, duration)).split()
-    tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('vp9.mkv')
+    ffmpeg_params = dict(
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+    )
+    command = ('ffmpeg -loglevel error '
+               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+               '-c:v vp9 -c:a opus -f matroska' % ffmpeg_params).split()
+    tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('vp9-opus.mkv')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-matroska',
-                            width=width, height=height, duration=duration)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
 @pytest.fixture(scope='class')
 def ogg_video_asset(tmpdir_factory):
-    width = DEFAULT_WIDTH
-    height = DEFAULT_HEIGHT
-    duration = DEFAULT_DURATION
-    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
-               '-c:v theora -f ogg' % (width, height, duration)).split()
-    tmpfile = tmpdir_factory.mktemp('ogg_video_asset').join('theora.ogg')
+    ffmpeg_params = dict(
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+    )
+    command = ('ffmpeg -loglevel error '
+               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+               '-c:v theora -c:a libvorbis -f ogg' % ffmpeg_params).split()
+    tmpfile = tmpdir_factory.mktemp('ogg_video_asset').join('theora-vorbis.ogg')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/ogg',
-                            width=width, height=height, duration=duration)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
 @pytest.fixture(scope='class')
 def nut_video_asset():
-    width = DEFAULT_WIDTH
-    height = DEFAULT_HEIGHT
-    duration = DEFAULT_DURATION
-    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
-               '-c:v ffv1 -level 3 -f nut pipe:' % (width, height, duration)).split()
+    ffmpeg_params = dict(
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+    )
+    command = ('ffmpeg -loglevel error '
+               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+               '-c:v ffv1 -level 3 -a:c pcm_mulaw -f nut pipe:' % ffmpeg_params).split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
-                            width=width, height=height, duration=duration)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
 @pytest.fixture(scope='class', params=['mp4_asset', 'mkv_video_asset'])
