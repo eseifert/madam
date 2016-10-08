@@ -191,27 +191,27 @@ def mp4_asset(tmpdir_factory):
 
 
 @pytest.fixture(scope='class')
-def y4m_asset():
-    width = DEFAULT_WIDTH
+def nut_video_asset():
+    width=DEFAULT_WIDTH
     height = DEFAULT_HEIGHT
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
-               '-pix_fmt yuv444p -f yuv4mpegpipe pipe:' % (width, height, duration)).split()
+               '-c:v ffv1 -level 3 -f nut pipe:' % (width, height, duration)).split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-yuv4mpegpipe',
+    return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
                             width=width, height=height, duration=duration)
 
 
-@pytest.fixture(scope='class', params=['mp4_asset', 'y4m_asset'])
-def video_asset(request, mp4_asset, y4m_asset):
+@pytest.fixture(scope='class', params=['mp4_asset', 'nut_video_asset'])
+def video_asset(request, mp4_asset, nut_video_asset):
     if request.param == 'mp4_asset':
         return mp4_asset
     else:
-        return y4m_asset
+        return nut_video_asset
 
 
-@pytest.fixture(scope='class', params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'mp4_asset', 'y4m_asset'])
-def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, mp4_asset, y4m_asset):
+@pytest.fixture(scope='class', params=['jpeg_asset', 'png_asset', 'mp3_asset', 'wav_asset', 'mp4_asset', 'nut_video_asset'])
+def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, mp4_asset, nut_video_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
     elif request.param == 'png_asset':
@@ -227,7 +227,7 @@ def asset(request, jpeg_asset, png_asset, gif_asset, mp3_asset, wav_asset, mp4_a
     elif request.param == 'mp4_asset':
         return mp4_asset
     else:
-        return y4m_asset
+        return nut_video_asset
 
 
 @pytest.fixture

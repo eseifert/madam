@@ -9,7 +9,7 @@ from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import image_asset, jpeg_asset, png_asset, gif_asset
-from assets import video_asset, mp4_asset, y4m_asset
+from assets import video_asset, mp4_asset, nut_video_asset
 from assets import unknown_asset
 
 
@@ -32,16 +32,16 @@ class TestFFmpegProcessor:
         assert resized_asset.width == 12
         assert resized_asset.height == 34
 
-    def test_resize_returns_essence_with_same_format(self, processor, y4m_asset):
+    def test_resize_returns_essence_with_same_format(self, processor, nut_video_asset):
         resize = processor.resize(width=12, height=34)
 
-        resized_asset = resize(y4m_asset)
+        resized_asset = resize(nut_video_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
         result = subprocess_run(command, input=resized_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
-        assert video_info.get('format', {}).get('format_name') == 'yuv4mpegpipe'
+        assert video_info.get('format', {}).get('format_name') == 'nut'
 
     def test_resize_returns_essence_with_correct_dimensions(self, processor, video_asset):
         resize_operator = processor.resize(width=12, height=34)

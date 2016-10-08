@@ -79,7 +79,7 @@ class FFmpegProcessor(Processor):
     __decoder_and_stream_type_to_mime_type = {
         ('matroska,webm', 'video'): 'video/x-matroska',
         ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
-        ('yuv4mpegpipe', 'video'): 'video/x-yuv4mpegpipe',
+        ('nut', 'video'): 'video/x-nut',
         ('mp3', 'audio'): 'audio/mpeg',
         ('ogg', 'audio'): 'audio/ogg',
         ('wav', 'audio'): 'audio/wav',
@@ -88,7 +88,7 @@ class FFmpegProcessor(Processor):
     __mime_type_to_encoder = {
         'video/x-matroska': 'matroska',
         'video/quicktime': 'mov',
-        'video/x-yuv4mpegpipe': 'yuv4mpegpipe',
+        'video/x-nut': 'nut',
         'audio/mpeg': 'mp3',
         'audio/ogg': 'ogg',
         'audio/wav': 'wav',
@@ -380,7 +380,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     __metadata_keys_by_mime_type = {
         'video/x-matroska': bidict({}),
         'video/quicktime': bidict({}),
-        'video/x-yuv4mpegpipe': bidict({}),
+        'video/x-nut': bidict({}),
         'audio/mpeg': bidict({
             'album': 'album',                   # TALB Album
             'album_artist': 'album_artist',     # TPE2 Band/orchestra/accompaniment
