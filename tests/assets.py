@@ -153,7 +153,7 @@ def opus_asset(tmpdir_factory):
 def nut_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
-               '-vn -f nut' % duration).split()
+               '-vn -c:a pcm_s16le -f nut' % duration).split()
     tmpfile = tmpdir_factory.mktemp('nut_asset').join('without_metadata.nut')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
@@ -184,7 +184,7 @@ def mp4_asset(tmpdir_factory):
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v h264 -preset ultrafast -qp 0 -c:a libfaac -f mp4' % ffmpeg_params).split()
+               '-strict -2 -c:v h264 -preset ultrafast -qp 0 -c:a aac -f mp4' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('mp4_asset').join('lossless.mp4')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
@@ -224,7 +224,7 @@ def ogg_video_asset(tmpdir_factory):
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v theora -c:a libvorbis -f ogg' % ffmpeg_params).split()
+               '-strict -2 -c:v theora -c:a vorbis -ac 2 -f ogg' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('ogg_video_asset').join('theora-vorbis.ogg')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
@@ -244,7 +244,7 @@ def nut_video_asset():
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v ffv1 -level 3 -a:c pcm_mulaw -f nut pipe:' % ffmpeg_params).split()
+               '-c:v ffv1 -level 3 -a:c pcm_s16le -f nut pipe:' % ffmpeg_params).split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
