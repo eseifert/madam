@@ -99,10 +99,11 @@ def gif_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 def image_asset(request, jpeg_asset, png_asset, gif_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
-    elif request.param == 'png_asset':
+    if request.param == 'png_asset':
         return png_asset
-    else:
+    if request.param == 'gif_asset':
         return gif_asset
+    raise ValueError()
 
 
 @pytest.fixture(scope='class')
@@ -168,10 +169,9 @@ def audio_asset(request, mp3_asset, opus_asset, wav_asset):
         return mp3_asset
     if request.param == 'opus_asset':
         return opus_asset
-    elif request.param == 'wav_asset':
+    if request.param == 'wav_asset':
         return wav_asset
-    else:
-        raise ValueError()
+    raise ValueError()
 
 
 @pytest.fixture(scope='class')
@@ -269,24 +269,23 @@ def asset(request,
           mp4_asset, mkv_video_asset, ogg_video_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
-    elif request.param == 'png_asset':
+    if request.param == 'png_asset':
         return png_asset
-    elif request.param == 'gif_asset':
+    if request.param == 'gif_asset':
         return gif_asset
-    elif request.param == 'mp3_asset':
+    if request.param == 'mp3_asset':
         return mp3_asset
-    elif request.param == 'opus_asset':
+    if request.param == 'opus_asset':
         return opus_asset
-    elif request.param == 'wav_asset':
+    if request.param == 'wav_asset':
         return wav_asset
-    elif request.param == 'mp4_asset':
+    if request.param == 'mp4_asset':
         return mp4_asset
-    elif request.param == 'mkv_video_asset':
+    if request.param == 'mkv_video_asset':
         return mkv_video_asset
-    elif request.param == 'ogg_video_asset':
+    if request.param == 'ogg_video_asset':
         return ogg_video_asset
-    else:
-        raise ValueError()
+    raise ValueError()
 
 
 @pytest.fixture
