@@ -1,5 +1,6 @@
 import json
 import subprocess
+from collections import defaultdict
 
 import PIL.Image
 import pytest
@@ -17,6 +18,18 @@ class TestFFmpegProcessor:
     @pytest.fixture(name='processor', scope='class')
     def ffmpeg_processor(self):
         return madam.video.FFmpegProcessor()
+
+    def __probe_streams_by_type(self, converted_asset):
+        command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
+        result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, check=True)
+        ffprobe_info = json.loads(result.stdout.decode('utf-8'))
+
+        streams_by_type = defaultdict(list)
+        for stream in ffprobe_info.get('streams', []):
+            streams_by_type[stream['codec_type']].append(stream)
+
+        return streams_by_type
 
     def test_resize_raises_error_for_invalid_dimensions(self, processor, video_asset):
         resize = processor.resize(width=12, height=-34)
@@ -65,8 +78,8 @@ class TestFFmpegProcessor:
     @pytest.fixture(scope='class')
     def converted_asset(self, processor, video_asset):
         conversion_operator = processor.convert(mime_type='video/x-matroska',
-                                                video=dict(codec='vp9'),
-                                                audio=dict(codec='opus'))
+                                                video=dict(codec='vp9', bitrate=50),
+                                                audio=dict(codec='opus', bitrate=16))
         converted_asset = conversion_operator(video_asset)
         return converted_asset
 
@@ -94,12 +107,14 @@ class TestFFmpegProcessor:
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('format', {}).get('format_name') == 'matroska,webm'
 
-    def test_converted_essence_stream_has_specified_codec(self, converted_asset):
-        command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
-        result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, check=True)
-        video_info = json.loads(result.stdout.decode('utf-8'))
-        assert video_info.get('streams', [{}])[0].get('codec_name') == 'vp9'
+    def test_converted_essence_stream_has_specified_codecs(self, converted_asset):
+        streams_by_type = self.__probe_streams_by_type(converted_asset)
+        video_streams = streams_by_type.get('video', [])
+        audio_streams = streams_by_type.get('audio', [])
+        assert len(video_streams) == 1
+        assert video_streams[0]['codec_name'] == 'vp9'
+        assert len(audio_streams) == 1
+        assert audio_streams[0]['codec_name'] == 'opus'
 
     def test_converted_essence_stream_has_same_size_as_source(self, converted_asset):
         assert converted_asset.width == DEFAULT_WIDTH
@@ -107,6 +122,34 @@ class TestFFmpegProcessor:
 
     def test_converted_essence_stream_has_same_duration_as_source(self, converted_asset):
         assert converted_asset.duration == pytest.approx(DEFAULT_DURATION, rel=1e-2)
+
+    def test_convert_can_strip_audio_stream(self, processor, video_asset):
+        conversion_operator = processor.convert(mime_type='video/quicktime',
+                                                video=dict(codec='h264', bitrate=50),
+                                                audio=dict(codec=None))
+
+        converted_asset = conversion_operator(video_asset)
+
+        streams_by_type = self.__probe_streams_by_type(converted_asset)
+        video_streams = streams_by_type.get('video', [])
+        audio_streams = streams_by_type.get('audio', [])
+        assert len(video_streams) == 1
+        assert video_streams[0]['codec_name'] == 'h264'
+        assert len(audio_streams) == 0
+
+    def test_convert_can_strip_video_stream(self, processor, video_asset):
+        conversion_operator = processor.convert(mime_type='audio/mpeg',
+                                                video=dict(codec=None),
+                                                audio=dict(codec='mp3', bitrate=32))
+
+        converted_asset = conversion_operator(video_asset)
+
+        streams_by_type = self.__probe_streams_by_type(converted_asset)
+        video_streams = streams_by_type.get('video', [])
+        audio_streams = streams_by_type.get('audio', [])
+        assert len(video_streams) == 0
+        assert len(audio_streams) == 1
+        assert audio_streams[0]['codec_name'] == 'mp3'
 
     def test_trim_fails_for_image_assets(self, processor, image_asset):
         trim_operator = processor.trim(from_seconds=0, to_seconds=0.1)

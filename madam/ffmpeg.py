@@ -248,14 +248,27 @@ class FFmpegProcessor(Processor):
             command = ['ffmpeg', '-loglevel', 'error',
                        '-i', ctx.input_path]
             if video is not None:
-                if 'codec' in video: command.extend(['-c:v', video['codec']])
-                if 'bitrate' in video: command.extend(['-b:v', '%dk' % video['bitrate']])
+                if 'codec' in video:
+                    if video['codec']:
+                        command.extend(['-c:v', video['codec']])
+                    else:
+                        command.extend(['-vn'])
+                if video.get('bitrate'):
+                    command.extend(['-b:v', '%dk' % video['bitrate']])
             if audio is not None:
-                if 'codec' in audio: command.extend(['-c:a', audio['codec']])
-                if 'bitrate' in audio: command.extend(['-b:a', '%dk' % audio['bitrate']])
+                if 'codec' in audio:
+                    if audio['codec']:
+                        command.extend(['-c:a', audio['codec']])
+                    else:
+                        command.extend(['-an'])
+                if audio.get('bitrate'):
+                    command.extend(['-b:a', '%dk' % audio['bitrate']])
             if subtitles is not None:
-                if 'codec' in subtitles:command.extend(['-c:s', subtitles['codec']])
-
+                if 'codec' in subtitles:
+                    if subtitles['codec']:
+                        command.extend(['-c:s', subtitles['codec']])
+                    else:
+                        command.extend(['-sn'])
             command.extend(['-threads', str(self.__threads),
                             '-f', encoder_name, '-y', ctx.output_path])
 
