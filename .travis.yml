@@ -12,9 +12,8 @@ install:
 - pip install -q sphinx>=1.3 sphinx_rtd_theme
 before_script:
 # Install ffmpeg
-- wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz
-- mkdir ffmpeg
-- tar xf ffmpeg-release-64bit-static.tar.xz --strip-components 1 -C ffmpeg
+- mkdir -p ffmpeg
+- test -x ffmpeg/ffprobe || (wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz && tar xf ffmpeg-release-64bit-static.tar.xz --strip-components 1 -C ffmpeg)
 - export PATH=$TRAVIS_BUILD_DIR/ffmpeg:$PATH
 # Install system dependencies for py3exiv2
 - sudo apt-get install libexiv2-dev -y
