@@ -9,7 +9,7 @@ from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import image_asset, jpeg_asset, png_asset, gif_asset
-from assets import video_asset, mp4_asset, nut_video_asset
+from assets import video_asset, mp4_asset, mkv_video_asset, nut_video_asset
 from assets import unknown_asset
 
 

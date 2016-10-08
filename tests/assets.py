@@ -162,8 +162,8 @@ def nut_audio_asset(tmpdir_factory):
                             duration=duration)
 
 
-@pytest.fixture(scope='class', params=['mp3_asset', 'opus_asset', 'wav_asset', 'nut_audio_asset'])
-def audio_asset(request, mp3_asset, opus_asset, wav_asset, nut_audio_asset):
+@pytest.fixture(scope='class', params=['mp3_asset', 'opus_asset', 'wav_asset'])
+def audio_asset(request, mp3_asset, opus_asset, wav_asset):
     if request.param == 'mp3_asset':
         return mp3_asset
     if request.param == 'opus_asset':
@@ -171,7 +171,7 @@ def audio_asset(request, mp3_asset, opus_asset, wav_asset, nut_audio_asset):
     elif request.param == 'wav_asset':
         return wav_asset
     else:
-        return nut_audio_asset
+        raise ValueError()
 
 
 @pytest.fixture(scope='class')
@@ -191,8 +191,24 @@ def mp4_asset(tmpdir_factory):
 
 
 @pytest.fixture(scope='class')
+def mkv_video_asset(tmpdir_factory):
+    width = DEFAULT_WIDTH
+    height = DEFAULT_HEIGHT
+    duration = DEFAULT_DURATION
+    command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
+               '-c:v vp9 -f matroska' % (width, height, duration)).split()
+    tmpfile = tmpdir_factory.mktemp('mkv_asset').join('lossless.mkv')
+    command.append(str(tmpfile))
+    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
+        essence = file.read()
+    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-matroska',
+                            width=width, height=height, duration=duration)
+
+
+@pytest.fixture(scope='class')
 def nut_video_asset():
-    width=DEFAULT_WIDTH
+    width = DEFAULT_WIDTH
     height = DEFAULT_HEIGHT
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i color=color=red:size=%dx%d:duration=%.1f:rate=15 '
@@ -202,21 +218,23 @@ def nut_video_asset():
                             width=width, height=height, duration=duration)
 
 
-@pytest.fixture(scope='class', params=['mp4_asset', 'nut_video_asset'])
-def video_asset(request, mp4_asset, nut_video_asset):
+@pytest.fixture(scope='class', params=['mp4_asset', 'mkv_video_asset'])
+def video_asset(request, mp4_asset, mkv_video_asset):
     if request.param == 'mp4_asset':
         return mp4_asset
+    elif request.param == 'mkv_video_asset':
+        return mkv_video_asset
     else:
-        return nut_video_asset
+        raise ValueError()
 
 
 @pytest.fixture(scope='class', params=['jpeg_asset', 'png_asset', 'gif_asset',
-                                       'mp3_asset', 'opus_asset', 'wav_asset', 'nut_audio_asset'
-                                       'mp4_asset', 'nut_video_asset'])
+                                       'mp3_asset', 'opus_asset', 'wav_asset',
+                                       'mp4_asset', 'mkv_video_asset'])
 def asset(request,
           jpeg_asset, png_asset, gif_asset,
-          mp3_asset, opus_asset, wav_asset, nut_audio_asset,
-          mp4_asset, nut_video_asset):
+          mp3_asset, opus_asset, wav_asset,
+          mp4_asset, mkv_video_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
     elif request.param == 'png_asset':
@@ -229,12 +247,12 @@ def asset(request,
         return opus_asset
     elif request.param == 'wav_asset':
         return wav_asset
-    elif request.param == 'nut_audio_asset':
-        return nut_audio_asset
     elif request.param == 'mp4_asset':
         return mp4_asset
+    elif request.param == 'mkv_video_asset':
+        return mkv_video_asset
     else:
-        return nut_video_asset
+        raise ValueError()
 
 
 @pytest.fixture

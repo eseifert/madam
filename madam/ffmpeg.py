@@ -140,10 +140,13 @@ class FFmpegProcessor(Processor):
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
-        metadata = dict(
-            mime_type=mime_type,
-            duration=float(probe_data['format']['duration'])
-        )
+        try:
+            metadata = dict(
+                mime_type=mime_type,
+                duration=float(probe_data['format']['duration'])
+            )
+        except KeyError:
+            print(probe_data['format'])
 
         for stream in probe_data['streams']:
             stream_type = stream.get('codec_type')
