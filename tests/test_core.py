@@ -80,6 +80,18 @@ class TestStorages:
 
         assert set(iterator) == {asset0, asset1}
 
+    def test_get_tags_returns_tags_for_asset(self, storage, asset):
+        asset_tags = {'foo', 'bar'}
+        storage.add(asset, tags=asset_tags)
+
+        tags = storage.get_tags(asset)
+
+        assert tags == asset_tags
+
+    def test_get_tags_fails_for_unknown_asset(self, storage):
+        with pytest.raises(KeyError):
+            storage.get_tags(None)
+
     def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
         tagged_assets = storage.filter_by_tags('some tag')
 

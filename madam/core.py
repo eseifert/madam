@@ -193,6 +193,16 @@ class AssetStorage(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def get_tags(self, asset):
+        """
+        Returns a set of all tags in this storage for the specified asset.
+
+        :param asset: Asset for which the tags should be returned
+        :return: Tags that are stored for the specified asset
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def filter_by_tags(self, *tags):
         """
         Returns a set of all assets in this storage that have at least the specified tags.
@@ -235,6 +245,12 @@ class InMemoryStorage(AssetStorage):
 
     def __iter__(self):
         return iter(list(self.tags_by_asset.keys()))
+
+    def get_tags(self, asset):
+        tags = self.tags_by_asset.get(asset)
+        if tags is None:
+            raise KeyError('Asset %r cannot be found in storage' % asset)
+        return frozenset(tags)
 
     def filter_by_tags(self, *tags):
         search_tags = set(tags)
@@ -282,11 +298,18 @@ class ShelveStorage(AssetStorage):
                 if stored_asset == asset:
                     del assets[asset_id]
                     return
-        raise ValueError('Unable to remove unknown asset %s', asset)
+        raise ValueError('Unable to remove unknown asset %r' % asset)
 
     def __iter__(self):
         with shelve.open(self.path) as assets:
             return iter([asset for asset, tags in assets.values()])
+
+    def get_tags(self, asset):
+        with shelve.open(self.path) as assets:
+            for stored_asset, tags in assets.values():
+                if stored_asset == asset:
+                    return frozenset(tags)
+        raise KeyError('Asset %r cannot be found in storage' % asset)
 
     def filter_by_tags(self, *tags):
         search_tags = set(tags)
