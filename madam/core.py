@@ -62,6 +62,21 @@ class Madam:
         member_class = getattr(module, member_name)
         return member_class
 
+    def get_processor(self, file):
+        """
+        Returns a processor that can read the data in the specified file.
+
+        :param file: file-like object to be parsed.
+        :return: Processor object that can handle the data in the specified file,
+                 or None if no suitable processor could be found.
+        """
+        for processor in self._processors:
+            file.seek(0)
+            if processor._can_read(file):
+                file.seek(0)
+                return processor
+        return None
+
     def read(self, file, metadata=None):
         r"""
         Reads the specified file and returns its contents as an Asset object.
@@ -86,13 +101,7 @@ class Madam:
         """
         if not file:
             raise TypeError('Unable to read object of type %s' % type(file))
-        processor = None
-        for p in self._processors:
-            file.seek(0)
-            if p._can_read(file):
-                processor = p
-                file.seek(0)
-                break
+        processor = self.get_processor(file)
         if not processor:
             raise UnsupportedFormatError()
         asset = processor._read(file)

@@ -19,6 +19,16 @@ def madam_instance():
     return Madam()
 
 
+def test_get_processor_returns_processor_for_readable_asset(madam, asset):
+    processor = madam.get_processor(asset.essence)
+    assert processor is not None
+
+
+def test_get_processor_returns_none_for_unreadable_asset(madam, unknown_asset):
+    processor = madam.get_processor(unknown_asset.essence)
+    assert processor is None
+
+
 def test_read_returns_jpeg_asset_whose_essence_does_not_contain_exif(madam, jpeg_asset, tmpdir):
     exif = jpeg_asset.exif
     file = tmpdir.join('asset_with_exif.jpg')
