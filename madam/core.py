@@ -62,13 +62,14 @@ class Madam:
         member_class = getattr(module, member_name)
         return member_class
 
-    def read(self, file, mime_type=None):
+    def read(self, file, metadata=None):
         r"""
         Reads the specified file and returns its contents as an Asset object.
 
         :param file: file-like object to be parsed
-        :param mime_type: MIME type of the specified file
-        :type mime_type: str
+        :param metadata: optional metadata for the resulting asset.
+                         Existing metadata entries extracted from the file will be overwritten.
+        :type metadata: dict
         :returns: Asset representing the specified file
         :raises UnsupportedFormatError: if the file format cannot be recognized or is not supported
         :raises TypeError: if the file is None
@@ -98,13 +99,17 @@ class Madam:
         for metadata_format, metadata_processor in self._metadata_processors_by_format.items():
             file.seek(0)
             try:
-                metadata = dict(asset.metadata)
-                metadata[metadata_format] = metadata_processor.read(file)
+                asset_metadata = dict(asset.metadata)
+                asset_metadata[metadata_format] = metadata_processor.read(file)
                 stripped_essence = metadata_processor.strip(asset.essence)
-                clean_asset = Asset(stripped_essence, **_freeze_dict(metadata))
+                clean_asset = Asset(stripped_essence, **asset_metadata)
                 asset = clean_asset
             except UnsupportedFormatError:
                 pass
+        if metadata:
+            asset_metadata = dict(asset.metadata)
+            asset_metadata.update(dict(metadata))
+            asset = Asset(asset.essence, **asset_metadata)
         return asset
 
     def write(self, asset, file):
