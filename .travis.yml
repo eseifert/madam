@@ -47,6 +47,7 @@ deploy:
     secure: q7r+zIDG+m7qrXFC/Cn2TaPXhSU9cnE+1m8j6smMlKfuNYcp1K56RYOzTn7TQgURLGaVhsw1ZpcB4ib1kt7uVvBMZD+gaMsZ3rSfF0wA+OjY/aUUHc3SP/n8JHexdTmrQJVVrX1yegoHRtl5JtApKbPRx6TTBdoPzJY70+R94PcIdM0Y1+MlHrAmvOsHUrBPt6uC/bfbE70/RkNStNBVFX3NpExi3+0VFqDtNpBkXBRs1Yot1l/pQCyKgHkm3mJMmBk8kv4mASOJSIOokv3IQb7vDx+G1jTyf7NCadkZLn9OJtBcd5CSL4kDBo3p61zprZptg4XW0zFbqWr2FKTEqGWEN/CSgF4GmCS25iTfkMLKjrYp4vD8hIHhW2q/GM/0fs8yuepljUeXgRiIYBI5DCx1I9TG2Yd8oENDUe3uJvSCaSsWr1QeB0NMlpZUo0fKsjhTzCFdTUnbsUhpyQVEVXa4nEz12ogXLllH5atvCV/kYoUHKGj36GCIsY98oD4DycKany3VQDGJGrv/TsfSrCMny1MVysPRvosdyOCACPUyawqTqJawKZS/DVRePfHaSnpY4X111BOf7vJkQVUOM4Xpsw0hirRTdrG7m0OGYxVzQUXl8z7FcDRVDiPpPJJKkZM/kWKeFOHG3MJGA4S8bFSMiIBRK6vGdGKq0/coiRs=
   on:
     tags: true
-    distributions: bdist_wheel
-    repo: eseifert/madam
     condition: $TOXENV = "py35"
+  repo: eseifert/madam
+  distributions: sdist bdist_wheel
+  skip_cleanup: true
