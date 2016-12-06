@@ -181,7 +181,7 @@ class AssetStorage(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def filter_by_tags(self, *tags):
         """
-        Returns all assets in this storage that have at least the specified tags.
+        Returns a set of all assets in this storage that have at least the specified tags.
 
         :param tags: Mandatory tags of an asset to be included in result
         :return: Assets whose tags are a superset of the specified tags
@@ -208,7 +208,6 @@ class InMemoryStorage(AssetStorage):
             raise ValueError('Unable to delete asset that is not contained in storage.')
         del self.tags_by_asset[asset]
 
-
     def __contains__(self, asset):
         return asset in self.tags_by_asset
 
@@ -225,8 +224,7 @@ class InMemoryStorage(AssetStorage):
 
     def filter_by_tags(self, *tags):
         search_tags = set(tags)
-        assets_by_tags = [asset for asset, tags in self.tags_by_asset.items() if search_tags.issubset(tags)]
-        return iter(assets_by_tags)
+        return set(asset for asset, asset_tags in self.tags_by_asset.items() if search_tags <= asset_tags)
 
 
 class FileStorage(AssetStorage):
@@ -279,9 +277,10 @@ class FileStorage(AssetStorage):
         with shelve.open(self._shelf_path) as assets:
             return iter([asset for asset, tags in assets.values()])
 
-    def filter_by_tags(self, *search_tags):
+    def filter_by_tags(self, *tags):
+        search_tags = set(tags)
         with shelve.open(self._shelf_path) as assets:
-            return iter([asset for asset, tags in assets.values() if set(search_tags) <= tags])
+            return set(asset for asset, asset_tags in assets.values() if search_tags <= asset_tags)
 
 
 def _freeze_dict(dictionary):
