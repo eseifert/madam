@@ -227,15 +227,15 @@ class InMemoryStorage(AssetStorage):
         return set(asset for asset, asset_tags in self.tags_by_asset.items() if search_tags <= asset_tags)
 
 
-class FileStorage(AssetStorage):
+class ShelveStorage(AssetStorage):
     """
     Represents a persistent storage backend for assets.
 
-    FileStorage uses a directory on the file system to serialize Assets.
+    ShelveStorage uses a directory on the file system to serialize Assets.
     """
     def __init__(self, path):
         """
-        Initializes a new FileStorage with the specified path.
+        Initializes a new ShelveStorage with the specified path.
 
         :param path: File system path where the data should go
         """

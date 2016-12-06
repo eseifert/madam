@@ -6,7 +6,7 @@ import pytest
 import tempfile
 
 from madam.core import Asset
-from madam.core import InMemoryStorage, FileStorage
+from madam.core import InMemoryStorage, ShelveStorage
 from madam.core import Pipeline
 
 
@@ -16,19 +16,19 @@ def in_memory_storage():
 
 
 @pytest.fixture
-def file_storage(tmpdir):
+def shelve_storage(tmpdir):
     storage_path = str(tmpdir.join('storageDir'))
-    return FileStorage(storage_path)
+    return ShelveStorage(storage_path)
 
 
-@pytest.mark.usefixtures('asset', 'in_memory_storage', 'file_storage')
+@pytest.mark.usefixtures('asset', 'in_memory_storage', 'shelve_storage')
 class TestStorages:
-    @pytest.fixture(params=['in_memory_storage', 'file_storage'])
-    def storage(self, request, in_memory_storage, file_storage):
+    @pytest.fixture(params=['in_memory_storage', 'shelve_storage'])
+    def storage(self, request, in_memory_storage, shelve_storage):
         if request.param == 'in_memory_storage':
             return in_memory_storage
-        elif request.param == 'file_storage':
-            return file_storage
+        elif request.param == 'shelve_storage':
+            return shelve_storage
 
     def test_contains_is_false_when_storage_is_empty(self, storage, asset):
         contains = asset in storage
@@ -113,11 +113,11 @@ class TestStorages:
         assert len(list(storage)) == 1
 
 
-@pytest.mark.usefixtures('asset', 'file_storage')
-class TestFileStorage:
+@pytest.mark.usefixtures('asset', 'shelve_storage')
+class TestShelveStorage:
     @pytest.fixture
-    def storage(self, file_storage):
-        return file_storage
+    def storage(self, shelve_storage):
+        return shelve_storage
 
     def test_creates_storage_directory(self, storage):
         assert os.path.isdir(storage.path)
@@ -127,12 +127,12 @@ class TestFileStorage:
             storage_path = os.path.join(tempdir, 'storageDir')
             os.mkdir(storage_path)
 
-            FileStorage(storage_path)
+            ShelveStorage(storage_path)
 
     def test_raises_error_when_storage_path_is_a_file(self):
         with tempfile.NamedTemporaryFile() as file:
             with pytest.raises(FileExistsError):
-                FileStorage(file.name)
+                ShelveStorage(file.name)
 
     def test_add_writes_data_to_storage_path(self, storage, asset):
         storage.add(asset)
