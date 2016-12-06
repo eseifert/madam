@@ -239,25 +239,22 @@ class ShelveStorage(AssetStorage):
 
         :param path: File system path where the data should go
         """
-        if os.path.isfile(path):
-            raise FileExistsError('The storage path "%s" is a file not a directory.' % path)
-        if not os.path.isdir(path):
-            os.mkdir(path)
+        if os.path.exists(path) and not os.path.isfile(path):
+            raise ValueError('The storage path %r is not a file.' % path)
         self.path = path
 
-        self._shelf_path = os.path.join(self.path, 'shelf')
-        with shelve.open(self._shelf_path) as assets:
+        with shelve.open(self.path) as assets:
             max_stored_asset_id = max(map(int, assets.keys())) if assets.keys() else 0
             self._asset_id_sequence = itertools.count(start=max_stored_asset_id + 1)
 
     def __contains__(self, asset):
-        with shelve.open(self._shelf_path) as assets:
+        with shelve.open(self.path) as assets:
             return asset in (stored_asset for stored_asset, tags in assets.values())
 
     def add(self, asset, tags=None):
         if not tags:
             tags = set()
-        with shelve.open(self._shelf_path) as assets:
+        with shelve.open(self.path) as assets:
             for asset_id, asset_with_tags in assets.items():
                 if asset == asset_with_tags[0]:
                     assets[asset_id] = (asset, tags)
@@ -266,7 +263,7 @@ class ShelveStorage(AssetStorage):
             assets[str(asset_id)] = (asset, tags)
 
     def remove(self, asset):
-        with shelve.open(self._shelf_path) as assets:
+        with shelve.open(self.path) as assets:
             for asset_id, (stored_asset, _) in assets.items():
                 if stored_asset == asset:
                     del assets[asset_id]
@@ -274,12 +271,12 @@ class ShelveStorage(AssetStorage):
         raise ValueError('Unable to remove unknown asset %s', asset)
 
     def __iter__(self):
-        with shelve.open(self._shelf_path) as assets:
+        with shelve.open(self.path) as assets:
             return iter([asset for asset, tags in assets.values()])
 
     def filter_by_tags(self, *tags):
         search_tags = set(tags)
-        with shelve.open(self._shelf_path) as assets:
+        with shelve.open(self.path) as assets:
             return set(asset for asset, asset_tags in assets.values() if search_tags <= asset_tags)
 
 

@@ -17,7 +17,7 @@ def in_memory_storage():
 
 @pytest.fixture
 def shelve_storage(tmpdir):
-    storage_path = str(tmpdir.join('storageDir'))
+    storage_path = str(tmpdir.join('shelf'))
     return ShelveStorage(storage_path)
 
 
@@ -119,26 +119,14 @@ class TestShelveStorage:
     def storage(self, shelve_storage):
         return shelve_storage
 
-    def test_creates_storage_directory(self, storage):
-        assert os.path.isdir(storage.path)
-
-    def test_uses_directory_when_directory_already_exists(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            storage_path = os.path.join(tempdir, 'storageDir')
-            os.mkdir(storage_path)
-
-            ShelveStorage(storage_path)
-
-    def test_raises_error_when_storage_path_is_a_file(self):
-        with tempfile.NamedTemporaryFile() as file:
-            with pytest.raises(FileExistsError):
-                ShelveStorage(file.name)
+    def test_raises_error_when_storage_path_is_not_a_file(self, tmpdir):
+        with pytest.raises(ValueError):
+            ShelveStorage(str(tmpdir))
 
     def test_add_writes_data_to_storage_path(self, storage, asset):
         storage.add(asset)
 
-        storage_path_file_count = len(os.listdir(storage.path))
-        assert storage_path_file_count >= 1
+        assert os.path.exists(storage.path)
 
 
 @pytest.mark.usefixtures('in_memory_storage')
