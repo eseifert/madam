@@ -55,7 +55,10 @@ class Exiv2MetadataProcessor(MetadataProcessor):
             for key in getattr(metadata, format + '_keys'):
                 madam_key = Exiv2MetadataProcessor.__metadata_key_to_exiv2_key.inv.get(key)
                 if madam_key is not None:
-                    format_metadata[madam_key] = metadata[key].value
+                    value = metadata[key].value
+                    if isinstance(value, pyexiv2.utils.NotifyingList):
+                        value = list(value)
+                    format_metadata[madam_key] = value
             if format_metadata:
                 metadata_by_format[format] = format_metadata
         return metadata_by_format
