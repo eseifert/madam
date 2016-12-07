@@ -57,7 +57,7 @@ class Exiv2MetadataProcessor(MetadataProcessor):
                 if madam_key is not None:
                     value = metadata[key].value
                     if isinstance(value, pyexiv2.utils.NotifyingList):
-                        value = list(value)
+                        value = tuple(value)
                     format_metadata[madam_key] = value
             if format_metadata:
                 metadata_by_format[format] = format_metadata

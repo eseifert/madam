@@ -128,6 +128,27 @@ def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     assert asset.height == DEFAULT_HEIGHT
 
 
+def test_read_only_returns_python_types_in_metadata(madam, jpeg_asset, tmpdir):
+    import datetime, fractions, frozendict
+    allowed_types = {str, float, int, tuple, frozendict.frozendict,
+                     datetime.datetime, fractions.Fraction}
+    file = tmpdir.join('asset_with_metadata.jpg')
+    file.write(jpeg_asset.essence.read(), 'wb')
+    metadata = pyexiv2.metadata.ImageMetadata(str(file))
+    metadata.read()
+    metadata['Exif.Image.Artist'] = b'Test artist'
+    metadata['Iptc.Application2.Caption'] = ['Foo bar']
+    metadata.write()
+
+    asset = madam.read(file.open('rb'))
+
+    for metadata_type in {'exif', 'iptc'}:
+        values = asset.metadata[metadata_type].values()
+        assert values
+        for value in values:
+            assert type(value) in allowed_types
+
+
 def test_writes_correct_essence_without_metadata(madam, asset):
     asset = Asset(essence=asset.essence)
     file = io.BytesIO()
