@@ -18,18 +18,35 @@ class TestExiv2MetadataProcessor:
     def test_supports_iptc(self, processor):
         assert 'iptc' in processor.formats
 
-    def test_read_returns_exif_dict_when_jpeg_contains_metadata(self, processor, jpeg_asset, tmpdir):
-        file = tmpdir.join('asset_with_exif.jpg')
+    def test_read_returns_dicts_when_jpeg_contains_metadata(self, processor, jpeg_asset, tmpdir):
+        file = tmpdir.join('asset_with_metadata.jpg')
         file.write(jpeg_asset.essence.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(file))
         metadata.read()
         metadata['Exif.Image.Artist'] = 'Test artist'
+        metadata['Iptc.Application2.Caption'] = ['Foo bar']
         metadata.write()
 
         metadata = processor.read(io.BytesIO(file.read('rb')))
 
         assert metadata['exif']['image.artist'] == 'Test artist'
-        assert len(metadata.keys()) == 1
+        assert metadata['iptc']['caption'][0] == 'Foo bar'
+        assert set(metadata.keys()) == {'exif', 'iptc'}
+
+    def test_read_ignores_unmapped_metadata(self, processor, jpeg_asset, tmpdir):
+        file = tmpdir.join('asset_with_metadata.jpg')
+        file.write(jpeg_asset.essence.read(), 'wb')
+        metadata = pyexiv2.metadata.ImageMetadata(str(file))
+        metadata.read()
+        metadata['Exif.Image.Artist'] = 'Test artist'
+        metadata['Exif.Image.Software'] = 'MADAM'
+        metadata.write()
+
+        metadata = processor.read(io.BytesIO(file.read('rb')))
+
+        assert metadata['exif']['image.artist'] == 'Test artist'
+        assert len(metadata['exif']) == 1
+        assert set(metadata.keys()) == {'exif'}
 
     def test_read_raises_error_when_file_format_is_invalid(self, processor):
         junk_data = io.BytesIO(b'abc123')
@@ -45,16 +62,17 @@ class TestExiv2MetadataProcessor:
         assert not metadata
 
     def test_strip_returns_essence_without_metadata(self, processor, jpeg_asset, tmpdir):
-        file = tmpdir.join('asset_with_exif.jpg')
+        file = tmpdir.join('asset_with_metadata.jpg')
         file.write(jpeg_asset.essence.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(file))
         metadata.read()
         metadata['Exif.Image.Artist'] = b'Test artist'
+        metadata['Iptc.Application2.Caption'] = ['Foo bar']
         metadata.write()
 
         essence = processor.strip(file.open('rb'))
 
-        essence_file = tmpdir.join('essence_without_exif')
+        essence_file = tmpdir.join('essence_without_metadata.jpg')
         essence_file.write(essence.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
         metadata.read()
