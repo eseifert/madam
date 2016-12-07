@@ -97,7 +97,7 @@ class TestStorages:
     def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
         tagged_assets = storage.filter_by_tags('some tag')
 
-        assert len(list(tagged_assets)) == 0
+        assert len(tagged_assets) == 0
 
     def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage, asset):
         storage.add(asset, tags={'foo'})
@@ -114,9 +114,11 @@ class TestStorages:
         storage.add(asset1, tags={'foo', 'bar'})
         storage.add(asset2, tags={'foo', 'bar'})
 
-        assets = list(storage.filter_by_tags('bar', 'foo'))
+        assets = storage.filter_by_tags('bar', 'foo')
 
-        assert asset0 not in assets and asset1 in assets and asset2 in assets
+        assert asset0 not in assets and \
+               asset1 in assets and \
+               asset2 in assets
 
     @pytest.mark.parametrize('tags', [None, {'my', 'tags'}])
     def test_add_does_nothing_when_asset_is_already_in_storage(self, storage, asset, tags):
