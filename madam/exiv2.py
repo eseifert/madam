@@ -50,17 +50,18 @@ class Exiv2MetadataProcessor(MetadataProcessor):
             except OSError:
                 raise UnsupportedFormatError('Unknown file format.')
         metadata_by_format = {}
-        for format in self.formats:
+        for metadata_format in self.formats:
             format_metadata = {}
-            for key in getattr(metadata, format + '_keys'):
+            for key in getattr(metadata, metadata_format + '_keys'):
                 madam_key = Exiv2MetadataProcessor.__metadata_key_to_exiv2_key.inv.get(key)
-                if madam_key is not None:
-                    value = metadata[key].value
-                    if isinstance(value, pyexiv2.utils.NotifyingList):
-                        value = tuple(value)
-                    format_metadata[madam_key] = value
+                if madam_key is None:
+                    continue
+                value = metadata[key].value
+                if isinstance(value, pyexiv2.utils.NotifyingList):
+                    value = tuple(value)
+                format_metadata[madam_key] = value
             if format_metadata:
-                metadata_by_format[format] = format_metadata
+                metadata_by_format[metadata_format] = format_metadata
         return metadata_by_format
 
     def strip(self, file):
