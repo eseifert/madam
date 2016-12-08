@@ -6,6 +6,7 @@ import itertools
 import os
 import shelve
 import shutil
+from collections import defaultdict
 
 from frozendict import frozendict
 
@@ -33,11 +34,13 @@ class Madam:
         )
         self._processors = []
         self._metadata_processors_by_format = {}
+        self._metadata_formats_by_processor = defaultdict(list)
 
         # Initialize processors
         for processor_path in self.config['processors']:
             processor_class = Madam._import_from(processor_path)
             self._processors.append(processor_class())
+
         # Initialize metadata processors
         for processor_path in self.config['metadata_processors']:
             try:
@@ -46,8 +49,13 @@ class Madam:
                 self.config['metadata_processors'].remove(processor_path)
                 continue
             processor = processor_class()
-            for format in list(processor.formats):
+            # Make sure there is only one metadata processor
+            for format in processor.formats:
+                if format in self._metadata_processors_by_format:
+                    # There is already a metadata processor for this format
+                    continue
                 self._metadata_processors_by_format[format] = processor
+                self._metadata_formats_by_processor[processor].append(format)
 
     @staticmethod
     def _import_from(member_path):
@@ -105,11 +113,14 @@ class Madam:
         if not processor:
             raise UnsupportedFormatError()
         asset = processor._read(file)
-        for metadata_format, metadata_processor in self._metadata_processors_by_format.items():
+        for metadata_processor, metadata_formats in self._metadata_formats_by_processor.items():
             file.seek(0)
             try:
                 asset_metadata = dict(asset.metadata)
-                asset_metadata[metadata_format] = metadata_processor.read(file)
+                metadata_by_formats = metadata_processor.read(file)
+                for metadata_format in metadata_formats:
+                    if metadata_format in metadata_by_formats:
+                        asset_metadata[metadata_format] = metadata_by_formats[metadata_format]
                 stripped_essence = metadata_processor.strip(asset.essence)
                 clean_asset = Asset(stripped_essence, **asset_metadata)
                 asset = clean_asset
