@@ -107,9 +107,16 @@ class SVGMetadataProcessor(MetadataProcessor):
         return result
 
     def combine(self, file, metadata):
+        if not metadata:
+            raise ValueError('No metadata provided.')
+        if 'rdf' not in metadata:
+            raise UnsupportedFormatError('No RDF metadata found.')
+        rdf = metadata['rdf']
+        if 'xml' not in rdf:
+            raise ValueError('XML string missing from RDF metadata.')
+
         tree, root, metadata_elem = SVGMetadataProcessor.__parse(file)
 
-        rdf = metadata['rdf']
         if metadata_elem is None:
             metadata_elem = ET.SubElement(parent=root, tag='{%(svg)s}metadata' % _SVG_NS)
         metadata_elem.append(ET.fromstring(rdf['xml']))
