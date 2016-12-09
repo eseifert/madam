@@ -126,3 +126,9 @@ class TestSVGMetadataProcessor:
 
         with pytest.raises(UnsupportedFormatError):
             processor.combine(svg_asset.essence, rdf)
+
+    def test_combine_raises_error_when_metadata_contains_unsupported_keys(self, processor, svg_asset):
+        metadata = dict(rdf=dict(foo='bar'))
+
+        with pytest.raises(ValueError):
+            processor.combine(svg_asset.essence, metadata)
