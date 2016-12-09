@@ -103,6 +103,7 @@ class SVGMetadataProcessor(MetadataProcessor):
 
         result = io.BytesIO()
         tree.write(result)
+        result.seek(0)
         return result
 
     def combine(self, file, metadata):
@@ -115,4 +116,5 @@ class SVGMetadataProcessor(MetadataProcessor):
 
         result = io.BytesIO()
         tree.write(result)
+        result.seek(0)
         return result
