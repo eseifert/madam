@@ -328,24 +328,23 @@ class ShelveStorage(AssetStorage):
             return set(asset for asset, asset_tags in assets.values() if search_tags <= asset_tags)
 
 
-def _freeze_dict(dictionary):
+def _immutable(value):
     """
-    Creates a read-only dictionary from the specified dictionary.
+    Creates a read-only version from the specified value.
 
-    If the dictionary contains a value which is a dictionary, this dict
-    is recursively transformed into a read-only dict.
+    Dictionaries, lists, and sets will be handled recursively.
 
-    :param dictionary: Dict to be transformed into a read-only dict
-    :return: Read-only dictionary
+    :param value: Value to be transformed into a read-only version
+    :return: Read-only value
     """
-    entries = {}
-    for key, value in dictionary.items():
-        if isinstance(value, dict):
-            value = _freeze_dict(value)
-        if isinstance(value, set):
-            value = frozenset(value)
-        entries[key] = value
-    return frozendict(entries)
+    if isinstance(value, dict):
+        return frozendict({k: _immutable(v) for k, v in value.items()})
+    elif isinstance(value, set):
+        return frozenset({_immutable(v) for v in value})
+    elif isinstance(value, list):
+        return tuple([_immutable(v) for v in value])
+    else:
+        return value
 
 
 class Asset:
@@ -369,7 +368,7 @@ class Asset:
         self._essence_data = essence.read()
         if 'mime_type' not in metadata:
             metadata['mime_type'] = None
-        self.metadata = _freeze_dict(metadata)
+        self.metadata = _immutable(metadata)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
