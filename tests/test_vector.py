@@ -1,7 +1,10 @@
+import io
+from xml.etree import ElementTree as ET
+
 import pytest
 
-from madam.vector import svg_length_to_px, SVGMetadataProcessor, UnsupportedFormatError
-from assets import unknown_asset
+from madam.vector import svg_length_to_px, SVGMetadataProcessor, UnsupportedFormatError, XML_NS
+from assets import svg_asset, unknown_asset
 
 
 def test_svg_length_to_px_works_for_valid_values():
@@ -44,3 +47,16 @@ class TestSVGMetadataProcessor:
 
         with pytest.raises(UnsupportedFormatError):
             processor.read(junk_data)
+
+    def test_read_returns_empty_dict_when_svg_contains_no_metadata(self, processor, svg_asset):
+        tree = ET.parse(svg_asset.essence)
+        root = tree.getroot()
+        metadata_elem = root.find('./svg:metadata', XML_NS)
+        root.remove(metadata_elem)
+        data_without_rdf = io.BytesIO()
+        tree.write(data_without_rdf)
+        data_without_rdf.seek(0)
+
+        metadata = processor.read(data_without_rdf)
+
+        assert not metadata['rdf']
