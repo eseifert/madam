@@ -106,3 +106,10 @@ class TestSVGMetadataProcessor:
 
         with pytest.raises(ValueError):
             processor.combine(svg_asset.essence, metadata)
+
+    def test_combine_fails_without_metadata_keys(self, processor, svg_asset):
+        essence = svg_asset.essence
+        metadata = dict(rdf=dict())
+
+        with pytest.raises(ValueError):
+            processor.combine(essence, metadata)
