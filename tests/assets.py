@@ -271,11 +271,12 @@ def video_asset(request, mp4_asset, mkv_video_asset):
         raise ValueError()
 
 
-@pytest.fixture(scope='class', params=['jpeg_asset', 'png_asset', 'gif_asset',
-                                       'mp3_asset', 'opus_asset', 'wav_asset',
-                                       'mp4_asset', 'mkv_video_asset', 'ogg_video_asset'])
+@pytest.fixture(scope='class', params=[
+    'jpeg_asset', 'png_asset', 'gif_asset', 'svg_asset',
+    'mp3_asset', 'opus_asset', 'wav_asset',
+    'mp4_asset', 'mkv_video_asset', 'ogg_video_asset'])
 def asset(request,
-          jpeg_asset, png_asset, gif_asset,
+          jpeg_asset, png_asset, gif_asset, svg_asset,
           mp3_asset, opus_asset, wav_asset,
           mp4_asset, mkv_video_asset, ogg_video_asset):
     if request.param == 'jpeg_asset':
@@ -284,6 +285,8 @@ def asset(request,
         return png_asset
     if request.param == 'gif_asset':
         return gif_asset
+    if request.param == 'svg_asset':
+        return svg_asset
     if request.param == 'mp3_asset':
         return mp3_asset
     if request.param == 'opus_asset':
