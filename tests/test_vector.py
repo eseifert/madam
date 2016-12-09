@@ -30,3 +30,10 @@ class TestSVGMetadataProcessor:
 
     def test_supports_rdf_metadata(self, processor):
         assert 'rdf' in processor.formats
+
+    def test_read_returns_correct_metadata_dict_for_svg_with_rdf(self, processor):
+        with open('tests/resources/svg_with_metadata.svg', 'rb') as file:
+            metadata = processor.read(file)
+
+        assert metadata['rdf']['xml']
+        assert len(metadata) == 1
