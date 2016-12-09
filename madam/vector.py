@@ -73,3 +73,46 @@ class SVGProcessor(Processor):
 
         file.seek(0)
         return Asset(essence=file, **metadata)
+
+
+class SVGMetdataProcessor(MetadataProcessor):
+    @property
+    def formats(self):
+        return {'rdf'}
+
+    @staticmethod
+    def __parse(file):
+        try:
+            tree = ET.parse(file)
+        except ET.ParseError as e:
+            raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
+        root = tree.getroot()
+        return tree, root, root.find('./svg:metadata', _SVG_NS)
+
+    def read(self, file):
+        _, _, metadata_elem = SVGMetdataProcessor.__parse(file)
+        if metadata_elem is None or len(metadata_elem) == 0:
+            return {'rdf': {}}
+        return {'rdf': {'xml': ET.tostring(metadata_elem[0], encoding='unicode')}}
+
+    def strip(self, file):
+        tree, root, metadata_elem = SVGMetdataProcessor.__parse(file)
+
+        if metadata_elem is not None:
+            root.remove(metadata_elem)
+
+        result = io.BytesIO()
+        tree.write(result)
+        return result
+
+    def combine(self, file, metadata):
+        tree, root, metadata_elem = SVGMetdataProcessor.__parse(file)
+
+        rdf = metadata['rdf']
+        if metadata_elem is None:
+            metadata_elem = ET.SubElement(parent=root, tag='{%(svg)s}metadata' % _SVG_NS)
+        metadata_elem.append(ET.fromstring(rdf['xml']))
+
+        result = io.BytesIO()
+        tree.write(result)
+        return result

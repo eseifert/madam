@@ -1,6 +1,6 @@
 import pytest
 
-from madam.vector import svg_length_to_px, SVGProcessor
+from madam.vector import svg_length_to_px, SVGProcessor, SVGMetdataProcessor
 
 
 def test_svg_length_to_px_works_for_valid_values():
@@ -27,3 +27,9 @@ class TestSVGProcessor:
     @pytest.fixture
     def svg_processor(self):
         return SVGProcessor()
+
+
+class TestSVGMetdataProcessor:
+    @pytest.fixture
+    def svg_metadata_processor(self):
+        return SVGMetdataProcessor()
