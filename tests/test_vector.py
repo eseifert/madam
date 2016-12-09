@@ -60,3 +60,11 @@ class TestSVGMetadataProcessor:
         metadata = processor.read(data_without_rdf)
 
         assert not metadata['rdf']
+
+    def test_strip_returns_essence_without_metadata(self, processor):
+        with open('tests/resources/svg_with_metadata.svg', 'rb') as file:
+            essence = file.read()
+            file.seek(0)
+            stripped_essence = processor.strip(file).read()
+
+        assert essence != stripped_essence
