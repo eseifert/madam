@@ -23,7 +23,10 @@ def test_svg_length_to_px_fails_for_invalid_values():
         assert svg_length_to_px('')
 
 
-class TestSVGMetdataProcessor:
+class TestSVGMetadataProcessor:
     @pytest.fixture
-    def svg_metadata_processor(self):
+    def processor(self):
         return SVGMetadataProcessor()
+
+    def test_supports_rdf_metadata(self, processor):
+        assert 'rdf' in processor.formats

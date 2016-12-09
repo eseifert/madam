@@ -44,8 +44,9 @@ def svg_length_to_px(length):
         return value
 
 
-_SVG_NS = dict(
+XML_NS = dict(
     svg='http://www.w3.org/2000/svg',
+    rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#',
     dc='http://purl.org/dc/elements/1.1/',
 )
 
@@ -87,7 +88,7 @@ class SVGMetadataProcessor(MetadataProcessor):
         except ET.ParseError as e:
             raise UnsupportedFormatError('Error while parsing XML: %s' % e)
         root = tree.getroot()
-        return tree, root, root.find('./svg:metadata', _SVG_NS)
+        return tree, root, root.find('./svg:metadata', XML_NS)
 
     def read(self, file):
         _, _, metadata_elem = SVGMetadataProcessor.__parse(file)
@@ -118,7 +119,7 @@ class SVGMetadataProcessor(MetadataProcessor):
         tree, root, metadata_elem = SVGMetadataProcessor.__parse(file)
 
         if metadata_elem is None:
-            metadata_elem = ET.SubElement(parent=root, tag='{%(svg)s}metadata' % _SVG_NS)
+            metadata_elem = ET.SubElement(parent=root, tag='{%(svg)s}metadata' % XML_NS)
         metadata_elem.append(ET.fromstring(rdf['xml']))
 
         result = io.BytesIO()
