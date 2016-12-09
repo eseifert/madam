@@ -85,7 +85,7 @@ class SVGMetadataProcessor(MetadataProcessor):
         try:
             tree = ET.parse(file)
         except ET.ParseError as e:
-            raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
+            raise UnsupportedFormatError('Error while parsing XML: %s' % e)
         root = tree.getroot()
         return tree, root, root.find('./svg:metadata', _SVG_NS)
 
