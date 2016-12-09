@@ -100,3 +100,9 @@ class TestSVGMetadataProcessor:
         assert metadata_elem is not None
         rdf_elem = metadata_elem.find('./rdf:RDF', XML_NS)
         assert rdf_elem is not None
+
+    def test_combine_raises_error_when_no_rdf_dict_is_given(self, processor, svg_asset):
+        metadata = {}
+
+        with pytest.raises(ValueError):
+            processor.combine(svg_asset.essence, metadata)
