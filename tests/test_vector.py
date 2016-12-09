@@ -1,6 +1,7 @@
 import pytest
 
-from madam.vector import svg_length_to_px, SVGMetadataProcessor
+from madam.vector import svg_length_to_px, SVGMetadataProcessor, UnsupportedFormatError
+from assets import unknown_asset
 
 
 def test_svg_length_to_px_works_for_valid_values():
@@ -37,3 +38,9 @@ class TestSVGMetadataProcessor:
 
         assert metadata['rdf']['xml']
         assert len(metadata) == 1
+
+    def test_read_raises_error_when_file_format_is_unsupported(self, processor, unknown_asset):
+        junk_data = unknown_asset.essence
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.read(junk_data)
