@@ -7,6 +7,19 @@ from madam.vector import svg_length_to_px, SVGMetadataProcessor, UnsupportedForm
 from assets import svg_asset, unknown_asset
 
 
+EXAMPLE_RDF = dict(rdf=
+        dict(xml=
+             '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"'
+             ' xmlns:dc="http://purl.org/dc/elements/1.1/"'
+             ' xmlns:opf="http://www.idpf.org/2007/opf">'
+             '<rdf:Description rdf:about="svg_with_metadata.svg">'
+             '<dc:format>image/svg+xml</dc:format><dc:type>Image</dc:type>'
+             '<dc:description>Example SVG file with metadata</dc:description>'
+             '</rdf:Description></rdf:RDF>'
+        )
+    )
+
+
 def test_svg_length_to_px_works_for_valid_values():
     assert svg_length_to_px('42') == pytest.approx(42, abs=1e-5)
     assert svg_length_to_px('1em') == pytest.approx(15, abs=1e-5)
@@ -74,3 +87,16 @@ class TestSVGMetadataProcessor:
 
         with pytest.raises(UnsupportedFormatError):
             processor.strip(junk_data)
+
+    def test_combine_returns_svg_with_metadata(self, processor, svg_asset):
+        essence = svg_asset.essence
+        metadata = EXAMPLE_RDF
+
+        essence_with_metadata = processor.combine(essence, metadata)
+
+        tree = ET.parse(essence_with_metadata)
+        root = tree.getroot()
+        metadata_elem = root.find('./svg:metadata', XML_NS)
+        assert metadata_elem is not None
+        rdf_elem = metadata_elem.find('./rdf:RDF', XML_NS)
+        assert rdf_elem is not None
