@@ -1,3 +1,9 @@
+import io
+from xml.etree import ElementTree as ET
+
+from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError
+
+
 def svg_length_to_px(length):
     if length is None:
         raise ValueError()
@@ -36,3 +42,34 @@ def svg_length_to_px(length):
         return value * PX_PER_INCH * PT_PER_INCH * 12
     elif unit == '%':
         return value
+
+
+_SVG_NS = dict(
+    svg='http://www.w3.org/2000/svg',
+    dc='http://purl.org/dc/elements/1.1/',
+)
+
+
+class SVGProcessor(Processor):
+    def _can_read(self, file):
+        try:
+            ET.parse(file)
+            return True
+        except ET.ParseError:
+            return False
+
+    def _read(self, file):
+        try:
+            tree = ET.parse(file)
+        except ET.ParseError as e:
+            raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
+        root = tree.getroot()
+
+        metadata = dict(mime_type='image/svg+xml')
+        if 'width' in root.keys():
+            metadata['width'] = svg_length_to_px(root['width'])
+        if 'height' in root.keys():
+            metadata['height'] = svg_length_to_px(root['height'])
+
+        file.seek(0)
+        return Asset(essence=file, **metadata)
