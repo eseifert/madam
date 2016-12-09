@@ -99,8 +99,9 @@ def gif_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 @pytest.fixture(scope='class')
 def svg_asset():
     essence = io.BytesIO()
-    with open('resources/svg_with_metadata.svg', 'r') as file:
+    with open('tests/resources/svg_with_metadata.svg', 'rb') as file:
         shutil.copyfileobj(file, essence)
+    essence.seek(0)
     return madam.core.Asset(essence=essence, mime_type='image/svg+xml',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT)
 
