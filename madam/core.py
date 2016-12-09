@@ -479,12 +479,12 @@ class Processor(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def _can_read(self, mime_type):
+    def _can_read(self, file):
         """
         Returns whether the specified MIME type is supported by this processor.
 
-        :param mime_type: MIME type to be checked
-        :return: whether the specified MIME type is supported or not
+        :param file: file-like object to be tested
+        :return: whether the data format of the specified file is supported or not
         """
         raise NotImplementedError()
 
