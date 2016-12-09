@@ -120,3 +120,9 @@ class TestSVGMetadataProcessor:
 
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, metadata)
+
+    def test_combine_raises_error_when_metadata_format_is_unsupported(self, processor, svg_asset):
+        rdf = {'123abc': 'Test artist'}
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.combine(svg_asset.essence, rdf)
