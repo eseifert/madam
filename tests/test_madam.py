@@ -84,7 +84,7 @@ def test_read_returns_asset_with_correct_mime_type(madam, asset):
 def test_read_stores_additional_metadata(madam, asset):
     filename = 'foobar'
 
-    read_asset = madam.read(asset.essence, metadata=dict(filename=filename))
+    read_asset = madam.read(asset.essence, additional_metadata=dict(filename=filename))
 
     assert 'filename' in read_asset.metadata
     assert read_asset.filename == filename

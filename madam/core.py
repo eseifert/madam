@@ -85,14 +85,14 @@ class Madam:
                 return processor
         return None
 
-    def read(self, file, metadata=None):
+    def read(self, file, additional_metadata=None):
         r"""
         Reads the specified file and returns its contents as an Asset object.
 
         :param file: file-like object to be parsed
-        :param metadata: optional metadata for the resulting asset.
-                         Existing metadata entries extracted from the file will be overwritten.
-        :type metadata: dict
+        :param additional_metadata: optional metadata for the resulting asset.
+               Existing metadata entries extracted from the file will be overwritten.
+        :type additional_metadata: dict
         :returns: Asset representing the specified file
         :raises UnsupportedFormatError: if the file format cannot be recognized or is not supported
         :raises TypeError: if the file is None
@@ -126,9 +126,9 @@ class Madam:
                 asset = clean_asset
             except UnsupportedFormatError:
                 pass
-        if metadata:
+        if additional_metadata:
             asset_metadata = dict(asset.metadata)
-            asset_metadata.update(dict(metadata))
+            asset_metadata.update(dict(additional_metadata))
             asset = Asset(asset.essence, **asset_metadata)
         return asset
 
