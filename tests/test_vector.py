@@ -68,3 +68,9 @@ class TestSVGMetadataProcessor:
             stripped_essence = processor.strip(file).read()
 
         assert essence != stripped_essence
+
+    def test_strip_raises_error_when_file_format_is_unsupported(self, processor, unknown_asset):
+        junk_data = unknown_asset.essence
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.strip(junk_data)
