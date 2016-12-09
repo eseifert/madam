@@ -67,9 +67,9 @@ class SVGProcessor(Processor):
 
         metadata = dict(mime_type='image/svg+xml')
         if 'width' in root.keys():
-            metadata['width'] = svg_length_to_px(root['width'])
+            metadata['width'] = svg_length_to_px(root.get('width'))
         if 'height' in root.keys():
-            metadata['height'] = svg_length_to_px(root['height'])
+            metadata['height'] = svg_length_to_px(root.get('height'))
 
         file.seek(0)
         return Asset(essence=file, **metadata)
