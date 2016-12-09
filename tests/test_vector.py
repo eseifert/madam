@@ -113,3 +113,10 @@ class TestSVGMetadataProcessor:
 
         with pytest.raises(ValueError):
             processor.combine(essence, metadata)
+
+    def test_combine_raises_error_when_essence_format_is_unsupported(self, processor, unknown_asset):
+        junk_data = unknown_asset.essence
+        metadata = EXAMPLE_RDF
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.combine(junk_data, metadata)
