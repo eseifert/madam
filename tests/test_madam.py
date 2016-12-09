@@ -9,7 +9,7 @@ from madam import Madam
 from madam.core import Asset, UnsupportedFormatError
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import asset, unknown_asset
-from assets import image_asset, jpeg_asset, png_asset, gif_asset
+from assets import image_asset, jpeg_asset, png_asset, gif_asset, svg_asset
 from assets import audio_asset, mp3_asset, opus_asset, wav_asset
 from assets import video_asset, mp4_asset, mkv_video_asset, ogg_video_asset
 
@@ -187,6 +187,7 @@ def test_writes_correct_essence_with_metadata(madam, jpeg_asset):
 def test_config_contains_list_of_all_processors_by_default(madam):
     assert madam.config['processors'] == [
         'madam.image.PillowProcessor',
+        'madam.vector.SVGProcessor',
         'madam.ffmpeg.FFmpegProcessor',
     ]
 
@@ -194,6 +195,7 @@ def test_config_contains_list_of_all_processors_by_default(madam):
 def test_config_contains_list_of_all_metadata_processors_by_default(madam):
     assert madam.config['metadata_processors'] == [
         'madam.exiv2.Exiv2MetadataProcessor',
+        'madam.vector.SVGMetadataProcessor',
         'madam.ffmpeg.FFmpegMetadataProcessor',
     ]
 

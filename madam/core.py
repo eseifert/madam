@@ -24,10 +24,12 @@ class Madam:
         self.config = dict(
             processors=[
                 'madam.image.PillowProcessor',
+                'madam.vector.SVGProcessor',
                 'madam.ffmpeg.FFmpegProcessor',
             ],
             metadata_processors=[
                 'madam.exiv2.Exiv2MetadataProcessor',
+                'madam.vector.SVGMetadataProcessor',
                 'madam.ffmpeg.FFmpegMetadataProcessor',
             ]
         )
