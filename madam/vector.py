@@ -75,7 +75,7 @@ class SVGProcessor(Processor):
         return Asset(essence=file, **metadata)
 
 
-class SVGMetdataProcessor(MetadataProcessor):
+class SVGMetadataProcessor(MetadataProcessor):
     @property
     def formats(self):
         return {'rdf'}
@@ -90,13 +90,13 @@ class SVGMetdataProcessor(MetadataProcessor):
         return tree, root, root.find('./svg:metadata', _SVG_NS)
 
     def read(self, file):
-        _, _, metadata_elem = SVGMetdataProcessor.__parse(file)
+        _, _, metadata_elem = SVGMetadataProcessor.__parse(file)
         if metadata_elem is None or len(metadata_elem) == 0:
             return {'rdf': {}}
         return {'rdf': {'xml': ET.tostring(metadata_elem[0], encoding='unicode')}}
 
     def strip(self, file):
-        tree, root, metadata_elem = SVGMetdataProcessor.__parse(file)
+        tree, root, metadata_elem = SVGMetadataProcessor.__parse(file)
 
         if metadata_elem is not None:
             root.remove(metadata_elem)
@@ -106,7 +106,7 @@ class SVGMetdataProcessor(MetadataProcessor):
         return result
 
     def combine(self, file, metadata):
-        tree, root, metadata_elem = SVGMetdataProcessor.__parse(file)
+        tree, root, metadata_elem = SVGMetadataProcessor.__parse(file)
 
         rdf = metadata['rdf']
         if metadata_elem is None:
