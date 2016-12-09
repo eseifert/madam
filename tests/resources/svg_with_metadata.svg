@@ -1,0 +1,39 @@
+<?xml version="1.0" standalone="yes"?>
+<svg width="24px" height="12px" version="1.1"
+     xmlns="http://www.w3.org/2000/svg">
+    <metadata>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                 xmlns:dc="http://purl.org/dc/elements/1.1/"
+                 xmlns:opf="http://www.idpf.org/2007/opf">
+            <rdf:Description rdf:about="svg_with_metadata.svg">
+                <dc:format>image/svg+xml</dc:format>
+                <dc:type>Image</dc:type>
+                <!-- iptc:credit -->
+                <dc:creator opf:role="aut">John Doe</dc:creator>
+                <!-- iptc:caption -->
+                <dc:description>Example SVG file with metadata</dc:description>
+                <!-- iptc:copyright -->
+                <dc:rights>Copyright 2016 Erich Seifert</dc:rights>
+                <!-- iptc:creation_date -->
+                <dc:date opf:event="creation">2016-11-01</dc:date>
+                <!-- iptc:headline -->
+                <dc:title>SVG metadata example</dc:title>
+                <!-- iptc:keywords -->
+                <dc:subject>SVG, metadata, RDF, Dublin Core, example</dc:subject>
+                <!-- iptc:source -->
+                <dc:source>Various</dc:source>
+                <!-- iptc:release_date -->
+                <dc:date opf:event="publication">2016-11-02</dc:date>
+                <!-- iptc:expiration_date -->
+                <dc:date opf:event="expiration">2020-11-01</dc:date>
+                <!-- iptc:language -->
+                <dc:language>en</dc:language>
+                <!-- iptc:subject? -->
+                <dc:subject>test resources</dc:subject>
+            </rdf:Description>
+        </rdf:RDF>
+    </metadata>
+
+    <rect x="0" y="0" width="24" height="12" fill="red"/>
+    <text x="1" y="8" font-family="sans-serif" font-size="5px" font-weight="bold">MADAM</text>
+</svg>
