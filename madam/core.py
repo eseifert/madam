@@ -33,8 +33,7 @@ class Madam:
             ]
         )
         self._processors = []
-        self._metadata_processors_by_format = {}
-        self._metadata_formats_by_processor = defaultdict(list)
+        self._metadata_processors = []
 
         # Initialize processors
         for processor_path in self.config['processors']:
@@ -49,13 +48,7 @@ class Madam:
                 self.config['metadata_processors'].remove(processor_path)
                 continue
             processor = processor_class()
-            # Make sure there is only one metadata processor
-            for format in processor.formats:
-                if format in self._metadata_processors_by_format:
-                    # There is already a metadata processor for this format
-                    continue
-                self._metadata_processors_by_format[format] = processor
-                self._metadata_formats_by_processor[processor].append(format)
+            self._metadata_processors.append(processor)
 
     @staticmethod
     def _import_from(member_path):
@@ -109,27 +102,35 @@ class Madam:
         """
         if not file:
             raise TypeError('Unable to read object of type %s' % type(file))
+
         processor = self.get_processor(file)
         if not processor:
             raise UnsupportedFormatError()
+
         asset = processor._read(file)
-        for metadata_processor, metadata_formats in self._metadata_formats_by_processor.items():
+
+        handled_formats = set()
+        for metadata_processor in self._metadata_processors:
+            asset_metadata = dict(asset.metadata)
             file.seek(0)
             try:
-                asset_metadata = dict(asset.metadata)
-                metadata_by_formats = metadata_processor.read(file)
-                for metadata_format in metadata_formats:
-                    if metadata_format in metadata_by_formats:
-                        asset_metadata[metadata_format] = metadata_by_formats[metadata_format]
+                metadata_by_format = metadata_processor.read(file)
+                for metadata_format, metadata_values in metadata_by_format.items():
+                    if metadata_format in handled_formats:
+                        continue
+                    asset_metadata[metadata_format] = metadata_values
                 stripped_essence = metadata_processor.strip(asset.essence)
                 clean_asset = Asset(stripped_essence, **asset_metadata)
                 asset = clean_asset
+                handled_formats.update(metadata_processor.formats)
             except UnsupportedFormatError:
                 pass
+
         if additional_metadata:
             asset_metadata = dict(asset.metadata)
             asset_metadata.update(dict(additional_metadata))
             asset = Asset(asset.essence, **asset_metadata)
+
         return asset
 
     def write(self, asset, file):
@@ -157,10 +158,28 @@ class Madam:
         ...     madam.write(wav_asset, file)
         """
         essence_with_metadata = asset.essence
-        for metadata_format, processor in self._metadata_processors_by_format.items():
-            metadata = getattr(asset, metadata_format, None)
-            if metadata is not None:
-                essence_with_metadata = processor.combine(essence_with_metadata, {metadata_format: metadata})
+        handled_formats = set()
+        for metadata_processor in self._metadata_processors:
+            metadata_by_format = {}
+
+            for metadata_format in metadata_processor.formats:
+                if metadata_format in handled_formats:
+                    continue
+                metadata = getattr(asset, metadata_format, None)
+                if metadata is None:
+                    handled_formats.add(metadata_format)
+                    continue
+                metadata_by_format[metadata_format] = metadata
+
+            if not metadata_by_format:
+                continue
+
+            try:
+                essence_with_metadata = metadata_processor.combine(essence_with_metadata, metadata_by_format)
+                handled_formats.update(metadata_processor.formats)
+            except UnsupportedFormatError:
+                pass
+
         shutil.copyfileobj(essence_with_metadata, file)
 
 
