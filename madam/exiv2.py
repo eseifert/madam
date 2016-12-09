@@ -70,12 +70,14 @@ class Exiv2MetadataProcessor(MetadataProcessor):
             tmp.write(file.read())
             tmp.flush()
             metadata = pyexiv2.ImageMetadata(tmp.name)
+
             try:
                 metadata.read()
             except OSError:
                 raise UnsupportedFormatError('Unknown file format.')
-            metadata.clear()
+
             try:
+                metadata.clear()
                 metadata.write()
             except OSError:
                 raise UnsupportedFormatError('Unknown file format.')
@@ -86,28 +88,35 @@ class Exiv2MetadataProcessor(MetadataProcessor):
 
         return result
 
-    def combine(self, essence, metadata_by_type):
+    def combine(self, essence, metadata_by_format):
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile() as tmp:
             tmp.write(essence.read())
             tmp.flush()
             exiv2_metadata = pyexiv2.ImageMetadata(tmp.name)
+
             try:
                 exiv2_metadata.read()
             except OSError:
                 raise UnsupportedFormatError('Unknown essence format.')
-            for metadata_type, metadata in metadata_by_type.items():
-                for key in metadata:
-                    try:
-                        exiv2_key = Exiv2MetadataProcessor.__metadata_key_to_exiv2_key[key]
-                        value_list = metadata[key] if isinstance(metadata[key], list) else [metadata[key]]
-                        exiv2_metadata[exiv2_key] = value_list
-                    except KeyError:
-                        raise UnsupportedFormatError('Invalid metadata to be combined with essence: %s=%s' %
-                                                     (metadata_type, metadata))
-            exiv2_metadata.write()
-            tmp.flush()
-            tmp.seek(0)
+
+            for metadata_format, metadata in metadata_by_format.items():
+                if metadata_format not in self.formats:
+                    raise UnsupportedFormatError('Metadata format %r is not supported.' % metadata_format)
+                for key, value in metadata.items():
+                    exiv2_key = Exiv2MetadataProcessor.__metadata_key_to_exiv2_key.get(key)
+                    if exiv2_key is None:
+                        continue
+                    if not isinstance(value, tuple):
+                        value = (value,)
+                    exiv2_metadata[exiv2_key] = value
+
+            try:
+                exiv2_metadata.write()
+                tmp.flush()
+                tmp.seek(0)
+            except OSError:
+                raise UnsupportedFormatError('Could not write metadata: %r' % metadata_by_format)
 
             shutil.copyfileobj(tmp, result)
             result.seek(0)
