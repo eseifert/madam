@@ -6,7 +6,6 @@ import itertools
 import os
 import shelve
 import shutil
-from collections import defaultdict
 
 from frozendict import frozendict
 
