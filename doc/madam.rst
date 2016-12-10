@@ -6,10 +6,11 @@ Submodules
 
 .. toctree::
 
-   madam.audio
    madam.core
+   madam.exiv2
+   madam.ffmpeg
    madam.image
-   madam.video
+   madam.vector
 
 Module contents
 ---------------
