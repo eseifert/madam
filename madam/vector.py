@@ -90,6 +90,13 @@ class SVGMetadataProcessor(MetadataProcessor):
         root = tree.getroot()
         return tree, root, root.find('./svg:metadata', XML_NS)
 
+    @staticmethod
+    def __register_xml_namespaces():
+        for prefix, uri in XML_NS.items():
+            if prefix == 'svg':
+                prefix = ''
+            ET.register_namespace(prefix, uri)
+
     def read(self, file):
         _, _, metadata_elem = SVGMetadataProcessor.__parse(file)
         if metadata_elem is None or len(metadata_elem) == 0:
@@ -103,7 +110,8 @@ class SVGMetadataProcessor(MetadataProcessor):
             root.remove(metadata_elem)
 
         result = io.BytesIO()
-        tree.write(result)
+        SVGMetadataProcessor.__register_xml_namespaces()
+        tree.write(result, xml_declaration=True, encoding='utf-8')
         result.seek(0)
         return result
 
@@ -123,6 +131,7 @@ class SVGMetadataProcessor(MetadataProcessor):
         metadata_elem.append(ET.fromstring(rdf['xml']))
 
         result = io.BytesIO()
-        tree.write(result)
+        SVGMetadataProcessor.__register_xml_namespaces()
+        tree.write(result, xml_declaration=True, encoding='utf-8')
         result.seek(0)
         return result
