@@ -1,7 +1,7 @@
 import datetime
 import io
-import shutil
 import subprocess
+from xml.etree import ElementTree as ET
 
 import PIL.Image
 import pytest
@@ -98,12 +98,41 @@ def gif_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 
 @pytest.fixture(scope='class')
 def svg_asset():
-    essence = io.BytesIO()
+    metadata = dict(rdf=
+        dict(xml=
+             '<rdf:Description rdf:about="svg_with_metadata.svg">'
+             '<dc:format>image/svg+xml</dc:format>'
+             '<dc:type>Image</dc:type>'
+             '<dc:creator opf:role="aut">John Doe</dc:creator>'
+             '<dc:description>Example SVG file with metadata</dc:description>'
+             '<dc:rights>Copyright 2016 Erich Seifert</dc:rights>'
+             '<dc:date opf:event="creation">2016-11-01</dc:date>'
+             '<dc:title>SVG metadata example</dc:title>'
+             '<dc:subject>SVG, metadata, RDF, Dublin Core, example</dc:subject>'
+             '<dc:source>Various</dc:source>'
+             '<dc:date opf:event="publication">2016-11-02</dc:date>'
+             '<dc:date opf:event="expiration">2020-11-01</dc:date>'
+             '<dc:language>en</dc:language>'
+             '<dc:subject>test resources</dc:subject>'
+             '</rdf:Description>'
+        )
+    )
+
     with open('tests/resources/svg_with_metadata.svg', 'rb') as file:
-        shutil.copyfileobj(file, essence)
+        tree = ET.parse(file)
+
+    # Remove metadata from essence
+    root = tree.getroot()
+    metadata_elem = root.find('./{http://www.w3.org/2000/svg}metadata')
+    if metadata_elem is not None:
+        root.remove(metadata_elem)
+    essence = io.BytesIO()
+    tree.write(essence)
     essence.seek(0)
+
     return madam.core.Asset(essence=essence, mime_type='image/svg+xml',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+                            **metadata)
 
 
 @pytest.fixture(params=['jpeg_asset', 'png_asset', 'gif_asset'])

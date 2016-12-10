@@ -62,15 +62,9 @@ class TestSVGMetadataProcessor:
             processor.read(junk_data)
 
     def test_read_returns_empty_dict_when_svg_contains_no_metadata(self, processor, svg_asset):
-        tree = ET.parse(svg_asset.essence)
-        root = tree.getroot()
-        metadata_elem = root.find('./svg:metadata', XML_NS)
-        root.remove(metadata_elem)
-        data_without_rdf = io.BytesIO()
-        tree.write(data_without_rdf)
-        data_without_rdf.seek(0)
+        essence_without_metadata = svg_asset.essence
 
-        metadata = processor.read(data_without_rdf)
+        metadata = processor.read(essence_without_metadata)
 
         assert not metadata['rdf']
 
