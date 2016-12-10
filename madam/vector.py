@@ -119,7 +119,7 @@ class SVGMetadataProcessor(MetadataProcessor):
         tree, root, metadata_elem = SVGMetadataProcessor.__parse(file)
 
         if metadata_elem is None:
-            metadata_elem = ET.SubElement(parent=root, tag='{%(svg)s}metadata' % XML_NS)
+            metadata_elem = ET.SubElement(root, '{%(svg)s}metadata' % XML_NS)
         metadata_elem.append(ET.fromstring(rdf['xml']))
 
         result = io.BytesIO()
