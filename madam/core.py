@@ -192,31 +192,45 @@ class AssetStorage(metaclass=abc.ABCMeta):
     respective storage implementation.
     """
     @abc.abstractmethod
-    def add(self, asset, tags=None):
+    def set(self, asset_key, asset, tags=None):
         """
-        Adds the specified :class:`~madam.core.Asset` to this asset storage.
+        Stores an :class:`~madam.core.Asset` in this asset storage using the
+        specified key.
 
-        An iterable of strings can be passed as an optional argument which describe
+        An iterable of strings can be passed as an optional argument, which describe
         the tags that apply for the added asset.
 
         Adding the same asset twice overwrites all tags for the asset.
 
+        :param asset_key: Unique value used as a key to store the asset.
         :param asset: Asset to be added
         :param tags: Tags associated with the asset
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def remove(self, asset):
+    def get(self, asset_key):
         """
-        Removes the specified :class:`~madam.core.Asset` from this asset storage.
+        Removes the :class:`~madam.core.Asset` with the specified key from this
+        asset storage.
 
-        :param asset: Asset to be removed
+        :param asset_key: Key of the asset for which the tags should be returned
+        :return A tuple containing an asset and a set of its tags
         """
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def __contains__(self, asset):
+    def remove(self, asset_key):
+        """
+        Removes the :class:`~madam.core.Asset` with the specified key from this
+        asset storage.
+
+        :param asset_key: Key of the asset to be removed
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def __contains__(self, asset_key):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -224,75 +238,67 @@ class AssetStorage(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_tags(self, asset):
-        """
-        Returns a set of all tags in this storage for the specified asset.
-
-        :param asset: Asset for which the tags should be returned
-        :return: Tags that are stored for the specified asset
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
     def filter_by_tags(self, *tags):
         """
-        Returns a set of all assets in this storage that have at least the specified tags.
+        Returns a set of all asset keys in this storage that have at least the specified tags.
 
         :param tags: Mandatory tags of an asset to be included in result
-        :return: Assets whose tags are a superset of the specified tags
+        :return: Keys of the assets whose tags are a superset of the specified tags
         """
         raise NotImplementedError()
 
 
 class InMemoryStorage(AssetStorage):
     """
-    Represents a non-persistent storage backend for assets.
+    Represents a non-persistent storage backend for :class:`~madam.core.Asset`
+    objects.
 
-    Assets are not serialized, but stored in main memory.
+    Assets are not serialized, but stored in memory.
     """
     def __init__(self):
-        self.tags_by_asset = {}
+        self.store = {}
 
-    def add(self, asset, tags=None):
+    def set(self, asset_key, asset, tags=None):
         if not tags:
-            tags = set()
-        self.tags_by_asset[asset] = tags
+            tags = frozenset()
+        self.store[asset_key] = (asset, frozenset(tags))
 
-    def remove(self, asset):
-        if asset not in self.tags_by_asset:
-            raise ValueError('Unable to delete asset that is not contained in storage.')
-        del self.tags_by_asset[asset]
+    def get(self, asset_key):
+        if asset_key not in self.store:
+            raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
+        return self.store[asset_key]
 
-    def __contains__(self, asset):
-        return asset in self.tags_by_asset
+    def remove(self, asset_key):
+        if asset_key not in self.store:
+            raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
+        del self.store[asset_key]
 
-    def get(self, **kwargs):
+    def __contains__(self, asset_key):
+        return asset_key in self.store
+
+    def filter(self, **kwargs):
         matches = []
-        for asset in self.tags_by_asset.keys():
+        for asset_key, (asset, tags) in self.store.items():
             for key, value in kwargs.items():
-                if asset.metadata.get(key, None) == value:
-                    matches.append(asset)
+                if asset.metadata.get(key) == value:
+                    matches.append(asset_key)
         return matches
 
     def __iter__(self):
-        return iter(list(self.tags_by_asset.keys()))
-
-    def get_tags(self, asset):
-        tags = self.tags_by_asset.get(asset)
-        if tags is None:
-            raise KeyError('Asset %r cannot be found in storage' % asset)
-        return frozenset(tags)
+        return iter(list(self.store.keys()))
 
     def filter_by_tags(self, *tags):
-        search_tags = set(tags)
-        return set(asset for asset, asset_tags in self.tags_by_asset.items() if search_tags <= asset_tags)
+        search_tags = frozenset(tags)
+        return set(asset_key for asset_key, (asset, asset_tags) in self.store.items()
+                   if search_tags <= asset_tags)
 
 
 class ShelveStorage(AssetStorage):
     """
-    Represents a persistent storage backend for assets.
+    Represents a persistent storage backend for :class:`~madam.core.Asset`
+    objects. Asset keys must be strings.
 
-    ShelveStorage uses a directory on the file system to serialize Assets.
+    ShelveStorage uses a file on the file system to serialize Assets.
     """
     def __init__(self, path):
         """
@@ -304,48 +310,37 @@ class ShelveStorage(AssetStorage):
             raise ValueError('The storage path %r is not a file.' % path)
         self.path = path
 
-        with shelve.open(self.path) as assets:
-            max_stored_asset_id = max(map(int, assets.keys())) if assets.keys() else 0
-            self._asset_id_sequence = itertools.count(start=max_stored_asset_id + 1)
+    def __contains__(self, asset_key):
+        with shelve.open(self.path) as store:
+            return asset_key in store
 
-    def __contains__(self, asset):
-        with shelve.open(self.path) as assets:
-            return asset in (stored_asset for stored_asset, tags in assets.values())
-
-    def add(self, asset, tags=None):
+    def set(self, asset_key, asset, tags=None):
         if not tags:
-            tags = set()
-        with shelve.open(self.path) as assets:
-            for asset_id, asset_with_tags in assets.items():
-                if asset == asset_with_tags[0]:
-                    assets[asset_id] = (asset, tags)
-                    return
-            asset_id = next(self._asset_id_sequence)
-            assets[str(asset_id)] = (asset, tags)
+            tags = frozenset()
+        with shelve.open(self.path) as store:
+            store[asset_key] = (asset, tags)
 
-    def remove(self, asset):
-        with shelve.open(self.path) as assets:
-            for asset_id, (stored_asset, _) in assets.items():
-                if stored_asset == asset:
-                    del assets[asset_id]
-                    return
-        raise ValueError('Unable to remove unknown asset %r' % asset)
+    def get(self, asset_key):
+        with shelve.open(self.path) as store:
+            if asset_key not in store:
+                raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
+            return store[asset_key]
+
+    def remove(self, asset_key):
+        with shelve.open(self.path) as store:
+            if asset_key not in store:
+                raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
+            del store[asset_key]
 
     def __iter__(self):
-        with shelve.open(self.path) as assets:
-            return iter([asset for asset, tags in assets.values()])
-
-    def get_tags(self, asset):
-        with shelve.open(self.path) as assets:
-            for stored_asset, tags in assets.values():
-                if stored_asset == asset:
-                    return frozenset(tags)
-        raise KeyError('Asset %r cannot be found in storage' % asset)
+        with shelve.open(self.path) as store:
+            return iter(list(store.keys()))
 
     def filter_by_tags(self, *tags):
-        search_tags = set(tags)
-        with shelve.open(self.path) as assets:
-            return set(asset for asset, asset_tags in assets.values() if search_tags <= asset_tags)
+        search_tags = frozenset(tags)
+        with shelve.open(self.path) as store:
+            return set(asset_key for asset_key, (asset, asset_tags) in store.items()
+                       if search_tags <= asset_tags)
 
 
 def _immutable(value):
