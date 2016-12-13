@@ -53,6 +53,9 @@ XML_NS = dict(
 
 
 class SVGProcessor(Processor):
+    """
+    Represents a processor that handles Scalable Vector Graphics (SVG) data.
+    """
     def _can_read(self, file):
         try:
             ET.parse(file)
@@ -78,6 +81,12 @@ class SVGProcessor(Processor):
 
 
 class SVGMetadataProcessor(MetadataProcessor):
+    """
+    Represents a metadata processor that handles Scalable Vector Graphics (SVG)
+    data.
+
+    It is assumed that the SVG XML uses UTF-8 encoding.
+    """
     @property
     def formats(self):
         return {'rdf'}
