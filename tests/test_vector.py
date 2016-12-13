@@ -3,7 +3,7 @@ from xml.etree import ElementTree as ET
 
 import pytest
 
-from madam.vector import svg_length_to_px, SVGMetadataProcessor, UnsupportedFormatError, XML_NS
+from madam.vector import svg_length_to_px, SVGMetadataProcessor, SVGProcessor, UnsupportedFormatError, XML_NS
 from assets import svg_asset, unknown_asset
 
 
@@ -25,6 +25,16 @@ def test_svg_length_to_px_fails_for_invalid_values():
         assert svg_length_to_px(None)
     with pytest.raises(ValueError):
         assert svg_length_to_px('')
+
+
+class TestSVGProcessor:
+    @pytest.fixture
+    def processor(self):
+        return SVGProcessor()
+
+    def test_read_fails_with_invalid_input(self, processor, unknown_asset):
+        with pytest.raises(UnsupportedFormatError):
+            processor.read(unknown_asset.essence)
 
 
 class TestSVGMetadataProcessor:
