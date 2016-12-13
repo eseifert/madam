@@ -38,15 +38,15 @@ class TestStorages:
 
     def test_contains_is_true_when_asset_was_added(self, storage, asset):
         asset_key = str(hash(asset))
-        storage.set(asset_key, asset)
+        storage[asset_key] = asset, None
 
         assert asset_key in storage
 
     def test_contains_is_false_when_asset_was_deleted(self, storage, asset):
         asset_key = str(hash(asset))
-        storage.set(asset_key, asset)
+        storage[asset_key] = asset, None
 
-        storage.remove(asset_key)
+        del storage[asset_key]
 
         assert asset_key not in storage
 
@@ -54,13 +54,13 @@ class TestStorages:
         asset_key = str(hash(asset))
 
         with pytest.raises(KeyError):
-            storage.remove(asset_key)
+            del storage[asset_key]
 
     def test_remove_deletes_asset_from_storage(self, storage, asset):
         asset_key = str(hash(asset))
-        storage.set(asset_key, asset)
+        storage[asset_key] = asset, None
 
-        storage.remove(asset_key)
+        del storage[asset_key]
 
         assert asset_key not in storage
 
@@ -72,7 +72,7 @@ class TestStorages:
         )
         for asset in assets:
             asset_key = str(hash(asset))
-            storage.set(asset_key, asset)
+            storage[asset_key] = asset, None
 
         iterator = iter(storage)
 
@@ -86,22 +86,22 @@ class TestStorages:
             Asset(io.BytesIO(b'3')),
         )
         asset_keys = tuple(str(hash(asset)) for asset in assets)
-        storage.set(asset_keys[0], assets[0])
-        storage.set(asset_keys[1], assets[1])
+        storage[asset_keys[0]] = assets[0], None
+        storage[asset_keys[1]] = assets[1], None
         iterator = iter(storage)
 
-        storage.remove(asset_keys[0])
-        storage.set(asset_keys[2], assets[2])
-        storage.set(asset_keys[3], assets[3])
+        del storage[asset_keys[0]]
+        storage[asset_keys[2]] = assets[2], None
+        storage[asset_keys[3]] = assets[3], None
 
         assert set(iterator) == {asset_keys[0], asset_keys[1]}
 
     def test_get_returns_tags_for_asset(self, storage, asset):
         asset_tags = {'foo', 'bar'}
         asset_key = str(hash(asset))
-        storage.set(asset_key, asset, tags=asset_tags)
+        storage[asset_key] = asset, asset_tags
 
-        _, tags = storage.get(asset_key)
+        _, tags = storage[asset_key]
 
         assert tags == asset_tags
 
@@ -109,7 +109,7 @@ class TestStorages:
         unstored_asset_key = str(0)
 
         with pytest.raises(KeyError):
-            storage.get(unstored_asset_key)
+            storage[unstored_asset_key]
 
     def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
         tagged_asset_keys = storage.filter_by_tags('some tag')
@@ -118,7 +118,7 @@ class TestStorages:
 
     def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage, asset):
         asset_key = str(hash(asset))
-        storage.set(asset_key, asset, tags={'foo'})
+        storage[asset_key] = asset, {'foo'}
 
         tagged_asset_keys = storage.filter_by_tags()
 
@@ -131,9 +131,9 @@ class TestStorages:
             Asset(io.BytesIO(b'2')),
         )
         asset_keys = tuple(str(hash(asset)) for asset in assets)
-        storage.set(asset_keys[0], assets[0], tags={'foo'})
-        storage.set(asset_keys[1], assets[1], tags={'foo', 'bar'})
-        storage.set(asset_keys[2], assets[2], tags={'foo', 'bar'})
+        storage[asset_keys[0]] = assets[0], {'foo'}
+        storage[asset_keys[1]] = assets[1], {'foo', 'bar'}
+        storage[asset_keys[2]] = assets[2], {'foo', 'bar'}
 
         tagged_asset_keys = storage.filter_by_tags('bar', 'foo')
 
@@ -144,9 +144,9 @@ class TestStorages:
     @pytest.mark.parametrize('tags', [None, {'my', 'tags'}])
     def test_set_does_nothing_when_asset_is_already_in_storage(self, storage, asset, tags):
         asset_key = str(hash(asset))
-        storage.set(asset_key, asset, tags=tags)
+        storage[asset_key] = asset, tags
 
-        storage.set(asset_key, asset, tags=tags)
+        storage[asset_key] = asset, tags
 
         assert len(list(storage)) == 1
 
@@ -163,7 +163,7 @@ class TestShelveStorage:
 
     def test_set_writes_data_to_storage_path(self, storage, asset):
         asset_key = str(hash(asset))
-        storage.set(asset_key, asset)
+        storage[asset_key] = asset, None
 
         assert os.path.exists(storage.path)
 
@@ -181,7 +181,7 @@ class TestInMemoryStorage:
     def test_filter_returns_assets_with_specified_madam_metadata(self, storage):
         asset = Asset(io.BytesIO(b'TestEssence'), duration=1)
         asset_key = hash(asset)
-        storage.set(asset_key, asset)
+        storage[asset_key] = asset, None
 
         asset_keys_with_1s_duration = storage.filter(duration=1)
 
