@@ -7,19 +7,6 @@ from madam.vector import svg_length_to_px, SVGMetadataProcessor, UnsupportedForm
 from assets import svg_asset, unknown_asset
 
 
-EXAMPLE_RDF = dict(rdf=
-        dict(xml=
-             '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"'
-             ' xmlns:dc="http://purl.org/dc/elements/1.1/"'
-             ' xmlns:opf="http://www.idpf.org/2007/opf">'
-             '<rdf:Description rdf:about="svg_with_metadata.svg">'
-             '<dc:format>image/svg+xml</dc:format><dc:type>Image</dc:type>'
-             '<dc:description>Example SVG file with metadata</dc:description>'
-             '</rdf:Description></rdf:RDF>'
-        )
-    )
-
-
 def test_svg_length_to_px_works_for_valid_values():
     assert svg_length_to_px('42') == pytest.approx(42, abs=1e-5)
     assert svg_length_to_px('1em') == pytest.approx(15, abs=1e-5)
@@ -41,6 +28,19 @@ def test_svg_length_to_px_fails_for_invalid_values():
 
 
 class TestSVGMetadataProcessor:
+    VALID_RDF_METADATA =\
+        dict(rdf=
+             dict(xml=
+                  '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"'
+                  ' xmlns:dc="http://purl.org/dc/elements/1.1/"'
+                  ' xmlns:opf="http://www.idpf.org/2007/opf">'
+                  '<rdf:Description rdf:about="svg_with_metadata.svg">'
+                  '<dc:format>image/svg+xml</dc:format><dc:type>Image</dc:type>'
+                  '<dc:description>Example SVG file with metadata</dc:description>'
+                  '</rdf:Description></rdf:RDF>'
+             )
+        )
+
     @pytest.fixture
     def processor(self):
         return SVGMetadataProcessor()
@@ -84,7 +84,7 @@ class TestSVGMetadataProcessor:
 
     def test_combine_returns_svg_with_metadata(self, processor, svg_asset):
         essence = svg_asset.essence
-        metadata = EXAMPLE_RDF
+        metadata = self.VALID_RDF_METADATA
 
         essence_with_metadata = processor.combine(essence, metadata)
 
@@ -110,7 +110,7 @@ class TestSVGMetadataProcessor:
 
     def test_combine_raises_error_when_essence_format_is_unsupported(self, processor, unknown_asset):
         junk_data = unknown_asset.essence
-        metadata = EXAMPLE_RDF
+        metadata = self.VALID_RDF_METADATA
 
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, metadata)
