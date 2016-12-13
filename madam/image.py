@@ -43,7 +43,7 @@ class PillowProcessor(Processor):
             'image/png': 'PNG'
         })
 
-    def _read(self, file):
+    def read(self, file):
         image = PIL.Image.open(file)
         metadata = dict(
             mime_type=self.__mime_type_to_pillow_type.inv[image.format],
@@ -54,7 +54,7 @@ class PillowProcessor(Processor):
         asset = Asset(file, **metadata)
         return asset
 
-    def _can_read(self, file):
+    def can_read(self, file):
         try:
             PIL.Image.open(file)
             file.seek(0)
@@ -95,7 +95,7 @@ class PillowProcessor(Processor):
         image_buffer = io.BytesIO()
         image.save(image_buffer, 'JPEG')
         image_buffer.seek(0)
-        asset = self._read(image_buffer)
+        asset = self.read(image_buffer)
         return asset
 
     def _rotate(self, asset, rotation):

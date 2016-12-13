@@ -122,14 +122,14 @@ class FFmpegProcessor(Processor):
 
         self.__threads = multiprocessing.cpu_count()
 
-    def _can_read(self, file):
+    def can_read(self, file):
         try:
             probe_data = _probe(file)
             return bool(probe_data)
         except CalledProcessError:
             return False
 
-    def _read(self, file):
+    def read(self, file):
         try:
             probe_data = _probe(file)
         except CalledProcessError:

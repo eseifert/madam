@@ -56,14 +56,14 @@ class SVGProcessor(Processor):
     """
     Represents a processor that handles Scalable Vector Graphics (SVG) data.
     """
-    def _can_read(self, file):
+    def can_read(self, file):
         try:
             ET.parse(file)
             return True
         except ET.ParseError:
             return False
 
-    def _read(self, file):
+    def read(self, file):
         try:
             tree = ET.parse(file)
         except ET.ParseError as e:

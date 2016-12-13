@@ -74,7 +74,7 @@ class Madam:
         """
         for processor in self._processors:
             file.seek(0)
-            if processor._can_read(file):
+            if processor.can_read(file):
                 file.seek(0)
                 return processor
         return None
@@ -108,7 +108,7 @@ class Madam:
         if not processor:
             raise UnsupportedFormatError()
 
-        asset = processor._read(file)
+        asset = processor.read(file)
 
         handled_formats = set()
         for metadata_processor in self._metadata_processors:
@@ -527,7 +527,7 @@ class Processor(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def _can_read(self, file):
+    def can_read(self, file):
         """
         Returns whether the specified MIME type is supported by this processor.
 
@@ -537,7 +537,7 @@ class Processor(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _read(self, file):
+    def read(self, file):
         """
         Returns an :class:`~madam.core.Asset` object whose essence is identical to
         the contents of the specified file.
