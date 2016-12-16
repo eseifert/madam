@@ -2,10 +2,10 @@ import abc
 import functools
 import io
 import importlib
-import itertools
 import os
 import shelve
 import shutil
+from collections.abc import MutableMapping
 
 from frozendict import frozendict
 
@@ -184,74 +184,27 @@ class Madam:
         shutil.copyfileobj(essence_with_metadata, file)
 
 
-class AssetStorage(metaclass=abc.ABCMeta):
+class AssetStorage(MutableMapping):
     """
     Represents a data store for :class:`~madam.core.Asset` objects.
 
     The persistence guarantees for stored data may differ based on the
     respective storage implementation.
     """
-    @abc.abstractmethod
-    def __setitem__(self, asset_key, asset_and_tags):
+    def filter(self, **kwargs):
         """
-        Stores an :class:`~madam.core.Asset` in this asset storage using the
-        specified key.
-
-        The `asset_and_tags` argument is a tuple of the asset and the
-        associated tags.
-
-        Adding an asset key twice overwrites all tags for the asset.
-
-        :param asset_key: Unique value used as a key to store the asset.
-        :param asset: Tuple of the asset and the tags associated with the asset
+        Returns a sequence of asset keys whose assets match the criteria that are
+        specified by the passed arguments.
+        :param kwargs: Criteria defined as keys and values
+        :return: Sequence of asset keys
         """
-        raise NotImplementedError()
+        matches = []
+        for asset_key, (asset, tags) in self.items():
+            for key, value in kwargs.items():
+                if asset.metadata.get(key) == value:
+                    matches.append(asset_key)
+        return matches
 
-    @abc.abstractmethod
-    def __getitem__(self, asset_key):
-        """
-        Returns a tuple of the :class:`~madam.core.Asset` with the specified
-        key and the tags associated with the asset.
-
-        An error will be raised if the key does not exist.
-
-        :param asset_key: Key of the asset for which the tags should be returned
-        :return: A tuple containing an asset and a set the tags associated with the asset
-        :raise KeyError: if the key does not exist in this storage
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def __delitem__(self, asset_key):
-        """
-        Removes the :class:`~madam.core.Asset` with the specified key from this
-        asset storage, as well as all associated data (e.g. tags).
-
-        :param asset_key: Key of the asset to be removed
-        :raise KeyError: if the key does not exist in this storage
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def __contains__(self, asset_key):
-        """
-        Returns whether an asset with the specified key is stored in this
-        asset storage.
-        :param asset_key: Key of the asset that should be tested
-        :return: `True` if the key exists, `False` otherwise
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def __iter__(self):
-        """
-        Returns an object that can be used to iterate all asset that are stored
-        in this asset storage.
-        :return: Iterator object
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
     def filter_by_tags(self, *tags):
         """
         Returns a set of all asset keys in this storage that have at least the
@@ -260,7 +213,9 @@ class AssetStorage(metaclass=abc.ABCMeta):
         :param tags: Mandatory tags of an asset to be included in result
         :return: Keys of the assets whose tags are a superset of the specified tags
         """
-        raise NotImplementedError()
+        search_tags = frozenset(tags)
+        return set(asset_key for asset_key, (asset, asset_tags) in self.items()
+                   if search_tags <= asset_tags)
 
 
 class InMemoryStorage(AssetStorage):
@@ -277,17 +232,46 @@ class InMemoryStorage(AssetStorage):
         self.store = {}
 
     def __setitem__(self, asset_key, asset_and_tags):
+        """
+        Stores an :class:`~madam.core.Asset` in this asset storage using the
+        specified key.
+
+        The `asset_and_tags` argument is a tuple of the asset and the
+        associated tags.
+
+        Adding an asset key twice overwrites all tags for the asset.
+
+        :param asset_key: Unique value used as a key to store the asset.
+        :param asset: Tuple of the asset and the tags associated with the asset
+        """
         asset, tags = asset_and_tags
         if not tags:
             tags = frozenset()
         self.store[asset_key] = (asset, frozenset(tags))
 
     def __getitem__(self, asset_key):
+        """
+        Returns a tuple of the :class:`~madam.core.Asset` with the specified
+        key and the tags associated with the asset.
+
+        An error will be raised if the key does not exist.
+
+        :param asset_key: Key of the asset for which the tags should be returned
+        :return: A tuple containing an asset and a set the tags associated with the asset
+        :raise KeyError: if the key does not exist in this storage
+        """
         if asset_key not in self.store:
             raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
         return self.store[asset_key]
 
     def __delitem__(self, asset_key):
+        """
+        Removes the :class:`~madam.core.Asset` with the specified key from this
+        asset storage, as well as all associated data (e.g. tags).
+
+        :param asset_key: Key of the asset to be removed
+        :raise KeyError: if the key does not exist in this storage
+        """
         if asset_key not in self.store:
             raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
         del self.store[asset_key]
@@ -309,31 +293,12 @@ class InMemoryStorage(AssetStorage):
         """
         return iter(list(self.store.keys()))
 
-    def filter_by_tags(self, *tags):
+    def __len__(self):
         """
-        Returns a set of all asset keys in this storage that have at least the
-        specified tags.
-
-        :param tags: Mandatory tags of an asset to be included in result
-        :return: Keys of the assets whose tags are a superset of the specified tags
+        Returns the number of assets in this storage.
+        :return: Number of assets in this storage
         """
-        search_tags = frozenset(tags)
-        return set(asset_key for asset_key, (asset, asset_tags) in self.store.items()
-                   if search_tags <= asset_tags)
-
-    def filter(self, **kwargs):
-        """
-        Returns a sequence of asset keys whose assets match the criteria that are
-        specified by the passed arguments.
-        :param kwargs: Criteria defined as keys and values
-        :return: Sequence of asset keys
-        """
-        matches = []
-        for asset_key, (asset, tags) in self.store.items():
-            for key, value in kwargs.items():
-                if asset.metadata.get(key) == value:
-                    matches.append(asset_key)
-        return matches
+        return len(self.store)
 
 
 class ShelveStorage(AssetStorage):
@@ -354,6 +319,18 @@ class ShelveStorage(AssetStorage):
         self.path = path
 
     def __setitem__(self, asset_key, asset_and_tags):
+        """
+        Stores an :class:`~madam.core.Asset` in this asset storage using the
+        specified key.
+
+        The `asset_and_tags` argument is a tuple of the asset and the
+        associated tags.
+
+        Adding an asset key twice overwrites all tags for the asset.
+
+        :param asset_key: Unique value used as a key to store the asset.
+        :param asset: Tuple of the asset and the tags associated with the asset
+        """
         asset, tags = asset_and_tags
         if not tags:
             tags = frozenset()
@@ -361,37 +338,60 @@ class ShelveStorage(AssetStorage):
             store[asset_key] = (asset, tags)
 
     def __getitem__(self, asset_key):
+        """
+        Returns a tuple of the :class:`~madam.core.Asset` with the specified
+        key and the tags associated with the asset.
+
+        An error will be raised if the key does not exist.
+
+        :param asset_key: Key of the asset for which the tags should be returned
+        :return: A tuple containing an asset and a set the tags associated with the asset
+        :raise KeyError: if the key does not exist in this storage
+        """
         with shelve.open(self.path) as store:
             if asset_key not in store:
                 raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
             return store[asset_key]
 
     def __delitem__(self, asset_key):
+        """
+        Removes the :class:`~madam.core.Asset` with the specified key from this
+        asset storage, as well as all associated data (e.g. tags).
+
+        :param asset_key: Key of the asset to be removed
+        :raise KeyError: if the key does not exist in this storage
+        """
         with shelve.open(self.path) as store:
             if asset_key not in store:
                 raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
             del store[asset_key]
 
     def __contains__(self, asset_key):
+        """
+        Returns whether an asset with the specified key is stored in this
+        asset storage.
+        :param asset_key: Key of the asset that should be tested
+        :return: `True` if the key exists, `False` otherwise
+        """
         with shelve.open(self.path) as store:
             return asset_key in store
 
     def __iter__(self):
+        """
+        Returns an object that can be used to iterate all asset that are stored
+        in this asset storage.
+        :return: Iterator object
+        """
         with shelve.open(self.path) as store:
             return iter(list(store.keys()))
 
-    def filter_by_tags(self, *tags):
+    def __len__(self):
         """
-        Returns a set of all asset keys in this storage that have at least the
-        specified tags.
-
-        :param tags: Mandatory tags of an asset to be included in result
-        :return: Keys of the assets whose tags are a superset of the specified tags
+        Returns the number of assets in this storage.
+        :return: Number of assets in this storage
         """
-        search_tags = frozenset(tags)
         with shelve.open(self.path) as store:
-            return set(asset_key for asset_key, (asset, asset_tags) in store.items()
-                       if search_tags <= asset_tags)
+            return len(store)
 
 
 def _immutable(value):

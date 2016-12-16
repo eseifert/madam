@@ -150,6 +150,20 @@ class TestStorages:
 
         assert len(list(storage)) == 1
 
+    def test_filter_returns_empty_list_when_storage_is_empty(self, storage):
+        filtered_asset_keys = storage.filter()
+        assert not filtered_asset_keys
+
+    def test_filter_returns_assets_with_specified_madam_metadata(self, storage):
+        asset = Asset(io.BytesIO(b'TestEssence'), duration=1)
+        asset_key = str(hash(asset))
+        storage[asset_key] = asset, None
+
+        asset_keys_with_1s_duration = storage.filter(duration=1)
+
+        assert len(asset_keys_with_1s_duration) == 1
+        assert list(asset_keys_with_1s_duration)[0] == asset_key
+
 
 @pytest.mark.usefixtures('asset', 'shelve_storage')
 class TestShelveStorage:
@@ -166,27 +180,6 @@ class TestShelveStorage:
         storage[asset_key] = asset, None
 
         assert os.path.exists(storage.path)
-
-
-@pytest.mark.usefixtures('in_memory_storage')
-class TestInMemoryStorage:
-    @pytest.fixture
-    def storage(self, in_memory_storage):
-        return in_memory_storage
-
-    def test_filter_returns_empty_list_when_storage_is_empty(self, storage):
-        filtered_asset_keys = storage.filter()
-        assert not filtered_asset_keys
-
-    def test_filter_returns_assets_with_specified_madam_metadata(self, storage):
-        asset = Asset(io.BytesIO(b'TestEssence'), duration=1)
-        asset_key = hash(asset)
-        storage[asset_key] = asset, None
-
-        asset_keys_with_1s_duration = storage.filter(duration=1)
-
-        assert len(asset_keys_with_1s_duration) == 1
-        assert list(asset_keys_with_1s_duration)[0] == asset_key
 
 
 @pytest.fixture
