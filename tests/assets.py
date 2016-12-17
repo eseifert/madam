@@ -39,7 +39,7 @@ def jpeg_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, 
     image.save(essence, 'JPEG', quality=100)
     essence.seek(0)
     metadata = dict(
-        exif={'image.artist': 'Test artist'},
+        exif={'artist': 'Test artist'},
         iptc={
             'bylines': ['The', 'Creators'],
             'byline_titles': ['Dr.', 'Prof.'],

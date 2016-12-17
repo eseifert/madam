@@ -29,7 +29,7 @@ class TestExiv2MetadataProcessor:
 
         metadata = processor.read(io.BytesIO(file.read('rb')))
 
-        assert metadata['exif']['image.artist'] == 'Test artist'
+        assert metadata['exif']['artist'] == 'Test artist'
         assert metadata['iptc']['caption'][0] == 'Foo bar'
         assert set(metadata.keys()) == {'exif', 'iptc'}
 
@@ -39,12 +39,12 @@ class TestExiv2MetadataProcessor:
         metadata = pyexiv2.metadata.ImageMetadata(str(file))
         metadata.read()
         metadata['Exif.Image.Artist'] = 'Test artist'
-        metadata['Exif.Image.Software'] = 'MADAM'
+        metadata['Exif.Image.TargetPrinter'] = 'Printer'
         metadata.write()
 
         metadata = processor.read(io.BytesIO(file.read('rb')))
 
-        assert metadata['exif']['image.artist'] == 'Test artist'
+        assert metadata['exif']['artist'] == 'Test artist'
         assert len(metadata['exif']) == 1
         assert set(metadata.keys()) == {'exif'}
 
