@@ -95,7 +95,8 @@ class TestExiv2MetadataProcessor:
         read_metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
         read_metadata.read()
         for key in metadata['exif'].keys():
-            assert read_metadata['Exif.'+key.title()].value == metadata['exif'][key]
+            exiv2_key = processor.metadata_to_exiv2[key]
+            assert read_metadata[exiv2_key].value == metadata['exif'][key]
 
     def test_combine_raises_error_when_essence_format_is_invalid(self, processor, jpeg_asset):
         junk_data = io.BytesIO(b'abc123')

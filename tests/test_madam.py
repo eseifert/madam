@@ -29,19 +29,12 @@ def test_get_processor_returns_none_for_unreadable_asset(madam, unknown_asset):
     assert processor is None
 
 
-def test_read_returns_jpeg_asset_whose_essence_does_not_contain_exif(madam, jpeg_asset, tmpdir):
-    exif = jpeg_asset.exif
-    file = tmpdir.join('asset_with_exif.jpg')
-    file.write(jpeg_asset.essence.read(), 'wb')
-    metadata = pyexiv2.metadata.ImageMetadata(str(file))
-    metadata.read()
-    for key in exif:
-        metadata['Exif.'+key.title()] = exif[key]
-    metadata.write()
+def test_read_returns_jpeg_asset_whose_essence_does_not_contain_metadata(madam, jpeg_asset, tmpdir):
+    jpeg_with_metadata = jpeg_asset
 
-    asset = madam.read(file.open('rb'))
+    asset = madam.read(jpeg_with_metadata.essence)
 
-    essence_file = tmpdir.join('essence_without_exif.jpg')
+    essence_file = tmpdir.join('essence_without_metadata.jpg')
     essence_file.write(asset.essence.read(), 'wb')
     metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
     metadata.read()
