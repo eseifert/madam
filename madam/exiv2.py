@@ -12,7 +12,7 @@ class Exiv2MetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor using the exiv2 library.
     """
-    __metadata_key_to_exiv2_key = bidict({
+    metadata_to_exiv2 = bidict({
         # Exif
         'aperture': 'Exif.Image.ApertureValue',
         'artist': 'Exif.Image.Artist',
@@ -77,7 +77,7 @@ class Exiv2MetadataProcessor(MetadataProcessor):
         for metadata_format in self.formats:
             format_metadata = {}
             for key in getattr(metadata, metadata_format + '_keys'):
-                madam_key = Exiv2MetadataProcessor.__metadata_key_to_exiv2_key.inv.get(key)
+                madam_key = Exiv2MetadataProcessor.metadata_to_exiv2.inv.get(key)
                 if madam_key is None:
                     continue
                 value = metadata[key].value
@@ -128,7 +128,7 @@ class Exiv2MetadataProcessor(MetadataProcessor):
                 if metadata_format not in self.formats:
                     raise UnsupportedFormatError('Metadata format %r is not supported.' % metadata_format)
                 for key, value in metadata.items():
-                    exiv2_key = Exiv2MetadataProcessor.__metadata_key_to_exiv2_key.get(key)
+                    exiv2_key = Exiv2MetadataProcessor.metadata_to_exiv2.get(key)
                     if exiv2_key is None:
                         continue
                     if not isinstance(value, tuple):

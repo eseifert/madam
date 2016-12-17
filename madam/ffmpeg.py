@@ -392,7 +392,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     }
 
     # See https://wiki.multimedia.cx/index.php?title=FFmpeg_Metadata
-    __metadata_keys_by_mime_type = {
+    metadata_keys_by_mime_type = {
         'video/x-matroska': bidict({}),
         'video/quicktime': bidict({}),
         'video/ogg': bidict({}),
@@ -499,7 +499,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         # Convert FFMetadata items to metadata items
         metadata = {}
-        metadata_keys = self.__metadata_keys_by_mime_type[mime_type]
+        metadata_keys = self.metadata_keys_by_mime_type[mime_type]
         for ffmetadata_key, value in ffmetadata.items():
             metadata_key = metadata_keys.inv.get(ffmetadata_key)
             if metadata_key is not None:
@@ -562,7 +562,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                        '-f', encoder_name, '-i', ctx.input_path]
 
             ffmetadata = metadata_by_type['ffmetadata']
-            metadata_keys = self.__metadata_keys_by_mime_type[mime_type]
+            metadata_keys = self.metadata_keys_by_mime_type[mime_type]
             for metadata_key, value in ffmetadata.items():
                 ffmetadata_key = metadata_keys.get(metadata_key)
                 if ffmetadata_key is None:
