@@ -1,3 +1,4 @@
+import datetime
 import io
 import pyexiv2
 import pytest
@@ -5,6 +6,14 @@ import pytest
 from assets import jpeg_asset
 from madam.core import UnsupportedFormatError
 from madam.exiv2 import Exiv2MetadataProcessor
+
+
+def convert_exiv2_type(exiv2_value):
+    if isinstance(exiv2_value, list):
+        return tuple(convert_exiv2_type(v) for v in exiv2_value)
+    if isinstance(exiv2_value, datetime.time):
+        return exiv2_value.replace(tzinfo=None)
+    return exiv2_value
 
 
 class TestExiv2MetadataProcessor:
@@ -85,8 +94,9 @@ class TestExiv2MetadataProcessor:
             processor.strip(junk_data)
 
     def test_combine_returns_essence_with_metadata(self, processor, jpeg_asset, tmpdir):
+        metadata_formats = ('exif', 'iptc')
         essence = jpeg_asset.essence
-        metadata = {'exif': jpeg_asset.exif}
+        metadata = {k: v for k, v in jpeg_asset.metadata.items() if k in metadata_formats}
 
         essence_with_metadata = processor.combine(essence, metadata)
 
@@ -94,9 +104,11 @@ class TestExiv2MetadataProcessor:
         essence_file.write(essence_with_metadata.read(), 'wb')
         read_metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
         read_metadata.read()
-        for key in metadata['exif'].keys():
-            exiv2_key = processor.metadata_to_exiv2[key]
-            assert read_metadata[exiv2_key].value == metadata['exif'][key]
+        for metadata_format in metadata_formats:
+            for key, value in metadata[metadata_format].items():
+                exiv2_key = processor.metadata_to_exiv2[key]
+                exiv2_value = convert_exiv2_type(read_metadata[exiv2_key].value)
+                assert exiv2_value == value
 
     def test_combine_raises_error_when_essence_format_is_invalid(self, processor, jpeg_asset):
         junk_data = io.BytesIO(b'abc123')
