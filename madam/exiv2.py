@@ -131,9 +131,10 @@ class Exiv2MetadataProcessor(MetadataProcessor):
                     exiv2_key = Exiv2MetadataProcessor.metadata_to_exiv2.get(key)
                     if exiv2_key is None:
                         continue
-                    if not isinstance(value, tuple):
-                        value = (value,)
-                    exiv2_metadata[exiv2_key] = value
+                    try:
+                        exiv2_metadata[exiv2_key] = value
+                    except TypeError as e:
+                        raise TypeError('Could not set key %r: %s' % (key, e))
 
             try:
                 exiv2_metadata.write()
