@@ -1,11 +1,29 @@
+import datetime
 import io
 import shutil
 import tempfile
+from fractions import Fraction
 
 import pyexiv2
 from bidict import bidict
 
 from madam.core import MetadataProcessor, UnsupportedFormatError
+
+
+def _convert_sequence(dec_enc):
+    return lambda exiv2_values: tuple(map(dec_enc[0], exiv2_values)), \
+           lambda values: list(map(dec_enc[1], values))
+
+
+def _convert_first(dec_enc):
+    return lambda exiv2_values: dec_enc[0](exiv2_values[0]), \
+           lambda value: [dec_enc[1](value)]
+
+
+def _convert_mapping(mapping):
+    bidi = bidict(mapping)
+    return lambda exiv2_value: bidi[exiv2_value], \
+           lambda value: bidi.inv[value]
 
 
 class Exiv2MetadataProcessor(MetadataProcessor):
@@ -60,6 +78,62 @@ class Exiv2MetadataProcessor(MetadataProcessor):
         'subjects': 'Iptc.Application2.Subject',
     })
 
+    __STRING = str, str
+    __INT = int, int
+    __RATIONAL = float, lambda value: Fraction(value).limit_denominator()
+    __DATE = lambda exiv2_value: exiv2_value, lambda value: value
+    __TIME = lambda exiv2_value: exiv2_value.replace(tzinfo=None), lambda value: value
+
+    converters = {
+        # Exif
+        'aperture': __RATIONAL,
+        'artist': __STRING,
+        'brightness': __RATIONAL,
+        'camera.manufacturer': __STRING,
+        'camera.model': __STRING,
+        'description': __STRING,
+        'exposure_time': __RATIONAL,
+        'fnumber': __RATIONAL,
+        'focal_length': __RATIONAL,
+        'focal_length_35mm': __INT,
+        'gps.altitude': __RATIONAL,
+        'gps.altitude_ref': _convert_mapping({'0': 'm_above_sea_level', '1': 'm_below_sea_level'}),
+        'gps.latitude': _convert_sequence(__RATIONAL),
+        'gps.latitude_ref': _convert_mapping({'N': 'north', 'S': 'south'}),
+        'gps.longitude': _convert_sequence(__RATIONAL),
+        'gps.longitude_ref': _convert_mapping({'E': 'east', 'W': 'west'}),
+        'gps.map_datum': __STRING,
+        'gps.speed': __RATIONAL,
+        'gps.speed_ref': _convert_mapping({'K': 'km/h', 'M': 'mph', 'N': 'kn'}),
+        'gps.date_stamp': __DATE,
+        'gps.time_stamp':
+            (lambda exiv2_val: datetime.time(*map(round, exiv2_val)),
+             lambda val: [Fraction(val.hour), Fraction(val.minute), Fraction(val.second)]),
+        'lens.manufacturer': __STRING,
+        'lens.model': __STRING,
+        'shutter_speed': __RATIONAL,
+        'software': __STRING,
+        # IPTC
+        'bylines': _convert_sequence(__STRING),
+        'byline_titles': _convert_sequence(__STRING),
+        'caption': _convert_first(__STRING),
+        'contacts': _convert_sequence(__STRING),
+        'copyright': _convert_first(__STRING),
+        'creation_date': _convert_first(__DATE),
+        'creation_time': _convert_first(__TIME),
+        'credit': _convert_first(__STRING),
+        'expiration_date': _convert_first(__DATE),
+        'expiration_time': _convert_first(__TIME),
+        'headline': _convert_first(__STRING),
+        'image_orientation': _convert_first(__STRING),
+        'keywords': _convert_sequence(__STRING),
+        'language': _convert_first(__STRING),
+        'release_date': _convert_first(__DATE),
+        'release_time': _convert_first(__TIME),
+        'source': _convert_first(__STRING),
+        'subjects': _convert_sequence(__STRING),
+    }
+
     @property
     def formats(self):
         return 'exif', 'iptc'
@@ -76,14 +150,13 @@ class Exiv2MetadataProcessor(MetadataProcessor):
         metadata_by_format = {}
         for metadata_format in self.formats:
             format_metadata = {}
-            for key in getattr(metadata, metadata_format + '_keys'):
-                madam_key = Exiv2MetadataProcessor.metadata_to_exiv2.inv.get(key)
+            for exiv2_key in getattr(metadata, metadata_format + '_keys'):
+                madam_key = Exiv2MetadataProcessor.metadata_to_exiv2.inv.get(exiv2_key)
                 if madam_key is None:
                     continue
-                value = metadata[key].value
-                if isinstance(value, pyexiv2.utils.NotifyingList):
-                    value = tuple(value)
-                format_metadata[madam_key] = value
+                exiv2_value = metadata[exiv2_key].value
+                convert_to_madam, _ = Exiv2MetadataProcessor.converters[madam_key]
+                format_metadata[madam_key] = convert_to_madam(exiv2_value)
             if format_metadata:
                 metadata_by_format[metadata_format] = format_metadata
         return metadata_by_format
@@ -127,14 +200,12 @@ class Exiv2MetadataProcessor(MetadataProcessor):
             for metadata_format, metadata in metadata_by_format.items():
                 if metadata_format not in self.formats:
                     raise UnsupportedFormatError('Metadata format %r is not supported.' % metadata_format)
-                for key, value in metadata.items():
-                    exiv2_key = Exiv2MetadataProcessor.metadata_to_exiv2.get(key)
+                for madam_key, madam_value in metadata.items():
+                    exiv2_key = Exiv2MetadataProcessor.metadata_to_exiv2.get(madam_key)
                     if exiv2_key is None:
                         continue
-                    try:
-                        exiv2_metadata[exiv2_key] = value
-                    except TypeError as e:
-                        raise TypeError('Could not set key %r: %s' % (key, e))
+                    _, convert_to_exiv2 = Exiv2MetadataProcessor.converters[madam_key]
+                    exiv2_metadata[exiv2_key] = convert_to_exiv2(madam_value)
 
             try:
                 exiv2_metadata.write()
