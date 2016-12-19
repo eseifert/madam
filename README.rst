@@ -43,14 +43,14 @@ Initialization:
 .. code:: pycon
 
     >>> from madam import Madam
-    >>> madam = Madam()
+    >>> manager = Madam()
 
 Reading a JPEG image and extracting metadata:
 
 .. code:: pycon
 
     >>> with open('path/to/file.jpg', 'rb') as file:
-    ...     asset = madam.read(file)
+    ...     asset = manager.read(file)
     >>> asset.mime_type
     'image/jpeg'
     >>> asset.width
@@ -62,9 +62,8 @@ Changing the size of an image asset:
 
 .. code:: pycon
 
-    >>> from madam.image import PillowProcessor
-    >>> pillow_processor = PillowProcessor()
-    >>> make_thumbnail = pillow_processor.resize(width=100, height=100)
+    >>> processor = manager.get_processor(asset.essence)
+    >>> make_thumbnail = processor.resize(width=100, height=100)
     >>> resized_asset = make_thumbnail(asset)
     >>> resized_asset.width
     100
@@ -75,7 +74,7 @@ Converting an image to a different file format and saving it to a file:
 
 .. code:: pycon
 
-    >>> convert_to_png = pillow_processor.convert(mime_type='image/png')
+    >>> convert_to_png = processor.convert(mime_type='image/png')
     >>> png_asset = convert_to_png(asset)
     >>> with open('path/to/file.png', 'wb') as file:
     ...     madam.write(png_asset, file)
