@@ -88,12 +88,12 @@ class PillowProcessor(Processor):
             resized_height = round(resize_factor * image.height)
         resized_image = image.resize((resized_width, resized_height),
                                      resample=PIL.Image.LANCZOS)
-        resized_asset = self._image_to_asset(resized_image)
+        resized_asset = self._image_to_asset(resized_image, mime_type=asset.mime_type)
         return resized_asset
 
-    def _image_to_asset(self, image):
+    def _image_to_asset(self, image, mime_type):
         image_buffer = io.BytesIO()
-        image.save(image_buffer, 'JPEG')
+        image.save(image_buffer, self.__mime_type_to_pillow_type[mime_type])
         image_buffer.seek(0)
         asset = self.read(image_buffer)
         return asset
@@ -112,7 +112,7 @@ class PillowProcessor(Processor):
         """
         image = PIL.Image.open(asset.essence)
         transposed_image = image.transpose(rotation)
-        transposed_asset = self._image_to_asset(transposed_image)
+        transposed_asset = self._image_to_asset(transposed_image, mime_type=asset.mime_type)
         return transposed_asset
 
     @operator

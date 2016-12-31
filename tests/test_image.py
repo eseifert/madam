@@ -4,7 +4,7 @@ import pytest
 
 import madam.image
 from madam.core import OperatorError, UnsupportedFormatError
-from assets import jpeg_asset, png_asset, image_asset, unknown_asset
+from assets import jpeg_asset, png_asset, gif_asset, image_asset, unknown_asset
 
 
 def is_equal_in_black_white_space(result_image, expected_image):
@@ -67,6 +67,13 @@ class TestPillowProcessor:
         assert filling_asset.width == 9
         assert filling_asset.height == 10
 
+    def test_resize_keeps_original_mime_type(self, pillow_processor, image_asset):
+        resize_operator = pillow_processor.resize(width=9, height=10)
+
+        resized_asset = resize_operator(image_asset)
+
+        assert resized_asset.mime_type == image_asset.mime_type
+
     def test_transpose_flips_dimensions(self, pillow_processor):
         asset = jpeg_asset()
         transpose_operator = pillow_processor.transpose()
@@ -82,6 +89,14 @@ class TestPillowProcessor:
         transposed_asset = transpose_operator(transpose_operator(asset))
 
         assert is_equal_in_black_white_space(PIL.Image.open(transposed_asset.essence), PIL.Image.open(asset.essence))
+
+    def test_transpose_keeps_original_mime_type(self, pillow_processor):
+        asset = jpeg_asset()
+        transpose_operator = pillow_processor.transpose()
+
+        transposed_asset = transpose_operator(asset)
+
+        assert transposed_asset.mime_type == asset.mime_type
 
     @pytest.mark.parametrize('orientation', [madam.image.FlipOrientation.HORIZONTAL, madam.image.FlipOrientation.VERTICAL])
     def test_flip_is_reversible(self, pillow_processor, orientation):
