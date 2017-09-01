@@ -272,7 +272,7 @@ def mkv_video_asset(tmpdir_factory):
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v vp9 -c:a opus -f matroska' % ffmpeg_params).split()
+               '-c:v vp9 -c:a libopus -f matroska' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('vp9-opus.mkv')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)

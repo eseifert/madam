@@ -79,7 +79,7 @@ class TestFFmpegProcessor:
     def converted_asset(self, processor, video_asset):
         conversion_operator = processor.convert(mime_type='video/x-matroska',
                                                 video=dict(codec='vp9', bitrate=50),
-                                                audio=dict(codec='opus', bitrate=16))
+                                                audio=dict(codec='libopus', bitrate=16))
         converted_asset = conversion_operator(video_asset)
         return converted_asset
 
