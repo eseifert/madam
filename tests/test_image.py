@@ -117,10 +117,10 @@ class TestPillowProcessor:
         (7, [PIL.Image.ROTATE_90, PIL.Image.FLIP_LEFT_RIGHT]),
         (8, [PIL.Image.ROTATE_270])
     ])
-    def test_auto_orient(self, pillow_processor, exif_orientation, image_transpositions):
+    def test_auto_orient_rotates_asset_correctly(self, pillow_processor, exif_orientation, image_transpositions):
         reference_asset = jpeg_asset()
         misoriented_asset = jpeg_asset(transpositions=image_transpositions,
-                                       exif={'Image.Orientation': exif_orientation})
+                                       exif={'orientation': exif_orientation})
         auto_orient_operator = pillow_processor.auto_orient()
 
         oriented_asset = auto_orient_operator(misoriented_asset)

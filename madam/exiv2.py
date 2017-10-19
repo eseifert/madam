@@ -56,6 +56,7 @@ class Exiv2MetadataProcessor(MetadataProcessor):
         'gps.time_stamp': 'Exif.GPSInfo.GPSTimeStamp',
         'lens.manufacturer': 'Exif.Photo.LensMake',
         'lens.model': 'Exif.Photo.LensModel',
+        'orientation': 'Exif.Image.Orientation',
         'shutter_speed': 'Exif.Photo.ShutterSpeedValue',
         'software': 'Exif.Image.ProcessingSoftware',
         # IPTC
@@ -70,7 +71,6 @@ class Exiv2MetadataProcessor(MetadataProcessor):
         'expiration_date': 'Iptc.Application2.ExpirationDate',
         'expiration_time': 'Iptc.Application2.ExpirationTime',
         'headline': 'Iptc.Application2.Headline',
-        'image_orientation': 'Iptc.Application2.ImageOrientation',
         'keywords': 'Iptc.Application2.Keywords',
         'language': 'Iptc.Application2.Language',
         'release_date': 'Iptc.Application2.ReleaseDate',
@@ -113,6 +113,7 @@ class Exiv2MetadataProcessor(MetadataProcessor):
              lambda val: [Fraction(val.hour), Fraction(val.minute), Fraction(val.second)]),
         'lens.manufacturer': __STRING,
         'lens.model': __STRING,
+        'orientation': __INT,
         'shutter_speed': __RATIONAL,
         'software': __STRING,
         # IPTC
