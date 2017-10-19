@@ -9,7 +9,7 @@ from madam import Madam
 from madam.core import Asset, UnsupportedFormatError
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import asset, unknown_asset
-from assets import image_asset, jpeg_asset, png_asset, gif_asset, svg_asset
+from assets import image_asset, jpeg_asset, png_asset, gif_asset, svg_asset, jpeg_data_with_exif
 from assets import audio_asset, mp3_asset, opus_asset, wav_asset
 from assets import video_asset, mp4_asset, mkv_video_asset, ogg_video_asset
 
@@ -27,6 +27,14 @@ def test_get_processor_returns_processor_for_readable_asset(madam, asset):
 def test_get_processor_returns_none_for_unreadable_asset(madam, unknown_asset):
     processor = madam.get_processor(unknown_asset.essence)
     assert processor is None
+
+
+def test_read_returns_jpeg_asset_with_correct_metadata(madam, jpeg_data_with_exif):
+    jpeg_with_metadata = jpeg_data_with_exif
+
+    asset = madam.read(jpeg_with_metadata)
+
+    assert 'exif' in asset.metadata
 
 
 def test_read_returns_jpeg_asset_whose_essence_does_not_contain_metadata(madam, jpeg_asset, tmpdir):
