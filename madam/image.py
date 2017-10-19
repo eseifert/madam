@@ -145,11 +145,15 @@ class PillowProcessor(Processor):
     def auto_orient(self, asset):
         """
         Creates a new asset whose essence is rotated according to the Exif orientation.
+        If no orientation metadata exists, an identical asset is returned.
 
-        :param asset: Asset with Exif metadata
+        :param asset: Asset with orientation metadata
         :return: Asset with rotated essence
         """
-        orientation = asset.exif['Image.Orientation']
+        orientation = asset.metadata.get('exif', {}).get('orientation')
+        if orientation is None:
+            return asset
+
         if orientation == 1:
             oriented_asset = Asset(asset.essence, metadata={})
         elif orientation == 2:

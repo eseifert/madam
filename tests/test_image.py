@@ -127,6 +127,14 @@ class TestPillowProcessor:
 
         assert is_equal_in_black_white_space(PIL.Image.open(reference_asset.essence), PIL.Image.open(oriented_asset.essence))
 
+    def test_auto_orient_without_orientation_returns_identical_asset(self, pillow_processor, jpeg_asset):
+        asset_without_orientation_metadata = jpeg_asset
+
+        auto_orient_operator = pillow_processor.auto_orient()
+
+        oriented_asset = auto_orient_operator(asset_without_orientation_metadata)
+        assert oriented_asset is asset_without_orientation_metadata
+
     def test_converted_asset_receives_correct_mime_type(self, pillow_processor):
         asset = jpeg_asset()
         conversion_operator = pillow_processor.convert(mime_type='image/png')
