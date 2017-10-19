@@ -97,6 +97,13 @@ def jpeg_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, 
 
 
 @pytest.fixture(scope='class')
+def jpeg_data_with_exif():
+    with open('tests/resources/image_with_exif.jpg', 'rb') as file:
+        binary_data = file.read()
+    return io.BytesIO(binary_data)
+
+
+@pytest.fixture(scope='class')
 def png_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
