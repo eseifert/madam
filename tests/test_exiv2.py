@@ -2,7 +2,7 @@ import io
 import pyexiv2
 import pytest
 
-from assets import jpeg_asset
+from assets import jpeg_asset, png_asset
 from madam.core import UnsupportedFormatError
 from madam.exiv2 import Exiv2MetadataProcessor
 
@@ -32,6 +32,12 @@ class TestExiv2MetadataProcessor:
         assert metadata['exif']['artist'] == 'Test artist'
         assert metadata['iptc']['caption'] == 'Foo bar'
         assert set(metadata.keys()) == {'exif', 'iptc'}
+
+    def test_read_fails_for_unsupported_format(self, processor, png_asset):
+        non_jpeg_essence = png_asset.essence
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.read(non_jpeg_essence)
 
     def test_read_ignores_unmapped_metadata(self, processor, jpeg_asset, tmpdir):
         file = tmpdir.join('asset_with_metadata.jpg')

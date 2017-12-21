@@ -30,6 +30,10 @@ class Exiv2MetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor using the exiv2 library.
     """
+    supported_mime_types = {
+        'image/jpeg'
+    }
+
     metadata_to_exiv2 = bidict({
         # Exif
         'aperture': 'Exif.Photo.ApertureValue',
@@ -150,6 +154,8 @@ class Exiv2MetadataProcessor(MetadataProcessor):
                 metadata.read()
             except OSError:
                 raise UnsupportedFormatError('Unknown file format.')
+        if metadata.mime_type not in Exiv2MetadataProcessor.supported_mime_types:
+            raise UnsupportedFormatError('Unsupported format: %s' % metadata.mime_type)
         metadata_by_format = {}
         for metadata_format in self.formats:
             format_metadata = {}
