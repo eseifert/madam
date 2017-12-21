@@ -191,7 +191,8 @@ class PillowProcessor(Processor):
             converted_essence_data = io.BytesIO()
             image.save(converted_essence_data, pil_format)
         except (IOError, KeyError) as pil_error:
-            raise OperatorError('Could not convert image: %s', pil_error)
+            raise OperatorError('Could not convert image to %r: %s' %
+                                (pil_format, pil_error))
         converted_essence_data.seek(0)
 
         converted_asset = Asset(converted_essence_data, mime_type=mime_type)
