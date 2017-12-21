@@ -79,6 +79,7 @@ class FFmpegProcessor(Processor):
     __decoder_and_stream_type_to_mime_type = {
         ('matroska,webm', 'video'): 'video/x-matroska',
         ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
+        ('avi', 'video'): 'video/x-msvideo',
         ('ogg', 'video'): 'video/ogg',
         ('mp3', 'audio'): 'audio/mpeg',
         ('ogg', 'audio'): 'audio/ogg',
@@ -88,6 +89,7 @@ class FFmpegProcessor(Processor):
     __mime_type_to_encoder = {
         'video/x-matroska': 'matroska',
         'video/quicktime': 'mov',
+        'video/x-msvideo': 'avi',
         'video/ogg': 'ogg',
         'audio/mpeg': 'mp3',
         'audio/ogg': 'ogg',
@@ -376,6 +378,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     __decoder_and_stream_type_to_mime_type = {
         ('matroska,webm', 'video'): 'video/x-matroska',
         ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
+        ('avi', 'video'): 'video/x-msvideo',
         ('ogg', 'video'): 'video/ogg',
         ('mp3', 'audio'): 'audio/mpeg',
         ('ogg', 'audio'): 'audio/ogg',
@@ -385,6 +388,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     __mime_type_to_encoder = {
         'video/x-matroska': 'matroska',
         'video/quicktime': 'mov',
+        'video/x-msvideo': 'avi',
         'video/ogg': 'ogg',
         'audio/mpeg': 'mp3',
         'audio/ogg': 'ogg',
@@ -394,6 +398,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     # See https://wiki.multimedia.cx/index.php?title=FFmpeg_Metadata
     metadata_keys_by_mime_type = {
         'video/x-matroska': bidict({}),
+        'video/x-msvideo': bidict({}),
         'video/quicktime': bidict({}),
         'video/ogg': bidict({}),
         'audio/mpeg': bidict({
