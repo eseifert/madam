@@ -32,7 +32,7 @@ def image_rgb(width, height, transpositions=None):
 
 
 @pytest.fixture(scope='class')
-def jpeg_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, **additional_metadata):
+def jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, **additional_metadata):
     if not transpositions:
         transpositions = []
     image = image_rgb(width=width, height=height, transpositions=transpositions)
@@ -103,7 +103,7 @@ def jpeg_data_with_exif():
 
 
 @pytest.fixture(scope='class')
-def png_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+def png_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
     image.save(essence, 'PNG')
@@ -117,7 +117,7 @@ def png_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 
 
 @pytest.fixture(scope='class')
-def gif_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+def gif_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
     image.save(essence, 'GIF')
@@ -131,7 +131,7 @@ def gif_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 
 
 @pytest.fixture(scope='class')
-def svg_asset():
+def svg_vector_asset():
     metadata = dict(rdf=
         dict(xml=
              '<rdf:Description rdf:about="svg_with_metadata.svg">'
@@ -169,19 +169,19 @@ def svg_asset():
                             **metadata)
 
 
-@pytest.fixture(params=['jpeg_asset', 'png_asset', 'gif_asset'])
-def image_asset(request, jpeg_asset, png_asset, gif_asset):
-    if request.param == 'jpeg_asset':
-        return jpeg_asset
-    if request.param == 'png_asset':
-        return png_asset
-    if request.param == 'gif_asset':
-        return gif_asset
+@pytest.fixture(params=['jpeg_image_asset', 'png_image_asset', 'gif_image_asset'])
+def image_asset(request, jpeg_image_asset, png_image_asset, gif_image_asset):
+    if request.param == 'jpeg_image_asset':
+        return jpeg_image_asset
+    if request.param == 'png_image_asset':
+        return png_image_asset
+    if request.param == 'gif_image_asset':
+        return gif_image_asset
     raise ValueError()
 
 
 @pytest.fixture(scope='class')
-def wav_asset(tmpdir_factory):
+def wav_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
                '-vn -c:a pcm_s16le -f wav' % duration).split()
@@ -195,7 +195,7 @@ def wav_asset(tmpdir_factory):
 
 
 @pytest.fixture(scope='class')
-def mp3_asset(tmpdir_factory):
+def mp3_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
                '-write_xing 0 -id3v2_version 0 -write_id3v1 0 '
@@ -210,7 +210,7 @@ def mp3_asset(tmpdir_factory):
 
 
 @pytest.fixture(scope='class')
-def opus_asset(tmpdir_factory):
+def opus_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
                '-vn -f opus' % duration).split()
@@ -237,14 +237,14 @@ def nut_audio_asset(tmpdir_factory):
                             duration=duration)
 
 
-@pytest.fixture(scope='class', params=['mp3_asset', 'opus_asset', 'wav_asset'])
-def audio_asset(request, mp3_asset, opus_asset, wav_asset):
-    if request.param == 'mp3_asset':
-        return mp3_asset
-    if request.param == 'opus_asset':
-        return opus_asset
-    if request.param == 'wav_asset':
-        return wav_asset
+@pytest.fixture(scope='class', params=['mp3_audio_asset', 'opus_audio_asset', 'wav_audio_asset'])
+def audio_asset(request, mp3_audio_asset, opus_audio_asset, wav_audio_asset):
+    if request.param == 'mp3_audio_asset':
+        return mp3_audio_asset
+    if request.param == 'opus_audio_asset':
+        return opus_audio_asset
+    if request.param == 'wav_audio_asset':
+        return wav_audio_asset
     raise ValueError()
 
 
@@ -357,27 +357,27 @@ def video_asset(request, avi_video_asset, mp4_video_asset, mkv_video_asset):
 
 
 @pytest.fixture(scope='class', params=[
-    'jpeg_asset', 'png_asset', 'gif_asset', 'svg_asset',
-    'mp3_asset', 'opus_asset', 'wav_asset',
+    'jpeg_image_asset', 'png_image_asset', 'gif_image_asset', 'svg_vector_asset',
+    'mp3_audio_asset', 'opus_audio_asset', 'wav_audio_asset',
     'avi_video_asset', 'mp4_video_asset', 'mkv_video_asset', 'ogg_video_asset'])
 def asset(request,
-          jpeg_asset, png_asset, gif_asset, svg_asset,
-          mp3_asset, opus_asset, wav_asset,
+          jpeg_image_asset, png_image_asset, gif_image_asset, svg_vector_asset,
+          mp3_audio_asset, opus_audio_asset, wav_audio_asset,
           avi_video_asset, mp4_video_asset, mkv_video_asset, ogg_video_asset):
-    if request.param == 'jpeg_asset':
-        return jpeg_asset
-    if request.param == 'png_asset':
-        return png_asset
-    if request.param == 'gif_asset':
-        return gif_asset
-    if request.param == 'svg_asset':
-        return svg_asset
-    if request.param == 'mp3_asset':
-        return mp3_asset
-    if request.param == 'opus_asset':
-        return opus_asset
-    if request.param == 'wav_asset':
-        return wav_asset
+    if request.param == 'jpeg_image_asset':
+        return jpeg_image_asset
+    if request.param == 'png_image_asset':
+        return png_image_asset
+    if request.param == 'gif_image_asset':
+        return gif_image_asset
+    if request.param == 'svg_vector_asset':
+        return svg_vector_asset
+    if request.param == 'mp3_audio_asset':
+        return mp3_audio_asset
+    if request.param == 'opus_audio_asset':
+        return opus_audio_asset
+    if request.param == 'wav_audio_asset':
+        return wav_audio_asset
     if request.param == 'avi_video_asset':
         return avi_video_asset
     if request.param == 'mp4_video_asset':

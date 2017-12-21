@@ -4,7 +4,7 @@ from xml.etree import ElementTree as ET
 import pytest
 
 from madam.vector import svg_length_to_px, SVGMetadataProcessor, SVGProcessor, UnsupportedFormatError, XML_NS
-from assets import svg_asset, unknown_asset
+from assets import svg_vector_asset, unknown_asset
 
 
 def test_svg_length_to_px_works_for_valid_values():
@@ -71,8 +71,8 @@ class TestSVGMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.read(junk_data)
 
-    def test_read_returns_empty_dict_when_svg_contains_no_metadata(self, processor, svg_asset):
-        essence_without_metadata = svg_asset.essence
+    def test_read_returns_empty_dict_when_svg_contains_no_metadata(self, processor, svg_vector_asset):
+        essence_without_metadata = svg_vector_asset.essence
 
         metadata = processor.read(essence_without_metadata)
 
@@ -92,8 +92,8 @@ class TestSVGMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.strip(junk_data)
 
-    def test_combine_returns_svg_with_metadata(self, processor, svg_asset):
-        essence = svg_asset.essence
+    def test_combine_returns_svg_with_metadata(self, processor, svg_vector_asset):
+        essence = svg_vector_asset.essence
         metadata = self.VALID_RDF_METADATA
 
         essence_with_metadata = processor.combine(essence, metadata)
@@ -105,14 +105,14 @@ class TestSVGMetadataProcessor:
         rdf_elem = metadata_elem.find('./rdf:RDF', XML_NS)
         assert rdf_elem is not None
 
-    def test_combine_raises_error_when_no_rdf_dict_is_given(self, processor, svg_asset):
+    def test_combine_raises_error_when_no_rdf_dict_is_given(self, processor, svg_vector_asset):
         metadata = {}
 
         with pytest.raises(ValueError):
-            processor.combine(svg_asset.essence, metadata)
+            processor.combine(svg_vector_asset.essence, metadata)
 
-    def test_combine_fails_without_metadata_keys(self, processor, svg_asset):
-        essence = svg_asset.essence
+    def test_combine_fails_without_metadata_keys(self, processor, svg_vector_asset):
+        essence = svg_vector_asset.essence
         metadata = dict(rdf=dict())
 
         with pytest.raises(ValueError):
@@ -125,14 +125,14 @@ class TestSVGMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, metadata)
 
-    def test_combine_raises_error_when_metadata_format_is_unsupported(self, processor, svg_asset):
+    def test_combine_raises_error_when_metadata_format_is_unsupported(self, processor, svg_vector_asset):
         rdf = {'123abc': 'Test artist'}
 
         with pytest.raises(UnsupportedFormatError):
-            processor.combine(svg_asset.essence, rdf)
+            processor.combine(svg_vector_asset.essence, rdf)
 
-    def test_combine_raises_error_when_metadata_contains_unsupported_keys(self, processor, svg_asset):
+    def test_combine_raises_error_when_metadata_contains_unsupported_keys(self, processor, svg_vector_asset):
         metadata = dict(rdf=dict(foo='bar'))
 
         with pytest.raises(ValueError):
-            processor.combine(svg_asset.essence, metadata)
+            processor.combine(svg_vector_asset.essence, metadata)

@@ -2,7 +2,7 @@ import io
 import pyexiv2
 import pytest
 
-from assets import jpeg_asset, png_asset
+from assets import jpeg_image_asset, png_image_asset
 from madam.core import UnsupportedFormatError
 from madam.exiv2 import Exiv2MetadataProcessor
 
@@ -18,9 +18,9 @@ class TestExiv2MetadataProcessor:
     def test_supports_iptc(self, processor):
         assert 'iptc' in processor.formats
 
-    def test_read_returns_dicts_when_jpeg_contains_metadata(self, processor, jpeg_asset, tmpdir):
+    def test_read_returns_dicts_when_jpeg_contains_metadata(self, processor, jpeg_image_asset, tmpdir):
         file = tmpdir.join('asset_with_metadata.jpg')
-        file.write(jpeg_asset.essence.read(), 'wb')
+        file.write(jpeg_image_asset.essence.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(file))
         metadata.read()
         metadata['Exif.Image.Artist'] = 'Test artist'
@@ -33,15 +33,15 @@ class TestExiv2MetadataProcessor:
         assert metadata['iptc']['caption'] == 'Foo bar'
         assert set(metadata.keys()) == {'exif', 'iptc'}
 
-    def test_read_fails_for_unsupported_format(self, processor, png_asset):
-        non_jpeg_essence = png_asset.essence
+    def test_read_fails_for_unsupported_format(self, processor, png_image_asset):
+        non_jpeg_essence = png_image_asset.essence
 
         with pytest.raises(UnsupportedFormatError):
             processor.read(non_jpeg_essence)
 
-    def test_read_ignores_unmapped_metadata(self, processor, jpeg_asset, tmpdir):
+    def test_read_ignores_unmapped_metadata(self, processor, jpeg_image_asset, tmpdir):
         file = tmpdir.join('asset_with_metadata.jpg')
-        file.write(jpeg_asset.essence.read(), 'wb')
+        file.write(jpeg_image_asset.essence.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(file))
         metadata.read()
         metadata['Exif.Image.Artist'] = 'Test artist'
@@ -60,16 +60,16 @@ class TestExiv2MetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.read(junk_data)
 
-    def test_read_returns_empty_dict_when_jpeg_contains_no_metadata(self, processor, jpeg_asset):
-        data_without_exif = jpeg_asset.essence
+    def test_read_returns_empty_dict_when_jpeg_contains_no_metadata(self, processor, jpeg_image_asset):
+        data_without_exif = jpeg_image_asset.essence
 
         metadata = processor.read(data_without_exif)
 
         assert not metadata
 
-    def test_strip_returns_essence_without_metadata(self, processor, jpeg_asset, tmpdir):
+    def test_strip_returns_essence_without_metadata(self, processor, jpeg_image_asset, tmpdir):
         file = tmpdir.join('asset_with_metadata.jpg')
-        file.write(jpeg_asset.essence.read(), 'wb')
+        file.write(jpeg_image_asset.essence.read(), 'wb')
         metadata = pyexiv2.metadata.ImageMetadata(str(file))
         metadata.read()
         metadata['Exif.Image.Artist'] = b'Test artist'
@@ -90,10 +90,10 @@ class TestExiv2MetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.strip(junk_data)
 
-    def test_combine_returns_essence_with_metadata(self, processor, jpeg_asset, tmpdir):
+    def test_combine_returns_essence_with_metadata(self, processor, jpeg_image_asset, tmpdir):
         metadata_formats = ('exif', 'iptc')
-        essence = jpeg_asset.essence
-        metadata = {k: v for k, v in jpeg_asset.metadata.items() if k in metadata_formats}
+        essence = jpeg_image_asset.essence
+        metadata = {k: v for k, v in jpeg_image_asset.metadata.items() if k in metadata_formats}
 
         essence_with_metadata = processor.combine(essence, metadata)
 
@@ -108,15 +108,15 @@ class TestExiv2MetadataProcessor:
                 convert_to_madam, _ = processor.converters[madam_key]
                 assert convert_to_madam(exiv2_value) == madam_value
 
-    def test_combine_raises_error_when_essence_format_is_invalid(self, processor, jpeg_asset):
+    def test_combine_raises_error_when_essence_format_is_invalid(self, processor, jpeg_image_asset):
         junk_data = io.BytesIO(b'abc123')
-        exif = jpeg_asset.exif
+        exif = jpeg_image_asset.exif
 
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, exif)
 
-    def test_combine_raises_error_when_metadata_format_is_invalid(self, processor, jpeg_asset):
+    def test_combine_raises_error_when_metadata_format_is_invalid(self, processor, jpeg_image_asset):
         exif = {'123abc': 'Test artist'}
 
         with pytest.raises(UnsupportedFormatError):
-            processor.combine(jpeg_asset.essence, exif)
+            processor.combine(jpeg_image_asset.essence, exif)

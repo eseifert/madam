@@ -9,9 +9,9 @@ from madam import Madam
 from madam.core import Asset, UnsupportedFormatError
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import asset, unknown_asset
-from assets import image_asset, jpeg_asset, png_asset, gif_asset, svg_asset, jpeg_data_with_exif
-from assets import audio_asset, mp3_asset, opus_asset, wav_asset
-from assets import video_asset, avi_video_asset, mp4_asset, mkv_video_asset, ogg_video_asset
+from assets import image_asset, jpeg_image_asset, png_image_asset, gif_image_asset, svg_vector_asset, jpeg_data_with_exif
+from assets import audio_asset, mp3_audio_asset, opus_audio_asset, wav_audio_asset
+from assets import video_asset, avi_video_asset, mp4_video_asset, mkv_video_asset, ogg_video_asset
 
 
 @pytest.fixture(name='madam', scope='class')
@@ -37,8 +37,8 @@ def test_read_returns_jpeg_asset_with_correct_metadata(madam, jpeg_data_with_exi
     assert 'exif' in asset.metadata
 
 
-def test_read_returns_jpeg_asset_whose_essence_does_not_contain_metadata(madam, jpeg_asset, tmpdir):
-    jpeg_with_metadata = jpeg_asset
+def test_read_returns_jpeg_asset_whose_essence_does_not_contain_metadata(madam, jpeg_image_asset, tmpdir):
+    jpeg_with_metadata = jpeg_image_asset
 
     asset = madam.read(jpeg_with_metadata.essence)
 
@@ -96,7 +96,7 @@ def test_read_returns_asset_whose_essence_is_filled(read_asset):
 
 
 def test_read_jpeg_does_not_alter_the_original_file(madam):
-    jpeg_data = jpeg_asset().essence
+    jpeg_data = jpeg_image_asset().essence
     original_image_data = jpeg_data.read()
     jpeg_data.seek(0)
 
@@ -129,9 +129,9 @@ def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     assert asset.height == DEFAULT_HEIGHT
 
 
-def test_read_return_correct_hierarchy_of_metadata(madam, jpeg_asset, tmpdir):
+def test_read_return_correct_hierarchy_of_metadata(madam, jpeg_image_asset, tmpdir):
     file = tmpdir.join('asset_with_metadata.jpg')
-    file.write(jpeg_asset.essence.read(), 'wb')
+    file.write(jpeg_image_asset.essence.read(), 'wb')
     metadata = pyexiv2.metadata.ImageMetadata(str(file))
     metadata.read()
     metadata['Iptc.Application2.Headline'] = ['Foo']
@@ -145,12 +145,12 @@ def test_read_return_correct_hierarchy_of_metadata(madam, jpeg_asset, tmpdir):
     assert len(asset.iptc) == 2
 
 
-def test_read_only_returns_python_types_in_metadata(madam, jpeg_asset, tmpdir):
+def test_read_only_returns_python_types_in_metadata(madam, jpeg_image_asset, tmpdir):
     import datetime, fractions, frozendict
     allowed_types = {str, float, int, tuple, frozendict.frozendict,
                      datetime.datetime, fractions.Fraction}
     file = tmpdir.join('asset_with_metadata.jpg')
-    file.write(jpeg_asset.essence.read(), 'wb')
+    file.write(jpeg_image_asset.essence.read(), 'wb')
     metadata = pyexiv2.metadata.ImageMetadata(str(file))
     metadata.read()
     metadata['Exif.Image.Artist'] = b'Test artist'
@@ -176,13 +176,13 @@ def test_writes_correct_essence_without_metadata(madam, asset):
     assert file.read() == asset.essence.read()
 
 
-def test_writes_correct_essence_with_metadata(madam, jpeg_asset):
+def test_writes_correct_essence_with_metadata(madam, jpeg_image_asset):
     file = io.BytesIO()
 
-    madam.write(jpeg_asset, file)
+    madam.write(jpeg_image_asset, file)
 
     file.seek(0)
-    assert file.read() != jpeg_asset.essence.read()
+    assert file.read() != jpeg_image_asset.essence.read()
 
 
 def test_config_contains_list_of_all_processors_by_default(madam):

@@ -9,7 +9,7 @@ import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
 from assets import DEFAULT_DURATION
-from assets import audio_asset, mp3_asset, opus_asset, wav_asset, nut_audio_asset
+from assets import audio_asset, mp3_audio_asset, nut_audio_asset, opus_audio_asset, wav_audio_asset
 from assets import unknown_asset
 
 
@@ -76,8 +76,8 @@ class TestFFmpegMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.read(junk_data)
 
-    def test_read_returns_empty_dict_when_mp3_contains_no_metadata(self, processor, mp3_asset):
-        data_without_id3 = mp3_asset.essence
+    def test_read_returns_empty_dict_when_mp3_contains_no_metadata(self, processor, mp3_audio_asset):
+        data_without_id3 = mp3_audio_asset.essence
 
         metadata = processor.read(data_without_id3)
 
@@ -103,8 +103,8 @@ class TestFFmpegMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.strip(essence)
 
-    def test_combine_returns_mp3_with_metadata(self, processor, mp3_asset, tmpdir):
-        essence = mp3_asset.essence
+    def test_combine_returns_mp3_with_metadata(self, processor, mp3_audio_asset, tmpdir):
+        essence = mp3_audio_asset.essence
         metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
 
         essence_with_metadata = processor.combine(essence, metadata)
@@ -119,8 +119,8 @@ class TestFFmpegMetadataProcessor:
             else:
                 assert mp3.tags[key] == actual
 
-    def test_combine_returns_opus_with_metadata(self, processor, opus_asset, tmpdir):
-        essence = opus_asset.essence
+    def test_combine_returns_opus_with_metadata(self, processor, opus_audio_asset, tmpdir):
+        essence = opus_audio_asset.essence
         metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
 
         essence_with_metadata = processor.combine(essence, metadata)
@@ -135,14 +135,14 @@ class TestFFmpegMetadataProcessor:
             else:
                 assert ogg.tags[key] == actual
 
-    def test_combine_raises_error_when_no_ffmetadata_dict_is_given(self, processor, mp3_asset):
+    def test_combine_raises_error_when_no_ffmetadata_dict_is_given(self, processor, mp3_audio_asset):
         metadata = {}
 
         with pytest.raises(ValueError):
-            processor.combine(mp3_asset.essence, metadata)
+            processor.combine(mp3_audio_asset.essence, metadata)
 
-    def test_combine_fails_without_metadata_keys(self, processor, mp3_asset):
-        essence = mp3_asset.essence
+    def test_combine_fails_without_metadata_keys(self, processor, mp3_audio_asset):
+        essence = mp3_audio_asset.essence
         metadata = dict(ffmetadata={})
 
         with pytest.raises(ValueError):
@@ -162,14 +162,14 @@ class TestFFmpegMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.combine(essence, metadata)
 
-    def test_combine_raises_error_when_metadata_format_is_unsupported(self, processor, mp3_asset):
+    def test_combine_raises_error_when_metadata_format_is_unsupported(self, processor, mp3_audio_asset):
         ffmetadata = {'123abc': 'Test artist'}
 
         with pytest.raises(UnsupportedFormatError):
-            processor.combine(mp3_asset.essence, ffmetadata)
+            processor.combine(mp3_audio_asset.essence, ffmetadata)
 
-    def test_combine_raises_error_when_metadata_contains_unsupported_keys(self, processor, mp3_asset):
+    def test_combine_raises_error_when_metadata_contains_unsupported_keys(self, processor, mp3_audio_asset):
         metadata = dict(ffmetadata=dict(foo='bar'))
 
         with pytest.raises(ValueError):
-            processor.combine(mp3_asset.essence, metadata)
+            processor.combine(mp3_audio_asset.essence, metadata)
