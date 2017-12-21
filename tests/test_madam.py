@@ -11,7 +11,7 @@ from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import asset, unknown_asset
 from assets import image_asset, jpeg_asset, png_asset, gif_asset, svg_asset, jpeg_data_with_exif
 from assets import audio_asset, mp3_asset, opus_asset, wav_asset
-from assets import video_asset, mp4_asset, mkv_video_asset, ogg_video_asset
+from assets import video_asset, avi_video_asset, mp4_asset, mkv_video_asset, ogg_video_asset
 
 
 @pytest.fixture(name='madam', scope='class')

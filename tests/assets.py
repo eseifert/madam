@@ -269,6 +269,26 @@ def mp4_asset(tmpdir_factory):
 
 
 @pytest.fixture(scope='class')
+def avi_video_asset(tmpdir_factory):
+    ffmpeg_params = dict(
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+    )
+    command = ('ffmpeg -loglevel error '
+               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+               '-c:v h264 -c:a mp3 -f avi' % ffmpeg_params).split()
+    tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('h264-mp3.avi')
+    command.append(str(tmpfile))
+    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
+        essence = file.read()
+    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-msvideo',
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
+
+
+@pytest.fixture(scope='class')
 def mkv_video_asset(tmpdir_factory):
     ffmpeg_params = dict(
         width=DEFAULT_WIDTH,
@@ -325,8 +345,10 @@ def nut_video_asset():
 
 
 @pytest.fixture(scope='class', params=['mp4_asset', 'mkv_video_asset'])
-def video_asset(request, mp4_asset, mkv_video_asset):
-    if request.param == 'mp4_asset':
+def video_asset(request, avi_video_asset, mp4_asset, mkv_video_asset):
+    if request.param == 'avi_video_asset':
+        return avi_video_asset
+    elif request.param == 'mp4_asset':
         return mp4_asset
     elif request.param == 'mkv_video_asset':
         return mkv_video_asset
@@ -337,11 +359,11 @@ def video_asset(request, mp4_asset, mkv_video_asset):
 @pytest.fixture(scope='class', params=[
     'jpeg_asset', 'png_asset', 'gif_asset', 'svg_asset',
     'mp3_asset', 'opus_asset', 'wav_asset',
-    'mp4_asset', 'mkv_video_asset', 'ogg_video_asset'])
+    'avi_video_asset', 'mp4_asset', 'mkv_video_asset', 'ogg_video_asset'])
 def asset(request,
           jpeg_asset, png_asset, gif_asset, svg_asset,
           mp3_asset, opus_asset, wav_asset,
-          mp4_asset, mkv_video_asset, ogg_video_asset):
+          avi_video_asset, mp4_asset, mkv_video_asset, ogg_video_asset):
     if request.param == 'jpeg_asset':
         return jpeg_asset
     if request.param == 'png_asset':
@@ -356,6 +378,8 @@ def asset(request,
         return opus_asset
     if request.param == 'wav_asset':
         return wav_asset
+    if request.param == 'avi_video_asset':
+        return avi_video_asset
     if request.param == 'mp4_asset':
         return mp4_asset
     if request.param == 'mkv_video_asset':
