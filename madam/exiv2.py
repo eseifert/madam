@@ -182,11 +182,13 @@ class Exiv2MetadataProcessor(MetadataProcessor):
             except OSError:
                 raise UnsupportedFormatError('Unknown file format.')
 
-            try:
-                metadata.clear()
-                metadata.write()
-            except OSError:
-                raise UnsupportedFormatError('Unknown file format.')
+            if metadata:
+                try:
+                    metadata.clear()
+                    metadata.write()
+                except OSError:
+                    raise UnsupportedFormatError('Unknown file format.')
+
             tmp.seek(0)
 
             shutil.copyfileobj(tmp, result)
