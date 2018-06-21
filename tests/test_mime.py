@@ -30,6 +30,9 @@ def test_mime_type_cannot_be_initialized_with_anything_but_string_or_none():
     with pytest.raises(TypeError):
         MimeType(mediatype=42, subtype='bar')
 
+    with pytest.raises(TypeError):
+        MimeType(mediatype='foo', subtype=42)
+
 
 def test_mime_type_cannot_be_initialized_with_mime_type_instance_and_subtype_string():
     mime = MimeType(mediatype='foo', subtype='bar')
