@@ -3,7 +3,6 @@ import unittest.mock
 import io
 import os
 import pytest
-import tempfile
 
 from madam.core import Asset
 from madam.core import InMemoryStorage, ShelveStorage
