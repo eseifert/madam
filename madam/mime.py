@@ -3,6 +3,8 @@ class MimeType:
     subtype = None
 
     def __init__(self, type, subtype=None):
+        if isinstance(type, str) and '/' in type:
+            type, subtype = type.split('/')
         if type and type != '*':
             self.type = str(type).lower()
         if subtype and subtype != '*':

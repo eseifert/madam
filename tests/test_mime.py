@@ -29,6 +29,20 @@ def test_mime_type_handles_wildcards():
     assert mime.subtype is None
 
 
+def test_mime_type_can_parse_mime_type_strings():
+    mime = MimeType('foo/bar')
+    assert mime.type == 'foo' and mime.subtype == 'bar'
+
+    mime = MimeType('foo/*')
+    assert mime.type == 'foo' and mime.subtype is None
+
+    mime = MimeType('*/bar')
+    assert mime.type is None and mime.subtype == 'bar'
+
+    mime = MimeType('*/*')
+    assert mime.type is None and mime.subtype is None
+
+
 def test_mime_type_returns_correct_mime_type_string():
     mime = MimeType(type='foo', subtype='bar')
     assert str(mime) == 'foo/bar'
