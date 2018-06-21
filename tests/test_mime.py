@@ -27,3 +27,17 @@ def test_mime_type_handles_wildcards():
     mime = MimeType(type='*', subtype='*')
     assert mime.type is None
     assert mime.subtype is None
+
+
+def test_mime_type_returns_correct_mime_type_string():
+    mime = MimeType(type='foo', subtype='bar')
+    assert str(mime) == 'foo/bar'
+
+    mime = MimeType(type='foo', subtype=None)
+    assert str(mime) == 'foo/*'
+
+    mime = MimeType(type=None, subtype='bar')
+    assert str(mime) == '*/bar'
+
+    mime = MimeType(type=None, subtype=None)
+    assert str(mime) == '*/*'
