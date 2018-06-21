@@ -13,3 +13,8 @@ class MimeType:
 
     def __hash__(self):
         return hash((self.type, self.subtype))
+
+    def __eq__(self, other):
+        if isinstance(other, MimeType):
+            return self.type == other.type and self.subtype == other.subtype
+        return NotImplemented
