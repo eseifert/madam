@@ -160,12 +160,16 @@ def test_mime_type_has_a_total_ordering():
     mime2 = MimeType(mediatype='foo', subtype='baz')
     assert mime1 < mime2
     assert mime2 > mime1
+    assert not (mime1 < mime1)
 
     mime3 = MimeType(mediatype='foo', subtype=None)
     assert mime3 < mime1
 
     mime4 = MimeType(mediatype=None, subtype='bar')
     assert mime4 < mime2
+
+    mime5 = MimeType(mediatype='goo', subtype='bar')
+    assert mime1 < mime5
 
 
 def test_mime_type_has_ordering_compared_to_strings():
