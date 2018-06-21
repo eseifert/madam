@@ -74,6 +74,11 @@ def test_mime_type_can_parse_mime_type_strings():
     assert mime.type is None and mime.subtype is None
 
 
+def test_mime_type_has_string_representation():
+    mime = MimeType(mediatype='foo', subtype=None)
+    assert repr(mime) == "MimeType(mediatype='foo', subtype=None)"
+
+
 def test_mime_type_returns_correct_mime_type_string():
     mime = MimeType(mediatype='foo', subtype='bar')
     assert str(mime) == 'foo/bar'

@@ -39,6 +39,11 @@ class MimeType:
     def __str__(self):
         return '/'.join((self.type or '*', self.subtype or '*'))
 
+    def __repr__(self):
+        return '%s(mediatype=%r, subtype=%r)' % (
+            self.__class__.__name__, self.type, self.subtype
+        )
+
     def __hash__(self):
         return hash((self.type, self.subtype))
 
