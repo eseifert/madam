@@ -360,8 +360,9 @@ class FFmpegProcessor(Processor):
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
-            command = ['ffmpeg', '-v', 'error', '-ss', str(float(seconds)),
+            command = ['ffmpeg', '-v', 'error',
                        '-i', ctx.input_path,
+                       '-ss', str(float(seconds)),
                        '-codec:v', codec_name, '-vframes', '1',
                        '-f', encoder_name, '-y', ctx.output_path]
 
