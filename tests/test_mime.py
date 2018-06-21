@@ -150,6 +150,11 @@ def test_mime_type_can_be_equal_to_a_mime_type_string():
     assert mime == '*/*'
 
 
+def test_mime_type_is_never_equal_to_incompatible_types():
+    mime = MimeType(mediatype='foo', subtype='bar')
+    assert not (mime == 42)
+
+
 def test_mime_type_has_a_total_ordering():
     mime1 = MimeType(mediatype='foo', subtype='bar')
     mime2 = MimeType(mediatype='foo', subtype='baz')
