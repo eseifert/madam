@@ -22,6 +22,21 @@ def test_mime_type_cannot_be_initialized_with_anything_but_string_or_none():
         MimeType(type=42, subtype='bar')
 
 
+def test_mime_type_cannot_be_initialized_with_mime_type_string_and_subtype_string():
+    with pytest.raises(ValueError):
+        MimeType(type='foo/bar', subtype='baz')
+
+
+def test_mime_type_type_cannot_contain_more_than_one_delimiter():
+    with pytest.raises(ValueError):
+        MimeType('foo/bar/baz')
+
+
+def test_mime_type_subtype_cannot_contain_a_delimiter():
+    with pytest.raises(ValueError):
+        MimeType(type='foo', subtype='bar/baz')
+
+
 def test_mime_type_handles_wildcards():
     mime = MimeType(type='foo', subtype='*')
     assert mime.type == 'foo'

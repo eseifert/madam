@@ -8,12 +8,21 @@ class MimeType:
     def __init__(self, type, subtype=None):
         if not isinstance(type, str) and type is not None:
             raise TypeError('MIME type can only store strings or None')
-        if type and '/' in type:
-            type, subtype = type.split('/')
-        if type and type != '*':
-            self.type = str(type).lower()
-        if subtype and subtype != '*':
-            self.subtype = str(subtype).lower()
+        if type:
+            delimiter_count = type.count('/')
+            if delimiter_count:
+                if subtype is not None:
+                    raise ValueError('Cannot pass MIME type string and subtype string')
+                if delimiter_count > 1:
+                    raise ValueError('Too many delimiters in %r' % type)
+                type, subtype = type.split('/')
+            if type != '*':
+                self.type = str(type).lower()
+        if subtype:
+            if subtype != '*':
+                if '/' in subtype:
+                    raise ValueError('Subtype cannot contain delimiters')
+                self.subtype = str(subtype).lower()
 
     def __str__(self):
         return '/'.join((self.type or '*',self.subtype or '*'))
