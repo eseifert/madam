@@ -89,3 +89,16 @@ def test_mime_can_be_equal_to_a_mime_type_string():
 
     mime = MimeType(type=None, subtype=None)
     assert mime == '*/*'
+
+
+def test_mime_has_a_total_ordering():
+    mime1 = MimeType(type='foo', subtype='bar')
+    mime2 = MimeType(type='foo', subtype='baz')
+    assert mime1 < mime2
+    assert mime2 > mime1
+
+    mime3 = MimeType(type='foo', subtype=None)
+    assert mime3 < mime1
+
+    mime4 = MimeType(type=None, subtype='bar')
+    assert mime4 < mime2

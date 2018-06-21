@@ -1,3 +1,6 @@
+from functools import total_ordering
+
+@total_ordering
 class MimeType:
     type = None
     subtype = None
@@ -21,4 +24,21 @@ class MimeType:
             return self == MimeType(other)
         if isinstance(other, MimeType):
             return self.type == other.type and self.subtype == other.subtype
+        return NotImplemented
+
+    def __lt__(self, other):
+        if isinstance(other, str):
+            return self < MimeType(other)
+        if isinstance(other, MimeType):
+            if self.type == other.type:
+                if self.subtype == other.subtype:
+                    return False
+                else:
+                    if self.subtype is None:
+                        return True
+                    return self.subtype < other.subtype
+            else:
+                if self.type is None:
+                    return True
+                return self.type < other.type
         return NotImplemented
