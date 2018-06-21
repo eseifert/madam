@@ -383,35 +383,35 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     Represents a metadata processor that uses FFmpeg.
     """
     __decoder_and_stream_type_to_mime_type = {
-        ('matroska,webm', 'video'): 'video/x-matroska',
-        ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
-        ('avi', 'video'): 'video/x-msvideo',
-        ('mpegts', 'video'): 'video/mp2t',
-        ('ogg', 'video'): 'video/ogg',
-        ('mp3', 'audio'): 'audio/mpeg',
-        ('ogg', 'audio'): 'audio/ogg',
-        ('wav', 'audio'): 'audio/wav',
+        ('matroska,webm', 'video'): MimeType('video/x-matroska'),
+        ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): MimeType('video/quicktime'),
+        ('avi', 'video'): MimeType('video/x-msvideo'),
+        ('mpegts', 'video'): MimeType('video/mp2t'),
+        ('ogg', 'video'): MimeType('video/ogg'),
+        ('mp3', 'audio'): MimeType('audio/mpeg'),
+        ('ogg', 'audio'): MimeType('audio/ogg'),
+        ('wav', 'audio'): MimeType('audio/wav'),
     }
 
     __mime_type_to_encoder = {
-        'video/x-matroska': 'matroska',
-        'video/quicktime': 'mov',
-        'video/x-msvideo': 'avi',
-        'video/mp2t': 'mpegts',
-        'video/ogg': 'ogg',
-        'audio/mpeg': 'mp3',
-        'audio/ogg': 'ogg',
-        'audio/wav': 'wav',
+        MimeType('video/x-matroska'): 'matroska',
+        MimeType('video/quicktime'): 'mov',
+        MimeType('video/x-msvideo'): 'avi',
+        MimeType('video/mp2t'): 'mpegts',
+        MimeType('video/ogg'): 'ogg',
+        MimeType('audio/mpeg'): 'mp3',
+        MimeType('audio/ogg'): 'ogg',
+        MimeType('audio/wav'): 'wav',
     }
 
     # See https://wiki.multimedia.cx/index.php?title=FFmpeg_Metadata
     metadata_keys_by_mime_type = {
-        'video/x-matroska': bidict({}),
-        'video/x-msvideo': bidict({}),
-        'video/mp2t': bidict({}),
-        'video/quicktime': bidict({}),
-        'video/ogg': bidict({}),
-        'audio/mpeg': bidict({
+        MimeType('video/x-matroska'): bidict({}),
+        MimeType('video/x-msvideo'): bidict({}),
+        MimeType('video/mp2t'): bidict({}),
+        MimeType('video/quicktime'): bidict({}),
+        MimeType('video/ogg'): bidict({}),
+        MimeType('audio/mpeg'): bidict({
             'album': 'album',                   # TALB Album
             'album_artist': 'album_artist',     # TPE2 Band/orchestra/accompaniment
             'album_sort': 'album-sort',         # TSOA Album sort order
@@ -466,7 +466,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             # SIGN, SYLT, SYTC, UFID, USER, WCOM, WCOP, WOAF, WOAR, WOAS, WORS,
             # WPAY, WPUB, and WXXX will be written as TXXX tag
         }),
-        'audio/ogg': bidict({
+        MimeType('audio/ogg'): bidict({
             'album': 'ALBUM',                   # Collection name
             'album_artist': 'album_artist',     # Band/orchestra/accompaniment
             'artist': 'ARTIST',                 # Band or singer, composer, author, etc.
@@ -489,7 +489,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             'tracks': 'TRACKTOTAL',             # Total number of track number in a collection or album
             'version': 'VERSION',               # Version of the track (e.g. remix info)
         }),
-        'audio/wav': bidict({}),
+        MimeType('audio/wav'): bidict({}),
     }
 
     @property
