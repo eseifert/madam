@@ -41,3 +41,8 @@ def test_mime_type_returns_correct_mime_type_string():
 
     mime = MimeType(type=None, subtype=None)
     assert str(mime) == '*/*'
+
+
+def test_mime_type_returns_valid_hash_code():
+    mime = MimeType(type='foo', subtype='bar')
+    assert hash(mime) == hash(('foo', 'bar'))
