@@ -31,9 +31,16 @@ def test_mime_type_cannot_be_initialized_with_anything_but_string_or_none():
         MimeType(mediatype=42, subtype='bar')
 
 
+def test_mime_type_cannot_be_initialized_with_mime_type_instance_and_subtype_string():
+    mime = MimeType(mediatype='foo', subtype='bar')
+
+    with pytest.raises(ValueError):
+        MimeType(mime, subtype='baz')
+
+
 def test_mime_type_cannot_be_initialized_with_mime_type_string_and_subtype_string():
     with pytest.raises(ValueError):
-        MimeType(mediatype='foo/bar', subtype='baz')
+        MimeType('foo/bar', subtype='baz')
 
 
 def test_mime_type_type_cannot_contain_more_than_one_delimiter():
