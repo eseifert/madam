@@ -77,6 +77,16 @@ def test_mime_can_be_checked_for_equality_with_another_mime_type():
     assert not (mime2 == mime4)
 
 
+def test_mime_type_is_case_insensitive():
+    mime1 = MimeType(type='foo', subtype='bar')
+
+    mime2 = MimeType(type='fOo', subtype='bAr')
+    assert mime1 == mime2
+
+    mime3 = MimeType(type='Foo', subtype='baR')
+    assert mime1 == mime3
+
+
 def test_mime_can_be_equal_to_a_mime_type_string():
     mime = MimeType(type='foo', subtype='bar')
     assert mime == 'foo/bar'
