@@ -7,6 +7,7 @@ import PIL.Image
 
 from madam.core import operator, OperatorError
 from madam.core import Asset, Processor
+from madam.mime import MimeType
 
 
 class ResizeMode(Enum):
@@ -38,15 +39,16 @@ class PillowProcessor(Processor):
     def __init__(self):
         super().__init__()
         self.__mime_type_to_pillow_type = bidict({
-            'image/gif': 'GIF',
-            'image/jpeg': 'JPEG',
-            'image/png': 'PNG'
+            MimeType('image/gif'): 'GIF',
+            MimeType('image/jpeg'): 'JPEG',
+            MimeType('image/png'): 'PNG'
         })
 
     def read(self, file):
         image = PIL.Image.open(file)
+        mime_type = self.__mime_type_to_pillow_type.inv[image.format]
         metadata = dict(
-            mime_type=self.__mime_type_to_pillow_type.inv[image.format],
+            mime_type=str(mime_type),
             width=image.width,
             height=image.height
         )
@@ -74,6 +76,7 @@ class PillowProcessor(Processor):
         :return: Asset with resized essence
         """
         image = PIL.Image.open(asset.essence)
+        mime_type = MimeType(asset.mime_type)
         width_delta = width - image.width
         height_delta = height - image.height
         resized_width = width
@@ -88,12 +91,14 @@ class PillowProcessor(Processor):
             resized_height = round(resize_factor * image.height)
         resized_image = image.resize((resized_width, resized_height),
                                      resample=PIL.Image.LANCZOS)
-        resized_asset = self._image_to_asset(resized_image, mime_type=asset.mime_type)
+        resized_asset = self._image_to_asset(resized_image, mime_type=mime_type)
         return resized_asset
 
     def _image_to_asset(self, image, mime_type):
+        mime_type = MimeType(mime_type)
+        pil_format = self.__mime_type_to_pillow_type[mime_type]
         image_buffer = io.BytesIO()
-        image.save(image_buffer, self.__mime_type_to_pillow_type[mime_type])
+        image.save(image_buffer, pil_format)
         image_buffer.seek(0)
         asset = self.read(image_buffer)
         return asset
@@ -111,8 +116,9 @@ class PillowProcessor(Processor):
         :return: New image asset with rotated essence
         """
         image = PIL.Image.open(asset.essence)
+        mime_type = MimeType(asset.mime_type)
         transposed_image = image.transpose(rotation)
-        transposed_asset = self._image_to_asset(transposed_image, mime_type=asset.mime_type)
+        transposed_asset = self._image_to_asset(transposed_image, mime_type=mime_type)
         return transposed_asset
 
     @operator
@@ -185,6 +191,7 @@ class PillowProcessor(Processor):
         :param mime_type: Target MIME type
         :return: New asset with converted essence
         """
+        mime_type = MimeType(mime_type)
         pil_format = self.__mime_type_to_pillow_type[mime_type]
         try:
             image = PIL.Image.open(asset.essence)

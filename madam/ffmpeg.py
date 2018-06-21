@@ -10,6 +10,7 @@ from bidict import bidict
 
 from madam.core import Asset, MetadataProcessor, Processor, operator, OperatorError, UnsupportedFormatError
 from madam.future import CalledProcessError, subprocess_run
+from madam.mime import MimeType
 
 
 def _probe(file):
@@ -77,34 +78,34 @@ class FFmpegProcessor(Processor):
     """
 
     __decoder_and_stream_type_to_mime_type = {
-        ('matroska,webm', 'video'): 'video/x-matroska',
-        ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): 'video/quicktime',
-        ('avi', 'video'): 'video/x-msvideo',
-        ('mpegts', 'video'): 'video/mp2t',
-        ('ogg', 'video'): 'video/ogg',
-        ('mp3', 'audio'): 'audio/mpeg',
-        ('ogg', 'audio'): 'audio/ogg',
-        ('wav', 'audio'): 'audio/wav',
+        ('matroska,webm', 'video'): MimeType('video/x-matroska'),
+        ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): MimeType('video/quicktime'),
+        ('avi', 'video'): MimeType('video/x-msvideo'),
+        ('mpegts', 'video'): MimeType('video/mp2t'),
+        ('ogg', 'video'): MimeType('video/ogg'),
+        ('mp3', 'audio'): MimeType('audio/mpeg'),
+        ('ogg', 'audio'): MimeType('audio/ogg'),
+        ('wav', 'audio'): MimeType('audio/wav'),
     }
 
     __mime_type_to_encoder = {
-        'video/x-matroska': 'matroska',
-        'video/quicktime': 'mov',
-        'video/x-msvideo': 'avi',
-        'video/mp2t': 'mpegts',
-        'video/ogg': 'ogg',
-        'audio/mpeg': 'mp3',
-        'audio/ogg': 'ogg',
-        'audio/wav': 'wav',
-        'image/gif': 'gif',
-        'image/jpeg': 'image2',
-        'image/png': 'image2',
+        MimeType('video/x-matroska'): 'matroska',
+        MimeType('video/quicktime'): 'mov',
+        MimeType('video/x-msvideo'): 'avi',
+        MimeType('video/mp2t'): 'mpegts',
+        MimeType('video/ogg'): 'ogg',
+        MimeType('audio/mpeg'): 'mp3',
+        MimeType('audio/ogg'): 'ogg',
+        MimeType('audio/wav'): 'wav',
+        MimeType('image/gif'): 'gif',
+        MimeType('image/jpeg'): 'image2',
+        MimeType('image/png'): 'image2',
     }
 
     __mime_type_to_codec = {
-        'image/gif': 'gif',
-        'image/jpeg': 'mjpeg',
-        'image/png': 'png',
+        MimeType('image/gif'): 'gif',
+        MimeType('image/jpeg'): 'mjpeg',
+        MimeType('image/png'): 'png',
     }
 
     def __init__(self):
@@ -145,7 +146,7 @@ class FFmpegProcessor(Processor):
             raise UnsupportedFormatError('Unsupported metadata source.')
 
         metadata = dict(
-            mime_type=mime_type,
+            mime_type=str(mime_type),
             duration=float(probe_data['format']['duration'])
         )
 
@@ -187,10 +188,11 @@ class FFmpegProcessor(Processor):
         if width < 1 or height < 1:
             raise ValueError('Invalid dimensions: %dx%d' % (width, height))
 
-        encoder_name = self.__mime_type_to_encoder.get(asset.mime_type)
+        mime_type = MimeType(asset.mime_type)
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
         if not encoder_name:
-            raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
-        if asset.mime_type.split('/')[0] not in ('image', 'video'):
+            raise UnsupportedFormatError('Unsupported asset type: %s' % mime_type)
+        if mime_type.type not in ('image', 'video'):
             raise OperatorError('Cannot resize asset of type %s')
 
         result = io.BytesIO()
@@ -211,7 +213,7 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not resize video asset: %s' % error_message)
 
-        return Asset(essence=result, mime_type=asset.mime_type,
+        return Asset(essence=result, mime_type=mime_type,
                      width=width, height=height, duration=asset.duration)
 
     @operator
@@ -245,7 +247,7 @@ class FFmpegProcessor(Processor):
         :param subtitles: Dictionary with the options for subtitle streams.
         :return: New asset with converted essence
         """
-        encoder_name = self.__mime_type_to_encoder.get(mime_type)
+        encoder_name = self.__mime_type_to_encoder.get(MimeType(mime_type))
         if not encoder_name:
             raise UnsupportedFormatError('Unsupported asset type: %s' % mime_type)
 

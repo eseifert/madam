@@ -8,6 +8,7 @@ import pyexiv2
 from bidict import bidict
 
 from madam.core import MetadataProcessor, UnsupportedFormatError
+from madam.mime import MimeType
 
 
 def _convert_sequence(dec_enc):
@@ -31,7 +32,7 @@ class Exiv2MetadataProcessor(MetadataProcessor):
     Represents a metadata processor using the exiv2 library.
     """
     supported_mime_types = {
-        'image/jpeg'
+        MimeType('image/jpeg')
     }
 
     metadata_to_exiv2 = bidict({
@@ -154,7 +155,7 @@ class Exiv2MetadataProcessor(MetadataProcessor):
                 metadata.read()
             except OSError:
                 raise UnsupportedFormatError('Unknown file format.')
-        if metadata.mime_type not in Exiv2MetadataProcessor.supported_mime_types:
+        if MimeType(metadata.mime_type) not in Exiv2MetadataProcessor.supported_mime_types:
             raise UnsupportedFormatError('Unsupported format: %s' % metadata.mime_type)
         metadata_by_format = {}
         for metadata_format in self.formats:
