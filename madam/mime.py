@@ -1,31 +1,43 @@
 from functools import total_ordering
 
+
 @total_ordering
 class MimeType:
     type = None
     subtype = None
 
-    def __init__(self, type, subtype=None):
-        if not isinstance(type, str) and type is not None:
-            raise TypeError('MIME type can only store strings or None')
-        if type:
-            delimiter_count = type.count('/')
-            if delimiter_count:
-                if subtype is not None:
-                    raise ValueError('Cannot pass MIME type string and subtype string')
-                if delimiter_count > 1:
-                    raise ValueError('Too many delimiters in %r' % type)
-                type, subtype = type.split('/')
-            if type != '*':
-                self.type = str(type).lower()
-        if subtype:
-            if subtype != '*':
+    def __init__(self, mediatype, subtype=None):
+        if isinstance(mediatype, MimeType):
+            if subtype is not None:
+                raise ValueError('Cannot pass MimeType object and subtype string for initialization.')
+            self.type = mediatype.type
+            self.subtype = mediatype.subtype
+        elif isinstance(mediatype, str):
+            if mediatype:
+                delimiter_count = mediatype.count('/')
+                if delimiter_count:
+                    if subtype is not None:
+                        raise ValueError('Cannot pass MIME type string and subtype string for initialization.')
+                    if delimiter_count > 1:
+                        raise ValueError('Too many delimiters in %r' % mediatype)
+                    mediatype, subtype = mediatype.split('/')
+                if mediatype != '*':
+                    self.type = str(mediatype).lower()
+        elif mediatype is not None:
+            raise TypeError('%r type is not allowed for initialization of MIME type' %
+                            type(mediatype).__name__)
+
+        if isinstance(subtype, str):
+            if subtype and subtype != '*':
                 if '/' in subtype:
                     raise ValueError('Subtype cannot contain delimiters')
                 self.subtype = str(subtype).lower()
+        elif subtype is not None:
+            raise TypeError('%r type is not allowed for initialization of MIME subtype' %
+                            type(subtype).__name__)
 
     def __str__(self):
-        return '/'.join((self.type or '*',self.subtype or '*'))
+        return '/'.join((self.type or '*', self.subtype or '*'))
 
     def __hash__(self):
         return hash((self.type, self.subtype))
