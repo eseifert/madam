@@ -259,7 +259,7 @@ def mp4_video_asset(tmpdir_factory):
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
                '-strict -2 -c:v h264 -preset ultrafast -qp 0 -c:a aac -f mp4' % ffmpeg_params).split()
-    tmpfile = tmpdir_factory.mktemp('mp4_video_asset').join('lossless.mp4')
+    tmpfile = tmpdir_factory.mktemp('mp4_video_asset').join('h264-aac.mp4')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
@@ -279,7 +279,7 @@ def avi_video_asset(tmpdir_factory):
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
                '-c:v h264 -c:a mp3 -f avi' % ffmpeg_params).split()
-    tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('h264-mp3.avi')
+    tmpfile = tmpdir_factory.mktemp('avi_video_asset').join('h264-mp3.avi')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
