@@ -45,7 +45,7 @@ class MimeType:
         )
 
     def __hash__(self):
-        return hash((self.type, self.subtype))
+        return hash(str(self))
 
     def __eq__(self, other):
         if isinstance(other, str):

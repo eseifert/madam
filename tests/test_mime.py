@@ -95,7 +95,7 @@ def test_mime_type_returns_correct_mime_type_string():
 
 def test_mime_type_returns_valid_hash_code():
     mime = MimeType(mediatype='foo', subtype='bar')
-    assert hash(mime) == hash(('foo', 'bar'))
+    assert hash(mime) == hash('foo/bar')
 
 
 def test_mime_type_can_be_checked_for_equality_with_another_mime_type():
