@@ -168,6 +168,11 @@ def test_mime_type_has_a_total_ordering():
     assert mime4 < mime2
 
 
+def test_mime_type_has_ordering_compared_to_strings():
+    mime = MimeType(mediatype='foo', subtype='bar')
+    assert mime < 'foo/baz'
+
+
 def test_mime_type_comparison_fails_for_incompatible_types():
     mime = MimeType(mediatype='foo', subtype='bar')
 
