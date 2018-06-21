@@ -6,7 +6,9 @@ class MimeType:
     subtype = None
 
     def __init__(self, type, subtype=None):
-        if isinstance(type, str) and '/' in type:
+        if not isinstance(type, str) and type is not None:
+            raise TypeError('MIME type can only store strings or None')
+        if type and '/' in type:
             type, subtype = type.split('/')
         if type and type != '*':
             self.type = str(type).lower()

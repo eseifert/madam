@@ -1,3 +1,5 @@
+import pytest
+
 from madam.mime import MimeType
 
 
@@ -13,6 +15,11 @@ def test_mime_type_stores_strings_or_none():
     mime = MimeType(type='', subtype='')
     assert mime.type is None
     assert mime.subtype is None
+
+
+def test_mime_type_cannot_be_initialized_with_anything_but_string_or_none():
+    with pytest.raises(TypeError):
+        MimeType(type=42, subtype='bar')
 
 
 def test_mime_type_handles_wildcards():
