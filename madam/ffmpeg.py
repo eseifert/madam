@@ -357,18 +357,18 @@ class FFmpegProcessor(Processor):
 
         :param asset: Video asset which will serve as the source for the frame
         :type asset: Asset
-        :param mime_type: MIME type of the source
+        :param mime_type: MIME type of the destination image
         :type mime_type: MimeType or str
         :param seconds: Offset of the frame in seconds
         :type seconds: float
         :return: New image asset with converted essence
         :rtype: Asset
         """
+        source_mime_type = MimeType(asset.mime_type)
+        if source_mime_type.type != 'video':
+            raise UnsupportedFormatError('Unsupported source asset type: %s' % source_mime_type)
+
         mime_type = MimeType(mime_type)
-
-        if not mime_type.type == 'video':
-            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
-
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         codec_name = self.__mime_type_to_codec.get(mime_type)
         if not (encoder_name and codec_name):
