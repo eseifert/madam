@@ -14,11 +14,11 @@ class ResizeMode(Enum):
     """
     Represents a behavior for image resize operations.
     """
-    #: Resized image exactly matches the specified dimensions
+    #: Image exactly matches the specified dimensions
     EXACT = 0
-    #: Resized image is resized to fit completely into the specified dimensions
+    #: Image is resized to fit completely into the specified dimensions
     FIT = 1
-    #: Resized image is resized to completely fill the specified dimensions
+    #: Image is resized to completely fill the specified dimensions
     FILL = 2
 
 
@@ -70,10 +70,15 @@ class PillowProcessor(Processor):
         Creates a new Asset whose essence is resized according to the specified parameters.
 
         :param asset: Asset to be resized
+        :type asset: Asset
         :param width: target width
+        :type width: int
         :param height: target height
+        :type height: int
         :param mode: resize behavior
+        :type mode: ResizeMode
         :return: Asset with resized essence
+        :rtype: Asset
         """
         image = PIL.Image.open(asset.essence)
         mime_type = MimeType(asset.mime_type)
@@ -109,11 +114,13 @@ class PillowProcessor(Processor):
         by the specified rotation.
 
         :param asset: Image asset to be rotated
+        :type asset: Asset
         :param rotation: One of ``PIL.Image.FLIP_LEFT_RIGHT``,
         ``PIL.Image.FLIP_TOP_BOTTOM``, ``PIL.Image.ROTATE_90``,
         ``PIL.Image.ROTATE_180``, ``PIL.Image.ROTATE_270``, or
         ``PIL.Image.TRANSPOSE``
         :return: New image asset with rotated essence
+        :rtype: Asset
         """
         image = PIL.Image.open(asset.essence)
         mime_type = MimeType(asset.mime_type)
@@ -128,7 +135,9 @@ class PillowProcessor(Processor):
         specified asset's essence.
 
         :param asset: Image asset whose essence is to be transposed
+        :type asset: Asset
         :return: New image asset with transposed essence
+        :rtype: Asset
         """
         return self._rotate(asset, PIL.Image.TRANSPOSE)
 
@@ -138,8 +147,11 @@ class PillowProcessor(Processor):
         Creates a new asset whose essence is flipped according the specified orientation.
 
         :param asset: Asset whose essence is to be flipped
+        :type asset: Asset
         :param orientation: axis of the flip operation
+        :type orientation: FlipOrientation
         :return: Asset with flipped essence
+        :rtype: Asset
         """
         if orientation == FlipOrientation.HORIZONTAL:
             flip_orientation = PIL.Image.FLIP_LEFT_RIGHT
@@ -154,7 +166,9 @@ class PillowProcessor(Processor):
         If no orientation metadata exists, an identical asset is returned.
 
         :param asset: Asset with orientation metadata
+        :type asset: Asset
         :return: Asset with rotated essence
+        :rtype: Asset
         """
         orientation = asset.metadata.get('exif', {}).get('orientation')
         if orientation is None:
@@ -188,8 +202,11 @@ class PillowProcessor(Processor):
         specified asset.
 
         :param asset: Asset whose contents will be converted
+        :type asset: Asset
         :param mime_type: Target MIME type
+        :type mime_type: MimeType or str
         :return: New asset with converted essence
+        :rtype: Asset
         """
         mime_type = MimeType(mime_type)
         pil_format = self.__mime_type_to_pillow_type[mime_type]

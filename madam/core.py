@@ -69,8 +69,10 @@ class Madam:
         Returns a processor that can read the data in the specified file.
 
         :param file: file-like object to be parsed.
+        :type file: file-like object
         :return: Processor object that can handle the data in the specified file,
                  or None if no suitable processor could be found.
+        :rtype: Processor
         """
         for processor in self._processors:
             file.seek(0)
@@ -81,13 +83,15 @@ class Madam:
 
     def read(self, file, additional_metadata=None):
         r"""
-        Reads the specified file and returns its contents as an Asset object.
+        Reads the specified file and returns its contents as an :class:`~madam.core.Asset` object.
 
         :param file: file-like object to be parsed
+        :type file: file-like object
         :param additional_metadata: optional metadata for the resulting asset.
                Existing metadata entries extracted from the file will be overwritten.
         :type additional_metadata: dict
         :returns: Asset representing the specified file
+        :rtype: Asset
         :raises UnsupportedFormatError: if the file format cannot be recognized or is not supported
         :raises TypeError: if the file is None
 
@@ -95,11 +99,11 @@ class Madam:
 
         >>> import io
         >>> from madam import Madam
-        >>> madam = Madam()
+        >>> manager = Madam()
         >>> file = io.BytesIO(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01'
         ... b'\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00'
         ... b'\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82')
-        >>> asset = madam.read(file)
+        >>> asset = manager.read(file)
         """
         if not file:
             raise TypeError('Unable to read object of type %s' % type(file))
@@ -136,10 +140,12 @@ class Madam:
 
     def write(self, asset, file):
         r"""
-        Write the Asset object to the specified file.
+        Write the :class:`~madam.core.Asset` object to the specified file.
 
         :param asset: Asset that contains the data to be written
+        :type asset: Asset
         :param file: file-like object to be written
+        :type file: file-like object
 
         :Example:
 
@@ -148,15 +154,15 @@ class Madam:
         >>> from madam import Madam
         >>> from madam.core import Asset
         >>> gif_asset = Asset(essence=io.BytesIO(b'GIF89a\x01\x00\x01\x00\x00\x00\x00;'), mime_type='image/gif')
-        >>> madam = Madam()
+        >>> manager = Madam()
         >>> with open(os.devnull, 'wb') as file:
-        ...     madam.write(gif_asset, file)
+        ...     manager.write(gif_asset, file)
         >>> wav_asset = Asset(
         ...     essence=io.BytesIO(b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac'
         ...             b'\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00'),
         ...     mime_type='video/mp4')
         >>> with open(os.devnull, 'wb') as file:
-        ...     madam.write(wav_asset, file)
+        ...     manager.write(wav_asset, file)
         """
         essence_with_metadata = asset.essence
         handled_formats = set()
@@ -195,8 +201,10 @@ class AssetStorage(MutableMapping):
         """
         Returns a sequence of asset keys whose assets match the criteria that are
         specified by the passed arguments.
+
         :param kwargs: Criteria defined as keys and values
         :return: Sequence of asset keys
+        :rtype: list[Asset]
         """
         matches = []
         for asset_key, (asset, tags) in self.items():
@@ -212,6 +220,7 @@ class AssetStorage(MutableMapping):
 
         :param tags: Mandatory tags of an asset to be included in result
         :return: Keys of the assets whose tags are a superset of the specified tags
+        :rtype: set
         """
         search_tags = frozenset(tags)
         return set(asset_key for asset_key, (asset, asset_tags) in self.items()
@@ -242,7 +251,8 @@ class InMemoryStorage(AssetStorage):
         Adding an asset key twice overwrites all tags for the asset.
 
         :param asset_key: Unique value used as a key to store the asset.
-        :param asset: Tuple of the asset and the tags associated with the asset
+        :param asset_and_tags: Tuple of the asset and the tags associated with the asset
+        :type asset_and_tags: tuple
         """
         asset, tags = asset_and_tags
         if not tags:
@@ -258,6 +268,7 @@ class InMemoryStorage(AssetStorage):
 
         :param asset_key: Key of the asset for which the tags should be returned
         :return: A tuple containing an asset and a set the tags associated with the asset
+        :rtype: tuple
         :raise KeyError: if the key does not exist in this storage
         """
         if asset_key not in self.store:
@@ -282,6 +293,7 @@ class InMemoryStorage(AssetStorage):
         asset storage.
         :param asset_key: Key of the asset that should be tested
         :return: `True` if the key exists, `False` otherwise
+        :rtype: bool
         """
         return asset_key in self.store
 
@@ -297,6 +309,7 @@ class InMemoryStorage(AssetStorage):
         """
         Returns the number of assets in this storage.
         :return: Number of assets in this storage
+        :rtype: int
         """
         return len(self.store)
 
@@ -329,7 +342,8 @@ class ShelveStorage(AssetStorage):
         Adding an asset key twice overwrites all tags for the asset.
 
         :param asset_key: Unique value used as a key to store the asset.
-        :param asset: Tuple of the asset and the tags associated with the asset
+        :param asset_and_tags: Tuple of the asset and the tags associated with the asset
+        :type asset_and_tags: tuple
         """
         asset, tags = asset_and_tags
         if not tags:
@@ -345,7 +359,9 @@ class ShelveStorage(AssetStorage):
         An error will be raised if the key does not exist.
 
         :param asset_key: Key of the asset for which the tags should be returned
+        :type asset_key: str
         :return: A tuple containing an asset and a set the tags associated with the asset
+        :rtype: tuple
         :raise KeyError: if the key does not exist in this storage
         """
         with shelve.open(self.path) as store:
@@ -359,6 +375,7 @@ class ShelveStorage(AssetStorage):
         asset storage, as well as all associated data (e.g. tags).
 
         :param asset_key: Key of the asset to be removed
+        :type asset_key: str
         :raise KeyError: if the key does not exist in this storage
         """
         with shelve.open(self.path) as store:
@@ -371,7 +388,9 @@ class ShelveStorage(AssetStorage):
         Returns whether an asset with the specified key is stored in this
         asset storage.
         :param asset_key: Key of the asset that should be tested
+        :type asset_key: str
         :return: `True` if the key exists, `False` otherwise
+        :rtype: bool
         """
         with shelve.open(self.path) as store:
             return asset_key in store
@@ -389,6 +408,7 @@ class ShelveStorage(AssetStorage):
         """
         Returns the number of assets in this storage.
         :return: Number of assets in this storage
+        :rtype: int
         """
         with shelve.open(self.path) as store:
             return len(store)
@@ -417,19 +437,20 @@ class Asset:
     """
     Represents a digital asset.
 
-    An :class:`~madam.core.Asset` is an immutable value object whose contents consist
+    An ``Asset`` is an immutable value object whose contents consist
     of *essence* and *metadata*. Essence represents the actual data of a media file,
     such as the color values of an image, whereas the metadata describes the essence.
 
-    Assets should not be instantiated directly. Instead, use :func:`~madam.core.read` to retrieve an Asset
-    representing your content.
+    Assets should not be instantiated directly. Instead, use :func:`~madam.core.Madam.read`
+    to retrieve an ``Asset`` representing your content.
     """
     def __init__(self, essence, **metadata):
         """
-        Initializes a new :class:`~madam.core.Asset` with the specified essence and metadata.
+        Initializes a new ``Asset`` with the specified essence and metadata.
 
         :param essence: The essence of the asset as a file-like object
         :param metadata: The metadata describing the essence
+        :type metadata: dict
         """
         self._essence_data = essence.read()
         if 'mime_type' not in metadata:
@@ -456,7 +477,8 @@ class Asset:
         Sets this objects __dict__ to the specified state.
 
         Required for Asset to be unpicklable. If this is absent, pickle will not
-        set the __dict__ correctly due to the presence of :func:`~madam.core.Asset.__getattr__`.
+        set the ``__dict__`` correctly due to the presence of :func:`~madam.core.Asset.__getattr__`.
+
         :param state: The state passed by pickle
         """
         self.__dict__ = state
@@ -477,7 +499,8 @@ class Asset:
 
 class UnsupportedFormatError(Exception):
     """
-    Represents an error that is raised whenever file content with unknown type is encountered.
+    Represents an error that is raised whenever file content with unknown type
+    is encountered.
     """
     pass
 
@@ -500,7 +523,7 @@ class Pipeline:
         """
         Applies the operators in this pipeline on the specified assets.
 
-        :param assets: Assets to be processed
+        :param assets: :class:`~madam.core.Asset` objects to be processed
         :return: Generator with processed assets
         """
         for asset in assets:
@@ -523,7 +546,8 @@ class Processor(metaclass=abc.ABCMeta):
     Represents an entity that can create :class:`~madam.core.Asset` objects
     from binary data.
 
-    Every Processor needs to have a no-args __init__ method in order to be registered correctly.
+    Every ``Processor`` needs to have a no-args ``__init__`` method in order to
+    be registered correctly.
     """
 
     @abc.abstractmethod
@@ -532,7 +556,9 @@ class Processor(metaclass=abc.ABCMeta):
         Returns whether the specified MIME type is supported by this processor.
 
         :param file: file-like object to be tested
+        :type file: file-like object
         :return: whether the data format of the specified file is supported or not
+        :rtype: bool
         """
         raise NotImplementedError()
 
@@ -543,7 +569,9 @@ class Processor(metaclass=abc.ABCMeta):
         the contents of the specified file.
 
         :param file: file-like object to be read
+        :type file: file-like object
         :return: Asset with essence
+        :rtype: Asset
         :raises UnsupportedFormatError: if the specified data format is not supported
         """
         raise NotImplementedError()
@@ -553,15 +581,17 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     """
     Represents an entity that can manipulate metadata.
 
-    Every MetadataProcessor needs to have a no-args __init__ method in order to be registered correctly.
+    Every ``MetadataProcessor`` needs to have a no-args ``__init__`` method in
+    order to be registered correctly.
     """
     @property
     @abc.abstractmethod
     def formats(self):
         """
         The metadata formats which are supported.
+
         :return: supported metadata formats
-        :rtype: tuple
+        :rtype: set[str]
         """
         raise NotImplementedError()
 
@@ -574,6 +604,7 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         :attr:`~madam.core.MetadataProcessor.format`.
 
         :param file: File-like object to be read
+        :type file: file-like object
         :return: Metadata contained in the file
         :rtype: dict
         :raises UnsupportedFormatError: if the data is corrupt or its format is not supported
@@ -586,6 +617,7 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         Removes all metadata of the supported type from the specified file.
 
         :param file: file-like that should get stripped of the metadata
+        :type file: file-like object
         :return: file-like object without metadata
         :rtype: io.BytesIO
         """
@@ -598,7 +630,9 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         the specified metadata was added.
 
         :param metadata: Mapping of the metadata format to the metadata dict
+        :type metadata: dict
         :param file: Container file
+        :type file: file-like object
         :return: file-like object with combined content
         :rtype: io.BytesIO
         """
@@ -634,6 +668,7 @@ def operator(function):
 
 class OperatorError(Exception):
     """
-    Represents an error that is raised whenever an error occurs in an :func:`~madam.core.operator`.
+    Represents an error that is raised whenever an error occurs in an
+    :func:`~madam.core.operator`.
     """
     pass

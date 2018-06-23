@@ -179,11 +179,13 @@ class FFmpegProcessor(Processor):
         Width and height must be positive numbers.
 
         :param asset: Video asset that will serve as the source for the frame
+        :type asset: Asset
         :param width: Width of the resized asset
         :type width: int
         :param height: Height of the resized asset
         :type height: int
         :return: New asset with specified width and height
+        :rtype: Asset
         """
         if width < 1 or height < 1:
             raise ValueError('Invalid dimensions: %dx%d' % (width, height))
@@ -241,11 +243,17 @@ class FFmpegProcessor(Processor):
         - **codec** – Processor-specific name of the subtitle format as string
 
         :param asset: Asset whose contents will be converted
+        :type asset: Asset
         :param mime_type: MIME type of the video container
+        :type mime_type: MimeType or str
         :param video: Dictionary with options for video streams.
+        :type video: dict
         :param audio: Dictionary with options for audio streams.
+        :type audio: dict
         :param subtitles: Dictionary with the options for subtitle streams.
+        :type subtitles: dict
         :return: New asset with converted essence
+        :rtype: Asset
         """
         encoder_name = self.__mime_type_to_encoder.get(MimeType(mime_type))
         if not encoder_name:
@@ -305,11 +313,13 @@ class FFmpegProcessor(Processor):
         between from_seconds and to_seconds.
 
         :param asset: Audio or video asset, which will serve as the source
+        :type asset: Asset
         :param from_seconds: Start time of the clip in seconds
         :type from_seconds: float
         :param to_seconds: End time of the clip in seconds
         :type to_seconds: float
         :return: New asset with trimmed essence
+        :rtype: Asset
         """
         encoder_name = self.__mime_type_to_encoder.get(asset.mime_type)
         if not encoder_name or not (asset.mime_type.startswith('audio/') or asset.mime_type.startswith('video/')):
@@ -346,14 +356,18 @@ class FFmpegProcessor(Processor):
         of the specified video asset.
 
         :param asset: Video asset which will serve as the source for the frame
+        :type asset: Asset
         :param mime_type: MIME type of the source
-        :type mime_type: str
+        :type mime_type: MimeType or str
         :param seconds: Offset of the frame in seconds
         :type seconds: float
         :return: New image asset with converted essence
+        :rtype: Asset
         """
-        if not asset.mime_type.startswith('video/'):
-            raise UnsupportedFormatError('Unsupported source asset type: %s' % asset.mime_type)
+        mime_type = MimeType(mime_type)
+
+        if not mime_type.type == 'video':
+            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
 
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         codec_name = self.__mime_type_to_codec.get(mime_type)

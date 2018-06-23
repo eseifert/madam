@@ -20,9 +20,9 @@ class MimeType:
         """
         Initializes a new MIME type with either
 
-        - *media type* and *subtype* strings,
+        - both, *media type* and *subtype* strings
         - a complete MIME type string like ``'audio/opus'``
-        - another ``MimeType`` object.
+        - another ``MimeType`` object
 
         :param mediatype: Can define either the media type, or the complete MIME
             type by passing a MIME type string or another ``MimeType`` instance.
