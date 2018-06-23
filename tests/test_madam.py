@@ -203,6 +203,6 @@ def test_config_contains_list_of_all_metadata_processors_by_default(madam):
 
 def test_config_does_not_contain_metadata_processor_when_it_is_not_installed():
     with patch.dict(sys.modules, {'madam.exiv2': None}):
-        madam = Madam()
+        manager = Madam()
 
-    assert 'madam.exiv2.Exiv2MetadataProcessor' not in madam.config['metadata_processors']
+    assert 'madam.exiv2.Exiv2MetadataProcessor' not in manager.config['metadata_processors']
