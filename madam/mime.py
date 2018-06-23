@@ -3,10 +3,33 @@ from functools import total_ordering
 
 @total_ordering
 class MimeType:
+    """
+    Represents a MIME type according to RFC 2045. This class behaves identical
+    to its string representation in ``dict`` and ``set``.
+
+    Limitations:
+
+    - Suffixes are considered a part of the subtype
+    - Parameters like ``charset`` are not supported and will be treated as part
+      of the subtype
+    """
     type = None
     subtype = None
 
     def __init__(self, mediatype, subtype=None):
+        """
+        Initializes a new MIME type with either
+
+        - *media type* and *subtype* strings,
+        - a complete MIME type string like ``'audio/opus'``
+        - another ``MimeType`` object.
+
+        :param mediatype: Can define either the media type, or the complete MIME
+            type by passing a MIME type string or another ``MimeType`` instance.
+        :type mediatype: str or MimeType or None
+        :param subtype: Defines the subtype.
+        :type subtype: str or None
+        """
         if isinstance(mediatype, MimeType):
             if subtype is not None:
                 raise ValueError('Cannot pass MimeType object and subtype string for initialization.')
