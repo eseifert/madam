@@ -110,7 +110,7 @@ class FFmpegProcessor(Processor):
 
     def __init__(self):
         """
-        Initializes a new FFmpegProcessor.
+        Initializes a new `FFmpegProcessor`.
 
         :raises EnvironmentError: if the installed version of ffprobe does not match the minimum version requirement
         """
@@ -505,6 +505,12 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         }),
         MimeType('audio/wav'): bidict({}),
     }
+
+    def __init__(self):
+        """
+        Initializes a new `FFmpegMetadataProcessor`.
+        """
+        super().__init__()
 
     @property
     def formats(self):

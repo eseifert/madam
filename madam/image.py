@@ -37,6 +37,9 @@ class PillowProcessor(Processor):
     Represents a processor that uses Pillow as a backend.
     """
     def __init__(self):
+        """
+        Initializes a new `PillowProcessor`.
+        """
         super().__init__()
         self.__mime_type_to_pillow_type = bidict({
             MimeType('image/gif'): 'GIF',
@@ -115,10 +118,10 @@ class PillowProcessor(Processor):
 
         :param asset: Image asset to be rotated
         :type asset: Asset
-        :param rotation: One of ``PIL.Image.FLIP_LEFT_RIGHT``,
-        ``PIL.Image.FLIP_TOP_BOTTOM``, ``PIL.Image.ROTATE_90``,
-        ``PIL.Image.ROTATE_180``, ``PIL.Image.ROTATE_270``, or
-        ``PIL.Image.TRANSPOSE``
+        :param rotation: One of `PIL.Image.FLIP_LEFT_RIGHT`,
+        `PIL.Image.FLIP_TOP_BOTTOM`, `PIL.Image.ROTATE_90`,
+        `PIL.Image.ROTATE_180`, `PIL.Image.ROTATE_270`, or
+        `PIL.Image.TRANSPOSE`
         :return: New image asset with rotated essence
         :rtype: Asset
         """

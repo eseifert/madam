@@ -192,19 +192,29 @@ class Madam:
 
 class AssetStorage(MutableMapping):
     """
-    Represents a data store for :class:`~madam.core.Asset` objects.
+    Represents an abstract base class for data stores of
+    :class:`~madam.core.Asset` objects.
+
+    All implementations of `AssetStorage` require a constructor.
 
     The persistence guarantees for stored data may differ based on the
     respective storage implementation.
     """
+    @abc.abstractmethod
+    def __init__(self):
+        """
+        Initializes a new `AssetStorage`.
+        """
+        pass
+
     def filter(self, **kwargs):
         """
         Returns a sequence of asset keys whose assets match the criteria that are
         specified by the passed arguments.
 
-        :param kwargs: Criteria defined as keys and values
+        :param \\**kwargs: Criteria defined as keys and values
         :return: Sequence of asset keys
-        :rtype: list[Asset]
+        :rtype: list
         """
         matches = []
         for asset_key, (asset, tags) in self.items():
@@ -218,7 +228,7 @@ class AssetStorage(MutableMapping):
         Returns a set of all asset keys in this storage that have at least the
         specified tags.
 
-        :param tags: Mandatory tags of an asset to be included in result
+        :param \\*tags: Mandatory tags of an asset to be included in result
         :return: Keys of the assets whose tags are a superset of the specified tags
         :rtype: set
         """
@@ -236,8 +246,9 @@ class InMemoryStorage(AssetStorage):
     """
     def __init__(self):
         """
-        Initializes a new, empty InMemoryStorage object.
+        Initializes a new, empty `InMemoryStorage` object.
         """
+        super().__init__()
         self.store = {}
 
     def __setitem__(self, asset_key, asset_and_tags):
@@ -267,8 +278,8 @@ class InMemoryStorage(AssetStorage):
         An error will be raised if the key does not exist.
 
         :param asset_key: Key of the asset for which the tags should be returned
-        :return: A tuple containing an asset and a set the tags associated with the asset
-        :rtype: tuple
+        :return: A tuple containing an asset and a set of the tags associated with the asset
+        :rtype: (Asset, set)
         :raise KeyError: if the key does not exist in this storage
         """
         if asset_key not in self.store:
@@ -291,6 +302,7 @@ class InMemoryStorage(AssetStorage):
         """
         Returns whether an asset with the specified key is stored in this
         asset storage.
+
         :param asset_key: Key of the asset that should be tested
         :return: `True` if the key exists, `False` otherwise
         :rtype: bool
@@ -301,6 +313,7 @@ class InMemoryStorage(AssetStorage):
         """
         Returns an object that can be used to iterate all asset that are stored
         in this asset storage.
+
         :return: Iterator object
         """
         return iter(list(self.store.keys()))
@@ -308,6 +321,7 @@ class InMemoryStorage(AssetStorage):
     def __len__(self):
         """
         Returns the number of assets in this storage.
+
         :return: Number of assets in this storage
         :rtype: int
         """
@@ -323,10 +337,12 @@ class ShelveStorage(AssetStorage):
     """
     def __init__(self, path):
         """
-        Initializes a new ShelveStorage with the specified path.
+        Initializes a new `ShelveStorage` with the specified path.
 
         :param path: File system path where the data should be stored
+        :type path: pathlib.Path or str
         """
+        super().__init__()
         if os.path.exists(path) and not os.path.isfile(path):
             raise ValueError('The storage path %r is not a file.' % path)
         self.path = path
@@ -343,7 +359,7 @@ class ShelveStorage(AssetStorage):
 
         :param asset_key: Unique value used as a key to store the asset.
         :param asset_and_tags: Tuple of the asset and the tags associated with the asset
-        :type asset_and_tags: tuple
+        :type asset_and_tags: (Asset, collections.Iterable)
         """
         asset, tags = asset_and_tags
         if not tags:
@@ -360,8 +376,8 @@ class ShelveStorage(AssetStorage):
 
         :param asset_key: Key of the asset for which the tags should be returned
         :type asset_key: str
-        :return: A tuple containing an asset and a set the tags associated with the asset
-        :rtype: tuple
+        :return: A tuple containing an asset and a set of the tags associated with the asset
+        :rtype: (Asset, set)
         :raise KeyError: if the key does not exist in this storage
         """
         with shelve.open(self.path) as store:
@@ -437,20 +453,21 @@ class Asset:
     """
     Represents a digital asset.
 
-    An ``Asset`` is an immutable value object whose contents consist
-    of *essence* and *metadata*. Essence represents the actual data of a media file,
-    such as the color values of an image, whereas the metadata describes the essence.
+    An `Asset` is an immutable value object whose contents consist of *essence*
+    and *metadata*. Essence represents the actual data of a media file, such as
+    the color values of an image, whereas the metadata describes the essence.
 
-    Assets should not be instantiated directly. Instead, use :func:`~madam.core.Madam.read`
-    to retrieve an ``Asset`` representing your content.
+    Assets should not be instantiated directly. Instead, use
+    :func:`~madam.core.Madam.read` to retrieve an `Asset` representing the
+    content.
     """
     def __init__(self, essence, **metadata):
         """
-        Initializes a new ``Asset`` with the specified essence and metadata.
+        Initializes a new `Asset` with the specified essence and metadata.
 
         :param essence: The essence of the asset as a file-like object
-        :param metadata: The metadata describing the essence
-        :type metadata: dict
+        :type essence: file-like object
+        :param \\**metadata: The metadata describing the essence
         """
         self._essence_data = essence.read()
         if 'mime_type' not in metadata:
@@ -476,8 +493,9 @@ class Asset:
         """
         Sets this objects __dict__ to the specified state.
 
-        Required for Asset to be unpicklable. If this is absent, pickle will not
-        set the ``__dict__`` correctly due to the presence of :func:`~madam.core.Asset.__getattr__`.
+        Required for Asset to be unpicklable. If this is absent, pickle will
+        not set the `__dict__` correctly due to the presence of
+        :func:`~madam.core.Asset.__getattr__`.
 
         :param state: The state passed by pickle
         """
@@ -502,15 +520,19 @@ class UnsupportedFormatError(Exception):
     Represents an error that is raised whenever file content with unknown type
     is encountered.
     """
-    pass
+    def __init__(self, *args, **kwargs):
+        """
+        Initializes a new `UnsupportedFormatError`.
+        """
+        super().__init__(*args, **kwargs)
 
 
 class Pipeline:
     """
     Represents a processing pipeline for :class:`~madam.core.Asset` objects.
 
-    The pipeline can be configured to hold a list of asset processing operators, all
-    of which are applied to one or more assets when calling the
+    The pipeline can be configured to hold a list of asset processing
+    operators, all of which are applied to one or more assets when calling the
     :func:`~madam.core.Pipeline.process` method.
     """
     def __init__(self):
@@ -523,7 +545,8 @@ class Pipeline:
         """
         Applies the operators in this pipeline on the specified assets.
 
-        :param assets: :class:`~madam.core.Asset` objects to be processed
+        :param \\*assets: Asset objects to be processed
+        :type \\*assets: Asset
         :return: Generator with processed assets
         """
         for asset in assets:
@@ -546,9 +569,15 @@ class Processor(metaclass=abc.ABCMeta):
     Represents an entity that can create :class:`~madam.core.Asset` objects
     from binary data.
 
-    Every ``Processor`` needs to have a no-args ``__init__`` method in order to
+    Every `Processor` needs to have a no-args `__init__` method in order to
     be registered correctly.
     """
+    @abc.abstractmethod
+    def __init__(self):
+        """
+        Initializes a new `Processor`.
+        """
+        pass
 
     @abc.abstractmethod
     def can_read(self, file):
@@ -581,9 +610,16 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     """
     Represents an entity that can manipulate metadata.
 
-    Every ``MetadataProcessor`` needs to have a no-args ``__init__`` method in
+    Every `MetadataProcessor` needs to have a no-args `__init__` method in
     order to be registered correctly.
     """
+    @abc.abstractmethod
+    def __init__(self):
+        """
+        Initializes a new `MetadataProcessor`.
+        """
+        pass
+
     @property
     @abc.abstractmethod
     def formats(self):
@@ -671,4 +707,8 @@ class OperatorError(Exception):
     Represents an error that is raised whenever an error occurs in an
     :func:`~madam.core.operator`.
     """
-    pass
+    def __init__(self, *args, **kwargs):
+        """
+        Initializes a new `OperatorError`.
+        """
+        super().__init__(*args, **kwargs)

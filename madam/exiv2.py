@@ -142,6 +142,12 @@ class Exiv2MetadataProcessor(MetadataProcessor):
         'subjects': _convert_sequence(__STRING),
     }
 
+    def __init__(self):
+        """
+        Initializes a new `Exiv2MetadataProcessor`.
+        """
+        super().__init__()
+
     @property
     def formats(self):
         return 'exif', 'iptc'
