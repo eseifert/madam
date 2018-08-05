@@ -13,8 +13,7 @@ class MimeType:
     - Parameters like ``charset`` are not supported and will be treated as part
       of the subtype
     """
-    type = None
-    subtype = None
+    __slots__ = 'type', 'subtype'
 
     def __init__(self, mediatype, subtype=None):
         """
@@ -30,6 +29,8 @@ class MimeType:
         :param subtype: Defines the subtype.
         :type subtype: str or None
         """
+        self.type = None  # type: str or None
+        self.subtype = None  # type: str or None
         if isinstance(mediatype, MimeType):
             if subtype is not None:
                 raise ValueError('Cannot pass MimeType object and subtype string for initialization.')
