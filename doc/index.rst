@@ -19,9 +19,62 @@ If you want to get started immediately, have a look at the :doc:`quickstart`
 tutorial.
 
 
+File format support
+===================
+
+MADAM supports a wide range of file formats for video, image, and audio data.
+This is achieved by using several external open source libraries. `Pillow`_
+and `exiv2`_ (for metadata) are used to read, process, or write image files.
+`FFmpeg`_ is used to read, process, or write audio and video files.
+
+The support of file formats heavily depends on the configuration of your local
+system. The formats shown in the following list should be available on most
+configurations. However, it represents only a fraction of the formats supported
+by the underlying libraries.
+
+Audio formats:
+    -   MP3
+    -   OGG
+    -   WAV / RIFF WAVE
+
+Image formats:
+    -   PNG
+    -   JPEG / JFIF
+    -   GIF
+
+Video formats:
+    -   AVI
+    -   Matroska (MKV), WebM
+    -   MPEG2 transport stream
+    -   OGG
+    -   Quicktime, MPEG4
+
+Vector graphics:
+    -   SVG
+
+Adding new file formats
+-----------------------
+The libraries used by MADAM are abstracted by so called *processors*. There is
+a distinction between regular processors and metadata processors. For example,
+to read and write images there is a :class:`madam.image.PillowProcessor`,
+which also provides functionality to modify an image. To extract Exif metadata
+there is a :class:`madam.exiv2.Exiv2MetadataProcessor`.
+
+Adding support for a new format often just means adding a mapping of the
+library format name to a MIME type to one of the existing processors. If you
+want to integrate a new library or tool into MADAM, a new
+:class:`madam.core.Processor` or :class:`madam.core.MetadataProcessor` will
+have to be implemented.
+
+
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+.. _FFmpeg: https://ffmpeg.org/
+.. _Pillow: https://python-pillow.org/
+.. _exiv2: http://www.exiv2.org/
