@@ -4,19 +4,20 @@ Welcome to MADAM
 MADAM is a digital asset management library. It aims to facilitate the handling
 of image, audio, and video files by helping out with several tasks:
 
+-   **Processing:** MADAM has a very extensible processing architecture.
+    With the various operators offered by MADAM, for example, images can be
+    optimized for display on mobile devices by resizing them, converting them
+    to a different file format, or sharpening them.
+
 -   **Organization:** MADAM helps you to organize media data by customizable
     backends to read and store media files. Once the files are stored, the
     backend can be queried based on the metadata that is present in the media
     files (e.g. XMP, Exif, …) or based on derived properties such as file size
     or the duration of a sound file.
 
--   **Processing:** MADAM has a very extensible processing architecture.
-    With the various operators offered by MADAM images, for example, can be
-    optimized for display on mobile devices by resizing them, converting them
-    to a different file format, or sharpening them.
-
-If you want to get started immediately, have a look at the :doc:`quickstart`
-tutorial.
+The :doc:`overview` section will give an introduction to the concepts and
+vocabulary used in MADAM. If you rather want to get started immediately, have a
+look at the :doc:`quickstart` section.
 
 
 File format support
@@ -32,17 +33,17 @@ system. The formats shown in the following list should be available on most
 configurations. However, it represents only a fraction of the formats supported
 by the underlying libraries.
 
-Audio formats:
+Audio:
     -   MP3
     -   OGG
     -   WAV / RIFF WAVE
 
-Image formats:
+Image:
     -   PNG
     -   JPEG / JFIF
     -   GIF
 
-Video formats:
+Video:
     -   AVI
     -   Matroska (MKV), WebM
     -   MPEG2 transport stream
@@ -52,19 +53,11 @@ Video formats:
 Vector graphics:
     -   SVG
 
-Adding new file formats
------------------------
-The libraries used by MADAM are abstracted by so called *processors*. There is
-a distinction between regular processors and metadata processors. For example,
-to read and write images there is a :class:`madam.image.PillowProcessor`,
-which also provides functionality to modify an image. To extract Exif metadata
-there is a :class:`madam.exiv2.Exiv2MetadataProcessor`.
-
 Adding support for a new format often just means adding a mapping of the
 library format name to a MIME type to one of the existing processors. If you
 want to integrate a new library or tool into MADAM, a new
 :class:`madam.core.Processor` or :class:`madam.core.MetadataProcessor` will
-have to be implemented.
+have to be implemented. See :doc:`overview` section for more details.
 
 
 Indices and tables
