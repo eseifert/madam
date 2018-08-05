@@ -48,7 +48,7 @@ class MimeType:
                     self.type = str(mediatype).lower()
         elif mediatype is not None:
             raise TypeError('%r type is not allowed for initialization of MIME type' %
-                            type(mediatype).__name__)
+                            type(mediatype).__qualname__)
 
         if isinstance(subtype, str):
             if subtype and subtype != '*':
@@ -57,14 +57,14 @@ class MimeType:
                 self.subtype = str(subtype).lower()
         elif subtype is not None:
             raise TypeError('%r type is not allowed for initialization of MIME subtype' %
-                            type(subtype).__name__)
+                            type(subtype).__qualname__)
 
     def __str__(self):
         return '/'.join((self.type or '*', self.subtype or '*'))
 
     def __repr__(self):
         return '%s(mediatype=%r, subtype=%r)' % (
-            self.__class__.__name__, self.type, self.subtype
+            self.__class__.__qualname__, self.type, self.subtype
         )
 
     def __hash__(self):
