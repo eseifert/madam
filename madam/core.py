@@ -434,7 +434,7 @@ def _immutable(value):
     """
     Creates a read-only version from the specified value.
 
-    Dictionaries, lists, and sets will be handled recursively.
+    Dictionaries, lists, and sets will be converted recursively.
 
     :param value: Value to be transformed into a read-only version
     :return: Read-only value
@@ -445,6 +445,25 @@ def _immutable(value):
         return frozenset({_immutable(v) for v in value})
     elif isinstance(value, list):
         return tuple([_immutable(v) for v in value])
+    else:
+        return value
+
+
+def _mutable(value):
+    """
+    Creates a writeable version from the specified (read-only) value.
+
+    Frozen dictionaries, tuples, and frozen sets will be converted recursively.
+
+    :param value: Value to be transformed into a writeable version
+    :return: Writeable value
+    """
+    if isinstance(value, frozendict):
+        return {k: _mutable(v) for k, v in value.items()}
+    elif isinstance(value, frozenset):
+        return {_mutable(v) for v in value}
+    elif isinstance(value, tuple):
+        return [_mutable(v) for v in value]
     else:
         return value
 
