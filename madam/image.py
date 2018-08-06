@@ -245,8 +245,13 @@ class PillowProcessor(Processor):
         if x == 0 and y == 0 and width == asset.width and height == asset.height:
             return asset
 
+        max_x = max(0, min(asset.width, width + x))
+        max_y = max(0, min(asset.height, height + y))
+        min_x = max(0, min(asset.width, x))
+        min_y = max(0, min(asset.height, y))
+
         image = PIL.Image.open(asset.essence)
-        cropped_image = image.crop(box=(x, y, x + width, y + height))
+        cropped_image = image.crop(box=(min_x, min_y, max_x, max_y))
         cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)
 
         return cropped_asset

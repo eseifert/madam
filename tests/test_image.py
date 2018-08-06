@@ -4,6 +4,7 @@ import pytest
 
 import madam.image
 from madam.core import OperatorError, UnsupportedFormatError
+from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT
 from assets import image_asset, jpeg_image_asset, png_image_asset, gif_image_asset, unknown_asset
 
 
@@ -194,3 +195,16 @@ class TestPillowProcessor:
 
         assert cropped_asset.width == crop_width
         assert cropped_asset.height == crop_height
+
+    @pytest.mark.parametrize('x, y, width, height, cropped_width, cropped_height', [
+        (-DEFAULT_WIDTH//2, -DEFAULT_HEIGHT//2, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2),
+        (DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2),
+    ])
+    def test_crop_fixes_partially_overlapping_cropping_area(self, pillow_processor, image_asset,
+                                                            x, y, width, height, cropped_width, cropped_height):
+        crop_operator = pillow_processor.crop(x=x, y=y, width=width, height=height)
+
+        cropped_asset = crop_operator(image_asset)
+
+        assert cropped_asset.width == cropped_width
+        assert cropped_asset.height == cropped_height
