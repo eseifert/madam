@@ -1,8 +1,7 @@
-madam package
-=============
+Module reference
+================
 
-Submodules
-----------
+The main module of MADAM is :mod:`madam`.It contains several submodules.
 
 .. toctree::
 
@@ -12,8 +11,3 @@ Submodules
    madam.image
    madam.mime
    madam.vector
-
-Module contents
----------------
-
-.. automodule:: madam

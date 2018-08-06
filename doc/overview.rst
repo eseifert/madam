@@ -23,22 +23,22 @@ Processors
 
 The extensions used to read, process, and write file formats are called
 **processors**. Usually, they are interfaces to external libraries that are
-used in the background to do all the heavy lifting.
+used in the background to do all the heavy lifting. There are two types of
+processors in MADAM:
 
-There are two types of processors in MADAM:
+Essence processors (or just processors)
+    Represented by :class:`madam.core.Processor` objects. Essence processors
+    are responsible to read and write the actual data in a specific file
+    format. They also offer various operations that can be performed to modify
+    the data, e.g. to resize or to rotate an image. One implementation of this
+    interface is the :class:`madam.image.PillowProcessor` class.
 
--   *Essence processors* or just *processors*, represented by
-    :class:`madam.core.Processor` objects, are responsible to read and write
-    the actual data in a specific file format. They also offer various
-    operations that can be performed to modify the data, e.g. to resize or to
-    rotate an image. One implementation of this interface is the
-    :class:`madam.image.PillowProcessor` class.
-
--   *Metadata processors*, represented by :class:`madam.core.MetadataProcessor`
-    objects, are responsible to read and write metadata only. Prominent
-    examples of such metadata could be ID3 in MP3 audio files, or Exif in JPEG
-    images. For example, the implementation for Exif metadata is the
-    :class:`madam.exiv2.Exiv2MetadataProcessor` class.
+Metadata processors
+    Represented by :class:`madam.core.MetadataProcessor` objects.
+    Metadata processors are responsible to read and write metadata only.
+    Prominent examples of such metadata could be ID3 in MP3 audio files, or
+    Exif in JPEG images. For example, the implementation for Exif metadata is
+    the :class:`madam.exiv2.Exiv2MetadataProcessor` class.
 
 
 Operators
@@ -49,8 +49,8 @@ Essence processors provide methods to modify assets, which are called
 operators are implemented as partial methods that can be pre-configured and
 then applied to one or many assets.
 
-Operators can raise exceptions from the type :class:`madam.core.OperatorError`
-if something goes wrong.
+.. note:: Operators can raise exceptions of the type
+    :class:`madam.core.OperatorError` if something goes wrong.
 
 
 Pipelines
@@ -92,10 +92,10 @@ Storage bakends also support filtering of assets by metadata or tags with the
 methods :func:`madam.core.AssetStorage.filter` and
 :func:`madam.core.AssetStorage.filter_by_tags`.
 
-Two basic backend implementations are provided:
 
--   :class:`madam.core.InMemoryStorage` uses a Python dictionary to store
-    assets
+.. note:: Two basic backend implementations are provided:
 
--   :class:`madam.core.ShelveStorage` uses Python :mod:`shelve` module to store
-    a serialized version of all assets and tags on disk
+    -   :class:`madam.core.InMemoryStorage` uses a Python dictionary to store
+        assets
+    -   :class:`madam.core.ShelveStorage` uses Python :mod:`shelve` module to
+        store a serialized version of all assets and tags on disk

@@ -1,5 +1,5 @@
-madam.vector module
-===================
+:mod:`madam.vector` module
+==========================
 
 .. automodule:: madam.vector
     :special-members: __init__
