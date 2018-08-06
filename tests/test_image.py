@@ -236,3 +236,12 @@ class TestPillowProcessor:
 
         assert rotated_asset.width == image_asset.width
         assert rotated_asset.height == image_asset.height
+
+    @pytest.mark.parametrize('angle', [-45.0, 15.0, 90.0])
+    def test_rotate_with_expand_changes_dimensions(self, pillow_processor, image_asset, angle):
+        rotate_operator = pillow_processor.rotate(angle=angle, expand=True)
+
+        rotated_asset = rotate_operator(image_asset)
+
+        assert rotated_asset.width != image_asset.width
+        assert rotated_asset.height != image_asset.height
