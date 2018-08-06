@@ -419,6 +419,14 @@ class FFmpegProcessor(Processor):
         if x == 0 and y == 0 and width == asset.width and height == asset.height:
             return asset
 
+        max_x = max(0, min(asset.width, width + x))
+        max_y = max(0, min(asset.height, height + y))
+        min_x = max(0, min(asset.width, x))
+        min_y = max(0, min(asset.height, y))
+
+        if min_x == asset.width or min_y == asset.height or max_x <= min_x or max_y <= min_y:
+            raise OperatorError('Invalid cropping area: <x=%r, y=%r, width=%r, height=%r>' % (x, y, width, height))
+
         return None
 
 

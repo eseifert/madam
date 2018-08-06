@@ -236,3 +236,14 @@ class TestFFmpegProcessor:
         cropped_asset = crop_operator(video_asset)
 
         assert cropped_asset is video_asset
+
+    @pytest.mark.parametrize('x, y, width, height', [
+        (-DEFAULT_WIDTH, -DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+        (DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+        (0, 0, -DEFAULT_WIDTH, -DEFAULT_HEIGHT),
+    ])
+    def test_crop_fails_with_non_overlapping_cropping_area(self, processor, video_asset, x, y, width, height):
+        crop_operator = processor.crop(x=x, y=y, width=width, height=height)
+
+        with pytest.raises(OperatorError):
+            crop_operator(video_asset)
