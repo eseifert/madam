@@ -222,3 +222,31 @@ class PillowProcessor(Processor):
                                 (mime_type, pil_error))
 
         return converted_asset
+
+    @operator
+    def crop(self, asset, x, y, width, height):
+        """
+        Creates a new asset whose essence is cropped to the specified
+        rectangular area.
+
+        :param asset: Asset whose contents will be cropped
+        :type asset: Asset
+        :param x: horizontal offset of the cropping area from left
+        :type x: int
+        :param y: vertical offset of the cropping area from top
+        :type y: int
+        :param width: width of the cropping area
+        :type width: int
+        :param height: height of the cropping area
+        :type height: int
+        :return: New asset with cropped essence
+        :rtype: Asset
+        """
+        if x == 0 and y == 0 and width == asset.width and height == asset.height:
+            return asset
+
+        image = PIL.Image.open(asset.essence)
+        cropped_image = image.crop(box=(x, y, x + width, y + height))
+        cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)
+
+        return cropped_asset

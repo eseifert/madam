@@ -175,3 +175,10 @@ class TestPillowProcessor:
 
         assert converted_asset.width == asset.width
         assert converted_asset.height == asset.height
+
+    def test_crop_with_original_dimensions_returns_identical_asset(self, pillow_processor, image_asset):
+        crop_operator = pillow_processor.crop(x=0, y=0, width=image_asset.width, height=image_asset.height)
+
+        cropped_asset = crop_operator(image_asset)
+
+        assert cropped_asset is image_asset
