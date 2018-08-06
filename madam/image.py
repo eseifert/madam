@@ -258,3 +258,23 @@ class PillowProcessor(Processor):
         cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)
 
         return cropped_asset
+
+    @operator
+    def rotate(self, asset, angle, expand=False):
+        """
+        Creates an asset whose essence is rotated by the specified angle in
+        degrees.
+
+        :param asset: Asset whose contents will be rotated
+        :type asset: Asset
+        :param angle: Angle in degrees, counter clockwise
+        :type angle: float
+        :param expand: If `true`, changes the dimensions of the new asset so it
+            can hold the entire rotated essence, otherwise the dimensions of
+            the original asset will be used.
+        :type expand: bool
+        :return: New asset with rotated essence
+        :rtype: Asset
+        """
+        if angle % 360.0 == 0.0:
+            return asset

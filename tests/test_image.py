@@ -219,3 +219,11 @@ class TestPillowProcessor:
 
         with pytest.raises(OperatorError):
             crop_operator(image_asset)
+
+    @pytest.mark.parametrize('angle', [0.0, 360.0, -360.0])
+    def test_rotate_without_rotation_returns_identical_asset(self, pillow_processor, image_asset, angle):
+        rotate_operator = pillow_processor.rotate(angle=angle)
+
+        rotated_asset = rotate_operator(image_asset)
+
+        assert rotated_asset is image_asset
