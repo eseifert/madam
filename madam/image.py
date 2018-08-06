@@ -250,6 +250,9 @@ class PillowProcessor(Processor):
         min_x = max(0, min(asset.width, x))
         min_y = max(0, min(asset.height, y))
 
+        if min_x == asset.width or min_y == asset.height or max_x <= min_x or max_y <= min_y:
+            raise OperatorError('Invalid cropping area: <x=%r, y=%r, width=%r, height=%r>' % (x, y, width, height))
+
         image = PIL.Image.open(asset.essence)
         cropped_image = image.crop(box=(min_x, min_y, max_x, max_y))
         cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)

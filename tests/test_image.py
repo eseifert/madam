@@ -208,3 +208,14 @@ class TestPillowProcessor:
 
         assert cropped_asset.width == cropped_width
         assert cropped_asset.height == cropped_height
+
+    @pytest.mark.parametrize('x, y, width, height', [
+        (-DEFAULT_WIDTH, -DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+        (DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+        (0, 0, -DEFAULT_WIDTH, -DEFAULT_HEIGHT),
+    ])
+    def test_crop_fails_with_non_overlapping_cropping_area(self, pillow_processor, image_asset, x, y, width, height):
+        crop_operator = pillow_processor.crop(x=x, y=y, width=width, height=height)
+
+        with pytest.raises(OperatorError):
+            crop_operator(image_asset)
