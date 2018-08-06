@@ -249,6 +249,19 @@ class TestFFmpegProcessor:
         assert cropped_asset.width == crop_width
         assert cropped_asset.height == crop_height
 
+    @pytest.mark.parametrize('x, y, width, height, cropped_width, cropped_height', [
+        (-DEFAULT_WIDTH//2, -DEFAULT_HEIGHT//2, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2),
+        (DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2),
+    ])
+    def test_crop_fixes_partially_overlapping_cropping_area(self, processor, video_asset,
+                                                            x, y, width, height, cropped_width, cropped_height):
+        crop_operator = processor.crop(x=x, y=y, width=width, height=height)
+
+        cropped_asset = crop_operator(video_asset)
+
+        assert cropped_asset.width == cropped_width
+        assert cropped_asset.height == cropped_height
+
     @pytest.mark.parametrize('x, y, width, height', [
         (-DEFAULT_WIDTH, -DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
         (DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
