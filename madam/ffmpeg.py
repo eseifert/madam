@@ -321,9 +321,10 @@ class FFmpegProcessor(Processor):
         :return: New asset with trimmed essence
         :rtype: Asset
         """
-        encoder_name = self.__mime_type_to_encoder.get(asset.mime_type)
-        if not encoder_name or not (asset.mime_type.startswith('audio/') or asset.mime_type.startswith('video/')):
-            raise UnsupportedFormatError('Unsupported source asset type: %s' % asset.mime_type)
+        mime_type = MimeType(asset.mime_type)
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
+        if not encoder_name or mime_type.type not in ('audio', 'video'):
+            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
 
         if to_seconds <= 0:
             to_seconds = asset.duration + to_seconds
@@ -390,6 +391,32 @@ class FFmpegProcessor(Processor):
 
         return Asset(essence=result, mime_type=mime_type,
                      width=asset.width, height=asset.height)
+
+    @operator
+    def crop(self, asset, x, y, width, height):
+        """
+        Creates a cropped video asset whose essence is cropped to the specified
+        rectangular area.
+
+        :param asset: Video asset whose contents will be cropped
+        :type asset: Asset
+        :param x: Horizontal offset of the cropping area from left
+        :type x: int
+        :param y: Vertical offset of the cropping area from top
+        :type y: int
+        :param width: Width of the cropping area
+        :type width: int
+        :param height: Height of the cropping area
+        :type height: int
+        :return: New asset with cropped essence
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
+        if not encoder_name or mime_type.type != 'video':
+            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
+
+        return None
 
 
 class FFmpegMetadataProcessor(MetadataProcessor):

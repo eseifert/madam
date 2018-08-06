@@ -223,3 +223,9 @@ class TestFFmpegProcessor:
 
         with pytest.raises(UnsupportedFormatError):
             extract_frame_operator(video_asset)
+
+    def test_crop_works_only_for_video_assets(self, processor, unknown_asset):
+        crop_operator = processor.crop(x=0, y=0, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT)
+
+        with pytest.raises(UnsupportedFormatError):
+            crop_operator(unknown_asset)
