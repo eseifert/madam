@@ -269,7 +269,7 @@ class PillowProcessor(Processor):
         :type asset: Asset
         :param angle: Angle in degrees, counter clockwise
         :type angle: float
-        :param expand: If `true`, changes the dimensions of the new asset so it
+        :param expand: If true, changes the dimensions of the new asset so it
             can hold the entire rotated essence, otherwise the dimensions of
             the original asset will be used.
         :type expand: bool
@@ -278,3 +278,9 @@ class PillowProcessor(Processor):
         """
         if angle % 360.0 == 0.0:
             return asset
+
+        image = PIL.Image.open(asset.essence)
+        rotated_image = image.rotate(angle=angle, resample=PIL.Image.BICUBIC, expand=expand)
+        rotated_asset = self._image_to_asset(rotated_image, mime_type=asset.mime_type)
+
+        return rotated_asset
