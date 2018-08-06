@@ -165,8 +165,9 @@ class PillowProcessor(Processor):
     @operator
     def auto_orient(self, asset):
         """
-        Creates a new asset whose essence is rotated according to the Exif orientation.
-        If no orientation metadata exists, an identical asset is returned.
+        Creates a new asset whose essence is rotated according to the Exif
+        orientation. If no orientation metadata exists or asset is not rotated,
+        an identical asset object is returned.
 
         :param asset: Asset with orientation metadata
         :type asset: Asset
@@ -174,23 +175,24 @@ class PillowProcessor(Processor):
         :rtype: Asset
         """
         orientation = asset.metadata.get('exif', {}).get('orientation')
-        if orientation is None:
+        if orientation is None or orientation == 1:
             return asset
 
-        if orientation == 1:
-            oriented_asset = Asset(asset.essence, metadata={})
-        elif orientation == 2:
-            oriented_asset = self.flip(orientation=FlipOrientation.HORIZONTAL)(asset)
+        flip_horizontally = self.flip(orientation=FlipOrientation.HORIZONTAL)
+        flip_vertically = self.flip(orientation=FlipOrientation.VERTICAL)
+
+        if orientation == 2:
+            oriented_asset = flip_horizontally(asset)
         elif orientation == 3:
             oriented_asset = self._rotate(asset, PIL.Image.ROTATE_180)
         elif orientation == 4:
-            oriented_asset = self.flip(orientation=FlipOrientation.VERTICAL)(asset)
+            oriented_asset = flip_vertically(asset)
         elif orientation == 5:
-            oriented_asset = self.flip(orientation=FlipOrientation.VERTICAL)(self._rotate(asset, PIL.Image.ROTATE_90))
+            oriented_asset = flip_vertically(self._rotate(asset, PIL.Image.ROTATE_90))
         elif orientation == 6:
             oriented_asset = self._rotate(asset, PIL.Image.ROTATE_270)
         elif orientation == 7:
-            oriented_asset = self.flip(orientation=FlipOrientation.HORIZONTAL)(self._rotate(asset, PIL.Image.ROTATE_90))
+            oriented_asset = flip_horizontally(self._rotate(asset, PIL.Image.ROTATE_90))
         elif orientation == 8:
             oriented_asset = self._rotate(asset, PIL.Image.ROTATE_90)
         else:
