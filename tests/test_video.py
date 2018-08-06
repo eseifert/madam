@@ -237,6 +237,18 @@ class TestFFmpegProcessor:
 
         assert cropped_asset is video_asset
 
+    def test_crop_returns_asset_with_correct_dimensions(self, processor, video_asset):
+        crop_width = video_asset.width // 2
+        crop_height = video_asset.height // 2
+        crop_x = (video_asset.width - crop_width) // 2
+        crop_y = (video_asset.height - crop_height) // 2
+        crop_operator = processor.crop(x=crop_x, y=crop_y, width=crop_width, height=crop_height)
+
+        cropped_asset = crop_operator(video_asset)
+
+        assert cropped_asset.width == crop_width
+        assert cropped_asset.height == crop_height
+
     @pytest.mark.parametrize('x, y, width, height', [
         (-DEFAULT_WIDTH, -DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
         (DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),

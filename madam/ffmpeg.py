@@ -427,7 +427,24 @@ class FFmpegProcessor(Processor):
         if min_x == asset.width or min_y == asset.height or max_x <= min_x or max_y <= min_y:
             raise OperatorError('Invalid cropping area: <x=%r, y=%r, width=%r, height=%r>' % (x, y, width, height))
 
-        return None
+        width = max_x - min_x
+        height = max_y - min_y
+
+        result = io.BytesIO()
+        with _FFmpegContext(asset.essence, result) as ctx:
+            command = ['ffmpeg', '-v', 'error',
+                       '-i', ctx.input_path, '-codec', 'copy',
+                       '-f:v', 'crop=w=%d:h=%d:x=%d:y=%d' % (width, height, x, y),
+                       '-f', encoder_name, '-y', ctx.output_path]
+
+            try:
+                subprocess_run(command, stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not convert video asset: %s' % error_message)
+
+        return Asset(essence=result, mime_type=mime_type,
+                     width=width, height=height)
 
 
 class FFmpegMetadataProcessor(MetadataProcessor):
