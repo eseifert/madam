@@ -214,15 +214,11 @@ class PillowProcessor(Processor):
         :rtype: Asset
         """
         mime_type = MimeType(mime_type)
-        pil_format = self.__mime_type_to_pillow_type[mime_type]
         try:
             image = PIL.Image.open(asset.essence)
-            converted_essence_data = io.BytesIO()
-            image.save(converted_essence_data, pil_format)
+            converted_asset = self._image_to_asset(image, mime_type)
         except (IOError, KeyError) as pil_error:
-            raise OperatorError('Could not convert image to %r: %s' %
-                                (pil_format, pil_error))
-        converted_essence_data.seek(0)
+            raise OperatorError('Could not convert image to %s: %s' %
+                                (mime_type, pil_error))
 
-        converted_asset = Asset(converted_essence_data, mime_type=mime_type)
         return converted_asset

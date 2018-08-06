@@ -166,3 +166,12 @@ class TestPillowProcessor:
 
         image = PIL.Image.open(converted_asset.essence)
         assert image.format == 'PNG'
+
+    def test_convert_maintains_dimensions(self, pillow_processor):
+        asset = jpeg_image_asset()
+        conversion_operator = pillow_processor.convert(mime_type='image/png')
+
+        converted_asset = conversion_operator(asset)
+
+        assert converted_asset.width == asset.width
+        assert converted_asset.height == asset.height
