@@ -286,3 +286,12 @@ class TestFFmpegProcessor:
         rotated_asset = rotate_operator(video_asset)
 
         assert rotated_asset is video_asset
+
+    @pytest.mark.parametrize('angle', [-45.0, 15.0, 90.0])
+    def test_rotate_without_expand_maintains_original_dimensions(self, processor, video_asset, angle):
+        rotate_operator = processor.rotate(angle=angle)
+
+        rotated_asset = rotate_operator(video_asset)
+
+        assert rotated_asset.width == video_asset.width
+        assert rotated_asset.height == video_asset.height

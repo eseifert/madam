@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from math import radians
 
 from bidict import bidict
 
@@ -471,7 +472,25 @@ class FFmpegProcessor(Processor):
         if angle % 360.0 == 0.0:
             return asset
 
-        return asset
+        angle_rad = radians(angle)
+        width = asset.width
+        height = asset.height
+
+        result = io.BytesIO()
+        with _FFmpegContext(asset.essence, result) as ctx:
+            command = ['ffmpeg', '-v', 'error',
+                       '-i', ctx.input_path, '-codec', 'copy',
+                       '-f:v', 'rotate=a=%(a)f:ow=%(w)d:oh=%(h)d)' % dict(a=angle_rad, w=width, h=height),
+                       '-f', encoder_name, '-y', ctx.output_path]
+
+            try:
+                subprocess_run(command, stderr=subprocess.PIPE, check=True)
+            except CalledProcessError as ffmpeg_error:
+                error_message = ffmpeg_error.stderr.decode('utf-8')
+                raise OperatorError('Could not convert video asset: %s' % error_message)
+
+        return Asset(essence=result, mime_type=mime_type,
+                     width=width, height=height)
 
 
 class FFmpegMetadataProcessor(MetadataProcessor):
