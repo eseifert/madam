@@ -468,6 +468,9 @@ class FFmpegProcessor(Processor):
         if not encoder_name or mime_type.type != 'video':
             raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
 
+        if angle % 360.0 == 0.0:
+            return asset
+
         return asset
 
 

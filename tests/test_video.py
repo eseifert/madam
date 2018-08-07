@@ -278,3 +278,11 @@ class TestFFmpegProcessor:
 
         with pytest.raises(UnsupportedFormatError):
             crop_operator(unknown_asset)
+
+    @pytest.mark.parametrize('angle', [0.0, 360.0, -360.0])
+    def test_rotate_without_rotation_returns_identical_asset(self, processor, video_asset, angle):
+        rotate_operator = processor.rotate(angle=angle)
+
+        rotated_asset = rotate_operator(video_asset)
+
+        assert rotated_asset is video_asset
