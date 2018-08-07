@@ -5,7 +5,7 @@ import os
 import shutil
 import subprocess
 import tempfile
-from math import radians
+from math import ceil, cos, pi, radians, sin
 
 from bidict import bidict
 
@@ -475,6 +475,20 @@ class FFmpegProcessor(Processor):
         angle_rad = radians(angle)
         width = asset.width
         height = asset.height
+
+        if expand:
+            if angle % 180 < 90:
+                width_ = asset.width
+                height_ = asset.height
+                angle_rad_ = angle_rad % pi
+            else:
+                width_ = asset.height
+                height_ = asset.width
+                angle_rad_ = angle_rad % pi - pi/2
+            cos_a = cos(angle_rad_)
+            sin_a = sin(angle_rad_)
+            width = ceil(round(width_ * cos_a + height_ * sin_a, 7))
+            height = ceil(round(width_ * sin_a + height_ * cos_a, 7))
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
