@@ -272,3 +272,9 @@ class TestFFmpegProcessor:
 
         with pytest.raises(OperatorError):
             crop_operator(video_asset)
+
+    def test_rotate_works_only_for_video_assets(self, processor, unknown_asset):
+        crop_operator = processor.rotate(angle=45)
+
+        with pytest.raises(UnsupportedFormatError):
+            crop_operator(unknown_asset)

@@ -446,6 +446,30 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, mime_type=mime_type,
                      width=width, height=height)
 
+    @operator
+    def rotate(self, asset, angle, expand=False):
+        """
+        Creates an asset whose essence is rotated by the specified angle in
+        degrees.
+
+        :param asset: Asset whose contents will be rotated
+        :type asset: Asset
+        :param angle: Angle in degrees, counter clockwise
+        :type angle: float
+        :param expand: If true, changes the dimensions of the new asset so it
+            can hold the entire rotated essence, otherwise the dimensions of
+            the original asset will be used.
+        :type expand: bool
+        :return: New asset with rotated essence
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
+        if not encoder_name or mime_type.type != 'video':
+            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
+
+        return asset
+
 
 class FFmpegMetadataProcessor(MetadataProcessor):
     """
