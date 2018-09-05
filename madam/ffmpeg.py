@@ -109,6 +109,21 @@ class FFmpegProcessor(Processor):
         MimeType('image/png'): 'png',
     }
 
+    __codec_options = {
+        'video': {
+            'libvpx-vp9': ['-speed', '1',
+                           '-tile-columns', '6',
+                           '-frame-parallel', '1',
+                           '-auto-alt-ref', '1',
+                           '-lag-in-frames', '25'],
+            'vp9': ['-speed', '1',
+                    '-tile-columns', '6',
+                    '-frame-parallel', '1',
+                    '-auto-alt-ref', '1',
+                    '-lag-in-frames', '25'],
+        }
+    }
+
     def __init__(self):
         """
         Initializes a new `FFmpegProcessor`.
@@ -268,6 +283,8 @@ class FFmpegProcessor(Processor):
                 if 'codec' in video:
                     if video['codec']:
                         command.extend(['-c:v', video['codec']])
+                        codec_options = FFmpegProcessor.__codec_options.get('video', {})
+                        command.extend(codec_options.get(video['codec'], []))
                     else:
                         command.extend(['-vn'])
                 if video.get('bitrate'):
@@ -276,6 +293,8 @@ class FFmpegProcessor(Processor):
                 if 'codec' in audio:
                     if audio['codec']:
                         command.extend(['-c:a', audio['codec']])
+                        codec_options = FFmpegProcessor.__codec_options.get('audio', {})
+                        command.extend(codec_options.get(audio['codec'], []))
                     else:
                         command.extend(['-an'])
                 if audio.get('bitrate'):
@@ -284,6 +303,8 @@ class FFmpegProcessor(Processor):
                 if 'codec' in subtitles:
                     if subtitles['codec']:
                         command.extend(['-c:s', subtitles['codec']])
+                        codec_options = FFmpegProcessor.__codec_options.get('subtitles', {})
+                        command.extend(codec_options.get(subtitles['codec'], []))
                     else:
                         command.extend(['-sn'])
             command.extend(['-threads', str(self.__threads),
