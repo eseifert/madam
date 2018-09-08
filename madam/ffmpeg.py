@@ -134,6 +134,12 @@ class FFmpegProcessor(Processor):
         }
     }
 
+    __container_options = {
+        MimeType('video/quicktime'): [
+            '-movflags', '+faststart',
+        ],
+    }
+
     def __init__(self):
         """
         Initializes a new `FFmpegProcessor`.
@@ -319,6 +325,10 @@ class FFmpegProcessor(Processor):
                         command.extend(codec_options.get(subtitles['codec'], []))
                     else:
                         command.extend(['-sn'])
+
+            container_options = FFmpegProcessor.__container_options.get(mime_type, {})
+            command.extend(container_options)
+
             command.extend(['-threads', str(self.__threads),
                             '-f', encoder_name, '-y', ctx.output_path])
 
