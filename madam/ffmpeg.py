@@ -111,16 +111,26 @@ class FFmpegProcessor(Processor):
 
     __codec_options = {
         'video': {
-            'libvpx-vp9': ['-speed', '1',
-                           '-tile-columns', '6',
-                           '-frame-parallel', '1',
-                           '-auto-alt-ref', '1',
-                           '-lag-in-frames', '25'],
-            'vp9': ['-speed', '1',
-                    '-tile-columns', '6',
-                    '-frame-parallel', '1',
-                    '-auto-alt-ref', '1',
-                    '-lag-in-frames', '25'],
+            'libx264': [
+                '-preset', 'slow',
+                '-pix_fmt', 'yuv420p',
+            ],
+            'libvpx-vp9': [
+                '-speed', '1',
+                '-tile-columns', '6',
+                '-frame-parallel', '1',
+                '-auto-alt-ref', '1',
+                '-lag-in-frames', '25',
+                '-pix_fmt', 'yuv420p',
+            ],
+            'vp9': [
+                '-speed', '1',
+                '-tile-columns', '6',
+                '-frame-parallel', '1',
+                '-auto-alt-ref', '1',
+                '-lag-in-frames', '25',
+                '-pix_fmt', 'yuv420p',
+            ],
         }
     }
 
@@ -271,7 +281,8 @@ class FFmpegProcessor(Processor):
         :return: New asset with converted essence
         :rtype: Asset
         """
-        encoder_name = self.__mime_type_to_encoder.get(MimeType(mime_type))
+        mime_type = MimeType(mime_type)
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
         if not encoder_name:
             raise UnsupportedFormatError('Unsupported asset type: %s' % mime_type)
 
@@ -318,13 +329,12 @@ class FFmpegProcessor(Processor):
                 raise OperatorError('Could not convert video asset: %s' % error_message)
 
         metadata = {
-            'mime_type': mime_type
+            'mime_type': str(mime_type)
         }
-        mime_category = mime_type.split('/')[0]
-        if mime_category in ('image', 'video'):
+        if mime_type.type in ('image', 'video'):
             metadata['width'] = asset.width
             metadata['height'] = asset.height
-        if mime_category in ('audio', 'video'):
+        if mime_type.type in ('audio', 'video'):
             metadata['duration'] = asset.duration
 
         return Asset(essence=result, **metadata)
