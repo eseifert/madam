@@ -279,11 +279,11 @@ class FFmpegProcessor(Processor):
         :param mime_type: MIME type of the video container
         :type mime_type: MimeType or str
         :param video: Dictionary with options for video streams.
-        :type video: dict
+        :type video: dict or None
         :param audio: Dictionary with options for audio streams.
-        :type audio: dict
+        :type audio: dict or None
         :param subtitles: Dictionary with the options for subtitle streams.
-        :type subtitles: dict
+        :type subtitles: dict or None
         :return: New asset with converted essence
         :rtype: Asset
         """
