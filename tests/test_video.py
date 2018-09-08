@@ -179,6 +179,14 @@ class TestFFmpegProcessor:
         assert trimmed_asset.duration != video_asset.duration
         assert trimmed_asset.duration == 0.1
 
+    def test_trim_with_negative_seconds_calculates_correct_duration(self, processor, video_asset):
+        trim_operator = processor.trim(from_seconds=0.0, to_seconds=-0.1)
+
+        trimmed_asset = trim_operator(video_asset)
+
+        assert trimmed_asset.duration != video_asset.duration
+        assert trimmed_asset.duration == video_asset.duration - 0.1
+
     def test_trimmed_asset_contains_valid_essence(self, processor, video_asset):
         trim_operator = processor.trim(from_seconds=0, to_seconds=0.1)
 
