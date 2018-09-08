@@ -288,7 +288,8 @@ class FFmpegProcessor(Processor):
                     else:
                         command.extend(['-vn'])
                 if video.get('bitrate'):
-                    command.extend(['-b:v', '%dk' % video['bitrate']])
+                    command.extend(['-b:v', '%dk' % video['bitrate'],
+                                    '-maxrate', '%dk' % video['bitrate']])
             if audio is not None:
                 if 'codec' in audio:
                     if audio['codec']:
