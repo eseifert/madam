@@ -30,7 +30,7 @@ def image_rgb(width, height, transpositions=None):
     return image
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, **additional_metadata):
     if not transpositions:
         transpositions = []
@@ -94,14 +94,14 @@ def jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=
     return madam.core.Asset(essence, **metadata)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def jpeg_data_with_exif():
     with open('tests/resources/image_with_exif.jpg', 'rb') as file:
         binary_data = file.read()
     return io.BytesIO(binary_data)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def png_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
@@ -115,7 +115,7 @@ def png_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     return madam.core.Asset(essence, **metadata)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def gif_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
@@ -129,7 +129,7 @@ def gif_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     return madam.core.Asset(essence, **metadata)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def svg_vector_asset():
     metadata = dict(rdf=
         dict(xml=
@@ -168,7 +168,7 @@ def svg_vector_asset():
                             **metadata)
 
 
-@pytest.fixture(params=['jpeg_image_asset', 'png_image_asset', 'gif_image_asset'])
+@pytest.fixture(scope='session', params=['jpeg_image_asset', 'png_image_asset', 'gif_image_asset'])
 def image_asset(request, jpeg_image_asset, png_image_asset, gif_image_asset):
     if request.param == 'jpeg_image_asset':
         return jpeg_image_asset
@@ -179,7 +179,7 @@ def image_asset(request, jpeg_image_asset, png_image_asset, gif_image_asset):
     raise ValueError()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def wav_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
@@ -193,7 +193,7 @@ def wav_audio_asset(tmpdir_factory):
                             duration=duration)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def mp3_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
@@ -208,7 +208,7 @@ def mp3_audio_asset(tmpdir_factory):
                             duration=duration)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def opus_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
@@ -222,7 +222,7 @@ def opus_audio_asset(tmpdir_factory):
                             duration=duration)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def nut_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
@@ -236,7 +236,7 @@ def nut_audio_asset(tmpdir_factory):
                             duration=duration)
 
 
-@pytest.fixture(scope='class', params=['mp3_audio_asset', 'opus_audio_asset', 'wav_audio_asset'])
+@pytest.fixture(scope='session', params=['mp3_audio_asset', 'opus_audio_asset', 'wav_audio_asset'])
 def audio_asset(request, mp3_audio_asset, opus_audio_asset, wav_audio_asset):
     if request.param == 'mp3_audio_asset':
         return mp3_audio_asset
@@ -247,7 +247,7 @@ def audio_asset(request, mp3_audio_asset, opus_audio_asset, wav_audio_asset):
     raise ValueError()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def mp4_video_asset(tmpdir_factory):
     ffmpeg_params = dict(
         width=DEFAULT_WIDTH,
@@ -270,7 +270,7 @@ def mp4_video_asset(tmpdir_factory):
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def avi_video_asset(tmpdir_factory):
     ffmpeg_params = dict(
         width=DEFAULT_WIDTH,
@@ -291,7 +291,7 @@ def avi_video_asset(tmpdir_factory):
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def mkv_video_asset(tmpdir_factory):
     ffmpeg_params = dict(
         width=DEFAULT_WIDTH,
@@ -314,7 +314,7 @@ def mkv_video_asset(tmpdir_factory):
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def mp2_video_asset(tmpdir_factory):
     ffmpeg_params = dict(
         width=DEFAULT_WIDTH,
@@ -337,7 +337,7 @@ def mp2_video_asset(tmpdir_factory):
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def ogg_video_asset(tmpdir_factory):
     ffmpeg_params = dict(
         width=DEFAULT_WIDTH,
@@ -358,7 +358,7 @@ def ogg_video_asset(tmpdir_factory):
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def nut_video_asset():
     ffmpeg_params = dict(
         width=DEFAULT_WIDTH,
@@ -375,7 +375,7 @@ def nut_video_asset():
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
 
 
-@pytest.fixture(scope='class', params=['mp2_video_asset', 'mp4_video_asset', 'mkv_video_asset'])
+@pytest.fixture(scope='session', params=['mp2_video_asset', 'mp4_video_asset', 'mkv_video_asset'])
 def video_asset(request, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_video_asset):
     if request.param == 'avi_video_asset':
         return avi_video_asset
@@ -389,7 +389,7 @@ def video_asset(request, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_
         raise ValueError()
 
 
-@pytest.fixture(scope='class', params=['mp4_video_asset', 'mkv_video_asset'])
+@pytest.fixture(scope='session', params=['mp4_video_asset', 'mkv_video_asset'])
 def video_asset_with_subtitle(request, mp4_video_asset, mkv_video_asset):
     if request.param == 'mp4_video_asset':
         return mp4_video_asset
@@ -399,7 +399,7 @@ def video_asset_with_subtitle(request, mp4_video_asset, mkv_video_asset):
         raise ValueError()
 
 
-@pytest.fixture(scope='class', params=[
+@pytest.fixture(scope='session', params=[
     'jpeg_image_asset', 'png_image_asset', 'gif_image_asset', 'svg_vector_asset',
     'mp3_audio_asset', 'opus_audio_asset', 'wav_audio_asset',
     'avi_video_asset', 'mp2_video_asset', 'mp4_video_asset', 'mkv_video_asset', 'ogg_video_asset'])
@@ -434,7 +434,7 @@ def asset(request,
     raise ValueError()
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def unknown_asset():
     random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
     return madam.core.Asset(essence=io.BytesIO(random_data),
