@@ -118,11 +118,13 @@ class FFmpegProcessor(Processor):
             'libvpx-vp9': [
                 '-speed', '1',
                 '-tile-columns', '6',
+                '-crf 32',
                 '-pix_fmt', 'yuv420p',
             ],
             'vp9': [
                 '-speed', '1',
                 '-tile-columns', '6',
+                '-crf 32',
                 '-pix_fmt', 'yuv420p',
             ],
         }
