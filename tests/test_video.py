@@ -10,7 +10,7 @@ from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import image_asset, jpeg_image_asset, png_image_asset, gif_image_asset
-from assets import video_asset, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_video_asset, ogg_video_asset
+from assets import video_asset_with_subtitle, video_asset, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_video_asset, ogg_video_asset
 from assets import unknown_asset
 
 
@@ -123,33 +123,75 @@ class TestFFmpegProcessor:
     def test_converted_essence_stream_has_same_duration_as_source(self, converted_asset):
         assert converted_asset.duration == pytest.approx(DEFAULT_DURATION, rel=1e-2)
 
-    def test_convert_can_strip_audio_stream(self, processor, video_asset):
+    def test_convert_can_process_all_streams(self, processor, video_asset_with_subtitle):
         conversion_operator = processor.convert(mime_type='video/quicktime',
                                                 video=dict(codec='h264', bitrate=50),
-                                                audio=dict(codec=None))
+                                                audio=dict(codec='aac', bitrate=24),
+                                                subtitle=dict(codec='mov_text'))
+
+        converted_asset = conversion_operator(video_asset_with_subtitle)
+
+        streams_by_type = self.__probe_streams_by_type(converted_asset)
+        video_streams = streams_by_type.get('video', [])
+        audio_streams = streams_by_type.get('audio', [])
+        subtitle_streams = streams_by_type.get('subtitle', [])
+        assert len(video_streams) == 1
+        assert video_streams[0]['codec_name'] == 'h264'
+        assert len(audio_streams) == 1
+        assert audio_streams[0]['codec_name'] == 'aac'
+        assert len(subtitle_streams) == 1
+        assert subtitle_streams[0]['codec_name'] == 'mov_text'
+
+    def test_convert_can_strip_all_streams_except_subtitle(self, processor, video_asset_with_subtitle):
+        conversion_operator = processor.convert(mime_type='video/x-matroska',
+                                                video=dict(codec=None),
+                                                audio=dict(codec=None),
+                                                subtitle=dict(codec='webvtt'))
+
+        converted_asset = conversion_operator(video_asset_with_subtitle)
+
+        streams_by_type = self.__probe_streams_by_type(converted_asset)
+        video_streams = streams_by_type.get('video', [])
+        audio_streams = streams_by_type.get('audio', [])
+        subtitle_streams = streams_by_type.get('subtitle', [])
+        assert len(video_streams) == 0
+        assert len(audio_streams) == 0
+        assert len(subtitle_streams) == 1
+        assert subtitle_streams[0]['codec_name'] == 'webvtt'
+
+    def test_convert_can_strip_all_streams_except_video(self, processor, video_asset):
+        conversion_operator = processor.convert(mime_type='video/x-matroska',
+                                                video=dict(codec='h264', bitrate=50),
+                                                audio=dict(codec=None),
+                                                subtitle=dict(codec=None))
 
         converted_asset = conversion_operator(video_asset)
 
         streams_by_type = self.__probe_streams_by_type(converted_asset)
         video_streams = streams_by_type.get('video', [])
         audio_streams = streams_by_type.get('audio', [])
+        subtitle_streams = streams_by_type.get('subtitle', [])
         assert len(video_streams) == 1
         assert video_streams[0]['codec_name'] == 'h264'
         assert len(audio_streams) == 0
+        assert len(subtitle_streams) == 0
 
-    def test_convert_can_strip_video_stream(self, processor, video_asset):
+    def test_convert_can_strip_all_streams_except_audio(self, processor, video_asset):
         conversion_operator = processor.convert(mime_type='audio/mpeg',
                                                 video=dict(codec=None),
-                                                audio=dict(codec='mp3', bitrate=32))
+                                                audio=dict(codec='mp3', bitrate=32),
+                                                subtitle=dict(codec=None))
 
         converted_asset = conversion_operator(video_asset)
 
         streams_by_type = self.__probe_streams_by_type(converted_asset)
         video_streams = streams_by_type.get('video', [])
         audio_streams = streams_by_type.get('audio', [])
+        subtitle_streams = streams_by_type.get('subtitle', [])
         assert len(video_streams) == 0
         assert len(audio_streams) == 1
         assert audio_streams[0]['codec_name'] == 'mp3'
+        assert len(subtitle_streams) == 0
 
     def test_trim_fails_for_image_assets(self, processor, image_asset):
         trim_operator = processor.trim(from_seconds=0, to_seconds=0.1)
