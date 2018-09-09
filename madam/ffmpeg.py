@@ -296,7 +296,7 @@ class FFmpegProcessor(Processor):
         with _FFmpegContext(asset.essence, result) as ctx:
             command = ['ffmpeg', '-loglevel', 'error',
                        '-i', ctx.input_path]
-            if video is not None:
+            if video:
                 if 'codec' in video:
                     if video['codec']:
                         command.extend(['-c:v', video['codec']])
@@ -307,7 +307,7 @@ class FFmpegProcessor(Processor):
                 if video.get('bitrate'):
                     command.extend(['-b:v', '%dk' % video['bitrate'],
                                     '-maxrate', '%dk' % video['bitrate']])
-            if audio is not None:
+            if audio:
                 if 'codec' in audio:
                     if audio['codec']:
                         command.extend(['-c:a', audio['codec']])
@@ -317,7 +317,7 @@ class FFmpegProcessor(Processor):
                         command.extend(['-an'])
                 if audio.get('bitrate'):
                     command.extend(['-b:a', '%dk' % audio['bitrate']])
-            if subtitle is not None:
+            if subtitle:
                 if 'codec' in subtitle:
                     if subtitle['codec']:
                         command.extend(['-c:s', subtitle['codec']])
