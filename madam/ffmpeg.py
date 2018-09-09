@@ -251,7 +251,7 @@ class FFmpegProcessor(Processor):
                      width=width, height=height, duration=asset.duration)
 
     @operator
-    def convert(self, asset, mime_type, video=None, audio=None, subtitles=None):
+    def convert(self, asset, mime_type, video=None, audio=None, subtitle=None):
         """
         Creates a new asset of the specified MIME type from the essence of the
         specified asset.
@@ -282,8 +282,8 @@ class FFmpegProcessor(Processor):
         :type video: dict or None
         :param audio: Dictionary with options for audio streams.
         :type audio: dict or None
-        :param subtitles: Dictionary with the options for subtitle streams.
-        :type subtitles: dict or None
+        :param subtitle: Dictionary with the options for subtitle streams.
+        :type subtitle: dict or None
         :return: New asset with converted essence
         :rtype: Asset
         """
@@ -317,12 +317,12 @@ class FFmpegProcessor(Processor):
                         command.extend(['-an'])
                 if audio.get('bitrate'):
                     command.extend(['-b:a', '%dk' % audio['bitrate']])
-            if subtitles is not None:
-                if 'codec' in subtitles:
-                    if subtitles['codec']:
-                        command.extend(['-c:s', subtitles['codec']])
+            if subtitle is not None:
+                if 'codec' in subtitle:
+                    if subtitle['codec']:
+                        command.extend(['-c:s', subtitle['codec']])
                         codec_options = FFmpegProcessor.__codec_options.get('subtitles', {})
-                        command.extend(codec_options.get(subtitles['codec'], []))
+                        command.extend(codec_options.get(subtitle['codec'], []))
                     else:
                         command.extend(['-sn'])
 
