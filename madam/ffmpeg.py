@@ -306,8 +306,11 @@ class FFmpegProcessor(Processor):
                     else:
                         command.extend(['-vn'])
                 if video.get('bitrate'):
-                    command.extend(['-b:v', '%dk' % video['bitrate'],
-                                    '-maxrate', '%dk' % video['bitrate']])
+                    # Set minimum at 50% of bitrate and maximum at 145% of bitrate
+                    # (see https://developers.google.com/media/vp9/settings/vod/)
+                    command.extend(['-minrate', '%dk' % round(0.5*video['bitrate']),
+                                    '-b:v', '%dk' % video['bitrate'],
+                                    '-maxrate', '%dk' % round(1.45*video['bitrate'])])
             if audio:
                 if 'codec' in audio:
                     if audio['codec']:
