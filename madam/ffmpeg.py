@@ -326,7 +326,7 @@ class FFmpegProcessor(Processor):
                     else:
                         command.extend(['-sn'])
 
-            container_options = FFmpegProcessor.__container_options.get(mime_type, {})
+            container_options = FFmpegProcessor.__container_options.get(mime_type, [])
             command.extend(container_options)
 
             command.extend(['-threads', str(self.__threads),
