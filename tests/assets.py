@@ -1,7 +1,6 @@
 import datetime
 import io
 import subprocess
-from fractions import Fraction
 from xml.etree import ElementTree as ET
 
 import PIL.Image
@@ -184,7 +183,7 @@ def image_asset(request, jpeg_image_asset, png_image_asset, gif_image_asset):
 def wav_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
-               '-vn -c:a pcm_s16le -f wav' % duration).split()
+               '-vn -sn -c:a pcm_s16le -f wav' % duration).split()
     tmpfile = tmpdir_factory.mktemp('wav_asset').join('without_metadata.wav')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
@@ -199,7 +198,7 @@ def mp3_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
                '-write_xing 0 -id3v2_version 0 -write_id3v1 0 '
-               '-vn -f mp3' % duration).split()
+               '-vn -sn -f mp3' % duration).split()
     tmpfile = tmpdir_factory.mktemp('mp3_asset').join('without_metadata.mp3')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
@@ -213,7 +212,7 @@ def mp3_audio_asset(tmpdir_factory):
 def opus_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
-               '-vn -f opus' % duration).split()
+               '-vn -sn -f opus' % duration).split()
     tmpfile = tmpdir_factory.mktemp('opus_asset').join('without_metadata.opus')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
@@ -227,7 +226,7 @@ def opus_audio_asset(tmpdir_factory):
 def nut_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
-               '-vn -c:a pcm_s16le -f nut' % duration).split()
+               '-vn -sn -c:a pcm_s16le -f nut' % duration).split()
     tmpfile = tmpdir_factory.mktemp('nut_asset').join('without_metadata.nut')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
@@ -254,12 +253,15 @@ def mp4_video_asset(tmpdir_factory):
         width=DEFAULT_WIDTH,
         height=DEFAULT_HEIGHT,
         duration=DEFAULT_DURATION,
+        subtitle_path='tests/resources/subtitle.vtt',
     )
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-strict -2 -c:v h264 -preset ultrafast -qp 0 -c:a aac -f mp4' % ffmpeg_params).split()
-    tmpfile = tmpdir_factory.mktemp('mp4_video_asset').join('h264-aac.mp4')
+               '-f webvtt -i %(subtitle_path)s '
+               '-strict -2 -c:v h264 -preset ultrafast -qp 0 -c:a aac -c:s mov_text '
+               '-f mp4' % ffmpeg_params).split()
+    tmpfile = tmpdir_factory.mktemp('mp4_video_asset').join('h264-aac-mov_text.mp4')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
@@ -278,7 +280,8 @@ def avi_video_asset(tmpdir_factory):
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v h264 -c:a mp3 -f avi' % ffmpeg_params).split()
+               '-c:v h264 -c:a mp3 -sn '
+               '-f avi' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('avi_video_asset').join('h264-mp3.avi')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
@@ -294,12 +297,15 @@ def mkv_video_asset(tmpdir_factory):
         width=DEFAULT_WIDTH,
         height=DEFAULT_HEIGHT,
         duration=DEFAULT_DURATION,
+        subtitle_path='tests/resources/subtitle.vtt',
     )
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v vp9 -c:a libopus -f matroska' % ffmpeg_params).split()
-    tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('vp9-opus.mkv')
+               '-f webvtt -i %(subtitle_path)s '
+               '-c:v vp9 -c:a libopus -c:s webvtt '
+               '-f matroska' % ffmpeg_params).split()
+    tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('vp9-opus-webvtt.mkv')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
@@ -314,12 +320,15 @@ def mp2_video_asset(tmpdir_factory):
         width=DEFAULT_WIDTH,
         height=DEFAULT_HEIGHT,
         duration=DEFAULT_DURATION,
+        subtitle_path='tests/resources/subtitle.vtt',
     )
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v mpeg2video -c:a mp2 -f mpegts' % ffmpeg_params).split()
-    tmpfile = tmpdir_factory.mktemp('mp2_video_asset').join('mpeg2-mp2.ts')
+               '-f webvtt -i %(subtitle_path)s '
+               '-c:v mpeg2video -c:a mp2 -c:s dvbsub '
+               '-f mpegts' % ffmpeg_params).split()
+    tmpfile = tmpdir_factory.mktemp('mp2_video_asset').join('mpeg2-mp2-dvbsub.ts')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
@@ -338,7 +347,8 @@ def ogg_video_asset(tmpdir_factory):
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-strict -2 -c:v theora -c:a vorbis -ac 2 -f ogg' % ffmpeg_params).split()
+               '-strict -2 -c:v theora -c:a vorbis -ac 2 -sn '
+               '-f ogg' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('ogg_video_asset').join('theora-vorbis.ogg')
     command.append(str(tmpfile))
     subprocess_run(command, check=True, stderr=subprocess.PIPE)
@@ -358,7 +368,8 @@ def nut_video_asset():
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v ffv1 -level 3 -a:c pcm_s16le -f nut pipe:' % ffmpeg_params).split()
+               '-c:v ffv1 -level 3 -a:c pcm_s16le -sn '
+               '-f nut pipe:' % ffmpeg_params).split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
@@ -371,6 +382,16 @@ def video_asset(request, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_
     elif request.param == 'mp2_video_asset':
         return mp2_video_asset
     elif request.param == 'mp4_video_asset':
+        return mp4_video_asset
+    elif request.param == 'mkv_video_asset':
+        return mkv_video_asset
+    else:
+        raise ValueError()
+
+
+@pytest.fixture(scope='class', params=['mp4_video_asset', 'mkv_video_asset'])
+def video_asset_with_subtitle(request, mp4_video_asset, mkv_video_asset):
+    if request.param == 'mp4_video_asset':
         return mp4_video_asset
     elif request.param == 'mkv_video_asset':
         return mkv_video_asset
