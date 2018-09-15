@@ -139,6 +139,9 @@ class FFmpegProcessor(Processor):
         MimeType('video/quicktime'): [
             '-movflags', '+faststart',
         ],
+        MimeType('video/x-matroska'): [
+            '-avoid_negative_ts', '1',
+        ],
     }
 
     def __init__(self):
