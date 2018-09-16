@@ -36,20 +36,21 @@ class PillowProcessor(Processor):
     """
     Represents a processor that uses Pillow as a backend.
     """
+    __mime_type_to_pillow_type = bidict({
+        MimeType('image/gif'): 'GIF',
+        MimeType('image/jpeg'): 'JPEG',
+        MimeType('image/png'): 'PNG'
+    })
+
     def __init__(self):
         """
         Initializes a new `PillowProcessor`.
         """
         super().__init__()
-        self.__mime_type_to_pillow_type = bidict({
-            MimeType('image/gif'): 'GIF',
-            MimeType('image/jpeg'): 'JPEG',
-            MimeType('image/png'): 'PNG'
-        })
 
     def read(self, file):
         image = PIL.Image.open(file)
-        mime_type = self.__mime_type_to_pillow_type.inv[image.format]
+        mime_type = PillowProcessor.__mime_type_to_pillow_type.inv[image.format]
         metadata = dict(
             mime_type=str(mime_type),
             width=image.width,
@@ -104,7 +105,7 @@ class PillowProcessor(Processor):
 
     def _image_to_asset(self, image, mime_type):
         mime_type = MimeType(mime_type)
-        pil_format = self.__mime_type_to_pillow_type[mime_type]
+        pil_format = PillowProcessor.__mime_type_to_pillow_type[mime_type]
         image_buffer = io.BytesIO()
         image.save(image_buffer, pil_format)
         image_buffer.seek(0)
