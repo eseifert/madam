@@ -42,6 +42,16 @@ class PillowProcessor(Processor):
         MimeType('image/png'): 'PNG'
     })
 
+    __format_options = {
+        MimeType('image/jpeg'): dict(
+            optimize=True,
+            progressive=True,
+        ),
+        MimeType('image/png'): dict(
+            optimize=True,
+        ),
+    }
+
     def __init__(self):
         """
         Initializes a new `PillowProcessor`.
@@ -104,10 +114,22 @@ class PillowProcessor(Processor):
         return resized_asset
 
     def _image_to_asset(self, image, mime_type):
+        """
+        Converts an PIL image to a MADAM asset. THe conversion can also include
+        a conversion in file type.
+
+        :param image: PIL image
+        :type image: PIL.Image
+        :param mime_type: MIME type of the target asset
+        :type mime_type: MimeType
+        :return: MADAM asset with hte specified MIME type
+        :rtype: Asset
+        """
         mime_type = MimeType(mime_type)
         pil_format = PillowProcessor.__mime_type_to_pillow_type[mime_type]
+        pil_options = PillowProcessor.__format_options.get(mime_type, {})
         image_buffer = io.BytesIO()
-        image.save(image_buffer, pil_format)
+        image.save(image_buffer, pil_format, **pil_options)
         image_buffer.seek(0)
         asset = self.read(image_buffer)
         return asset
