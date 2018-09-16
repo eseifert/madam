@@ -113,6 +113,12 @@ class FFmpegProcessor(Processor):
         'video': {
             'libx264': [
                 '-preset', 'slow',
+                '-crf', '23',
+                '-pix_fmt', 'yuv420p',
+            ],
+            'libx265': [
+                '-preset', 'slow',
+                '-crf', '28',
                 '-pix_fmt', 'yuv420p',
             ],
             'libvpx': [
@@ -140,7 +146,7 @@ class FFmpegProcessor(Processor):
             '-movflags', '+faststart',
         ],
         MimeType('video/x-matroska'): [
-            '-avoid_negative_ts', '1',
+            '-avoid_negative_ts', 'make_zero',
         ],
     }
 
