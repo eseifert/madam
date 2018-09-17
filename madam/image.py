@@ -39,7 +39,8 @@ class PillowProcessor(Processor):
     __mime_type_to_pillow_type = bidict({
         MimeType('image/gif'): 'GIF',
         MimeType('image/jpeg'): 'JPEG',
-        MimeType('image/png'): 'PNG'
+        MimeType('image/png'): 'PNG',
+        MimeType('image/webp'): 'WEBP',
     })
 
     __format_options = {
@@ -49,6 +50,9 @@ class PillowProcessor(Processor):
         ),
         MimeType('image/png'): dict(
             optimize=True,
+        ),
+        MimeType('image/webp'): dict(
+            method=6,
         ),
     }
 

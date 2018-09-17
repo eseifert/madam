@@ -101,12 +101,14 @@ class FFmpegProcessor(Processor):
         MimeType('image/gif'): 'gif',
         MimeType('image/jpeg'): 'image2',
         MimeType('image/png'): 'image2',
+        MimeType('image/webp'): 'image2',
     }
 
     __mime_type_to_codec = {
         MimeType('image/gif'): 'gif',
         MimeType('image/jpeg'): 'mjpeg',
         MimeType('image/png'): 'png',
+        MimeType('image/webp'): 'libwebp',
     }
 
     __codec_options = {
