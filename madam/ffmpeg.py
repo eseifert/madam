@@ -98,6 +98,7 @@ class FFmpegProcessor(Processor):
         MimeType('audio/mpeg'): 'mp3',
         MimeType('audio/ogg'): 'ogg',
         MimeType('audio/wav'): 'wav',
+        MimeType('image/bmp'): 'image2',
         MimeType('image/gif'): 'gif',
         MimeType('image/jpeg'): 'image2',
         MimeType('image/png'): 'image2',
@@ -106,6 +107,7 @@ class FFmpegProcessor(Processor):
     }
 
     __mime_type_to_codec = {
+        MimeType('image/bmp'): 'bmp',
         MimeType('image/gif'): 'gif',
         MimeType('image/jpeg'): 'mjpeg',
         MimeType('image/png'): 'png',

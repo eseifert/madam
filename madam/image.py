@@ -37,6 +37,7 @@ class PillowProcessor(Processor):
     Represents a processor that uses Pillow as a backend.
     """
     __mime_type_to_pillow_type = bidict({
+        MimeType('image/bmp'): 'BMP',
         MimeType('image/gif'): 'GIF',
         MimeType('image/jpeg'): 'JPEG',
         MimeType('image/png'): 'PNG',
