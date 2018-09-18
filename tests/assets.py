@@ -130,6 +130,20 @@ def gif_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 
 
 @pytest.fixture(scope='session')
+def bmp_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_rgb(width=width, height=height)
+    essence = io.BytesIO()
+    image.save(essence, 'BMP')
+    essence.seek(0)
+    metadata = dict(
+        width=image.width,
+        height=image.height,
+        mime_type='image/bmp'
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
 def tiff_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
@@ -196,15 +210,18 @@ def svg_vector_asset():
                             **metadata)
 
 
-@pytest.fixture(scope='session', params=[
-    'jpeg_image_asset', 'png_image_asset', 'gif_image_asset', 'tiff_image_asset', 'webp_image_asset'])
-def image_asset(request, jpeg_image_asset, png_image_asset, gif_image_asset, tiff_image_asset, webp_image_asset):
+@pytest.fixture(scope='session', params=['jpeg_image_asset', 'png_image_asset', 'gif_image_asset',
+                                         'bmp_image_asset', 'tiff_image_asset', 'webp_image_asset'])
+def image_asset(request, jpeg_image_asset, png_image_asset, gif_image_asset,
+                bmp_image_asset, tiff_image_asset, webp_image_asset):
     if request.param == 'jpeg_image_asset':
         return jpeg_image_asset
     if request.param == 'png_image_asset':
         return png_image_asset
     if request.param == 'gif_image_asset':
         return gif_image_asset
+    if request.param == 'bmp_image_asset':
+        return bmp_image_asset
     if request.param == 'tiff_image_asset':
         return tiff_image_asset
     if request.param == 'webp_image_asset':
