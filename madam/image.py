@@ -40,6 +40,7 @@ class PillowProcessor(Processor):
         MimeType('image/gif'): 'GIF',
         MimeType('image/jpeg'): 'JPEG',
         MimeType('image/png'): 'PNG',
+        MimeType('image/tiff'): 'TIFF',
         MimeType('image/webp'): 'WEBP',
     })
 
@@ -50,6 +51,9 @@ class PillowProcessor(Processor):
         ),
         MimeType('image/png'): dict(
             optimize=True,
+        ),
+        MimeType('image/tiff'): dict(
+            compression='tiff_deflate',
         ),
         MimeType('image/webp'): dict(
             method=6,

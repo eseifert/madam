@@ -101,6 +101,7 @@ class FFmpegProcessor(Processor):
         MimeType('image/gif'): 'gif',
         MimeType('image/jpeg'): 'image2',
         MimeType('image/png'): 'image2',
+        MimeType('image/tiff'): 'image2',
         MimeType('image/webp'): 'image2',
     }
 
@@ -108,6 +109,7 @@ class FFmpegProcessor(Processor):
         MimeType('image/gif'): 'gif',
         MimeType('image/jpeg'): 'mjpeg',
         MimeType('image/png'): 'png',
+        MimeType('image/tiff'): 'tiff',
         MimeType('image/webp'): 'libwebp',
     }
 
