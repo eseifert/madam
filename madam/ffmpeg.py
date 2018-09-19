@@ -31,6 +31,12 @@ def _probe(file):
     return json_obj
 
 
+def _combine_metadata(asset, *cloned_keys, **additional_metadata):
+    metadata = {key: asset.metadata[key] for key in cloned_keys if key in asset.metadata}
+    metadata.update(additional_metadata)
+    return metadata
+
+
 def _get_decoder_and_stream_type(probe_data):
     decoder_name = probe_data['format']['format_name']
 
@@ -270,8 +276,11 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not resize asset: %s' % error_message)
 
-        return Asset(essence=result, mime_type=mime_type,
-                     width=width, height=height, duration=asset.duration)
+        metadata = _combine_metadata(asset,
+                                     'mime_type', 'duration', 'video', 'audio', 'subtitle',
+                                     width=width, height=height)
+
+        return Asset(essence=result, **metadata)
 
     @operator
     def convert(self, asset, mime_type, video=None, audio=None, subtitle=None):
@@ -407,8 +416,11 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not trim asset: %s' % error_message)
 
-        return Asset(essence=result, mime_type=asset.mime_type,
-                     width=asset.width, height=asset.height, duration=duration)
+        metadata = _combine_metadata(asset,
+                                     'mime_type', 'width', 'height', 'video', 'audio', 'subtitle',
+                                     duration=duration)
+
+        return Asset(essence=result, **metadata)
 
     @operator
     def extract_frame(self, asset, mime_type, seconds=0):
@@ -449,8 +461,13 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not extract frame from asset: %s' % error_message)
 
-        return Asset(essence=result, mime_type=mime_type,
-                     width=asset.width, height=asset.height)
+        metadata = _combine_metadata(asset,
+                                     'width', 'height',
+                                     mime_type=mime_type)
+        if 'video' in asset.metadata:
+            metadata['depth'] = asset.metadata['video']['depth']
+
+        return Asset(essence=result, **metadata)
 
     @operator
     def crop(self, asset, x, y, width, height):
@@ -503,8 +520,11 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not crop asset: %s' % error_message)
 
-        return Asset(essence=result, mime_type=mime_type,
-                     width=width, height=height)
+        metadata = _combine_metadata(asset,
+                                     'mime_type', 'duration', 'video', 'audio', 'subtitle',
+                                     width=width, height=height)
+
+        return Asset(essence=result, **metadata)
 
     @operator
     def rotate(self, asset, angle, expand=False):
@@ -562,8 +582,11 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not rotate asset: %s' % error_message)
 
-        return Asset(essence=result, mime_type=mime_type,
-                     width=width, height=height)
+        metadata = _combine_metadata(asset,
+                                     'mime_type', 'duration', 'video', 'audio', 'subtitle',
+                                     width=width, height=height)
+
+        return Asset(essence=result, **metadata)
 
 
 class FFmpegMetadataProcessor(MetadataProcessor):
