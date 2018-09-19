@@ -246,7 +246,7 @@ def wav_audio_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/wav',
-                            duration=duration)
+                            duration=duration, audio=dict(codec='pcm_s16le'))
 
 
 @pytest.fixture(scope='session')
@@ -261,7 +261,7 @@ def mp3_audio_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/mpeg',
-                            duration=duration)
+                            duration=duration, audio=dict(codec='mp3'))
 
 
 @pytest.fixture(scope='session')
@@ -275,7 +275,7 @@ def opus_audio_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/ogg',
-                            duration=duration)
+                            duration=duration, audio=dict(codec='opus'))
 
 
 @pytest.fixture(scope='session')
@@ -289,7 +289,7 @@ def nut_audio_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/x-nut',
-                            duration=duration)
+                            duration=duration, audio=dict(codec='pcm_s16le'))
 
 
 @pytest.fixture(scope='session', params=['mp3_audio_asset', 'opus_audio_asset', 'wav_audio_asset'])
