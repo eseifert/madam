@@ -323,7 +323,10 @@ def mp4_video_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/quicktime',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
+                            video=dict(codec='h264', depth=8),
+                            audio=dict(codec='aac'),
+                            subtitle=dict(codec='mov_text'))
 
 
 @pytest.fixture(scope='session')
@@ -344,7 +347,9 @@ def avi_video_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-msvideo',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
+                            video=dict(codec='h264', depth=8),
+                            audio=dict(codec='mp3'))
 
 
 @pytest.fixture(scope='session')
@@ -367,7 +372,10 @@ def mkv_video_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-matroska',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
+                            video=dict(codec='vp9', depth=8),
+                            audio=dict(codec='libopus'),
+                            subtitle=dict(codec='webvtt'))
 
 
 @pytest.fixture(scope='session')
@@ -390,7 +398,10 @@ def mp2_video_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/mp2t',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
+                            video=dict(codec='mpeg2video', depth=8),
+                            audio=dict(codec='mp2'),
+                            subtitle=dict(codec='dvbsub'))
 
 
 @pytest.fixture(scope='session')
@@ -411,7 +422,9 @@ def ogg_video_asset(tmpdir_factory):
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/ogg',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
+                            video=dict(codec='theora', depth=8),
+                            audio=dict(codec='vorbis'))
 
 
 @pytest.fixture(scope='session')
@@ -428,7 +441,9 @@ def nut_video_asset():
                '-f nut pipe:' % ffmpeg_params).split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION)
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
+                            video=dict(codec='ffv1', depth=8),
+                            audio=dict(codec='pcm_s16le'))
 
 
 @pytest.fixture(scope='session', params=['mp2_video_asset', 'mp4_video_asset', 'mkv_video_asset'])
