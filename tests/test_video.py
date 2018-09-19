@@ -145,7 +145,7 @@ class TestFFmpegProcessor:
         assert subtitle_streams[0]['codec_name'] == 'mov_text'
 
     def test_convert_can_strip_all_streams_except_subtitle(self, processor, video_asset_with_subtitle):
-        conversion_operator = processor.convert(mime_type='video/x-matroska',
+        conversion_operator = processor.convert(mime_type='text/vtt',
                                                 video=dict(codec=None),
                                                 audio=dict(codec=None),
                                                 subtitle=dict(codec='webvtt'))

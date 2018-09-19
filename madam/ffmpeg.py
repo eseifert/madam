@@ -34,13 +34,15 @@ def _probe(file):
 def _get_decoder_and_stream_type(probe_data):
     decoder_name = probe_data['format']['format_name']
 
-    stream_type = ''
-    for stream in probe_data['streams']:
-        if stream['codec_type'] == 'video':
-            stream_type = 'video'
-            break
-        elif stream['codec_type'] == 'audio':
-            stream_type = 'audio'
+    stream_types = {stream['codec_type'] for stream in probe_data['streams']}
+    if 'video' in stream_types:
+        stream_type = 'video'
+    elif 'audio' in stream_types:
+        stream_type = 'audio'
+    elif 'subtitle' in stream_types:
+        stream_type = 'subtitle'
+    else:
+        stream_type = ''
 
     return decoder_name, stream_type
 
@@ -86,6 +88,7 @@ class FFmpegProcessor(Processor):
         ('ogg', 'video'): MimeType('video/ogg'),
         ('mp3', 'audio'): MimeType('audio/mpeg'),
         ('ogg', 'audio'): MimeType('audio/ogg'),
+        ('webvtt', 'subtitle'): MimeType('text/vtt'),
         ('wav', 'audio'): MimeType('audio/wav'),
     }
 
@@ -104,6 +107,8 @@ class FFmpegProcessor(Processor):
         MimeType('image/png'): 'image2',
         MimeType('image/tiff'): 'image2',
         MimeType('image/webp'): 'image2',
+        MimeType('text/vnd.dvb.subtitle'): 'dvbsub',
+        MimeType('text/vtt'): 'webvtt',
     }
 
     __mime_type_to_codec = {
@@ -195,12 +200,14 @@ class FFmpegProcessor(Processor):
 
         metadata = dict(
             mime_type=str(mime_type),
-            duration=float(probe_data['format']['duration'])
         )
+
+        if 'duration' in probe_data['format']:
+            metadata['duration'] = float(probe_data['format']['duration'])
 
         for stream in probe_data['streams']:
             stream_type = stream.get('codec_type')
-            if stream_type in ('audio', 'video'):
+            if stream_type in {'video', 'audio', 'subtitle'}:
                 # Only use first stream
                 if stream_type in metadata:
                     break
