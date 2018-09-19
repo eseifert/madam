@@ -86,9 +86,10 @@ def jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=
             'source': 'Test suite',
             'subjects': ('The', 'topics'),
         },
+        mime_type='image/jpeg',
         width=width,
         height=height,
-        mime_type='image/jpeg'
+        depth=8,
     )
     metadata.update(additional_metadata)
     return madam.core.Asset(essence, **metadata)
@@ -108,9 +109,10 @@ def png_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image.save(essence, 'PNG')
     essence.seek(0)
     metadata = dict(
+        mime_type='image/png',
         width=image.width,
         height=image.height,
-        mime_type='image/png'
+        depth=8,
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -122,9 +124,10 @@ def gif_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image.save(essence, 'GIF')
     essence.seek(0)
     metadata = dict(
+        mime_type='image/gif',
         width=image.width,
         height=image.height,
-        mime_type='image/gif'
+        depth=8,
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -136,9 +139,10 @@ def bmp_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image.save(essence, 'BMP')
     essence.seek(0)
     metadata = dict(
+        mime_type='image/bmp',
         width=image.width,
         height=image.height,
-        mime_type='image/bmp'
+        depth=8,
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -150,9 +154,10 @@ def tiff_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image.save(essence, 'TIFF')
     essence.seek(0)
     metadata = dict(
+        mime_type='image/tiff',
         width=image.width,
         height=image.height,
-        mime_type='image/tiff'
+        depth=8,
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -164,9 +169,10 @@ def webp_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image.save(essence, 'WebP')
     essence.seek(0)
     metadata = dict(
+        mime_type='image/webp',
         width=image.width,
         height=image.height,
-        mime_type='image/webp'
+        depth=8,
     )
     return madam.core.Asset(essence, **metadata)
 
