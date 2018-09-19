@@ -268,7 +268,7 @@ class FFmpegProcessor(Processor):
                 subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not resize video asset: %s' % error_message)
+                raise OperatorError('Could not resize asset: %s' % error_message)
 
         return Asset(essence=result, mime_type=mime_type,
                      width=width, height=height, duration=asset.duration)
@@ -362,7 +362,7 @@ class FFmpegProcessor(Processor):
                 subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not convert video asset: %s' % error_message)
+                raise OperatorError('Could not convert asset: %s' % error_message)
 
         return self.read(result)
 
@@ -405,7 +405,7 @@ class FFmpegProcessor(Processor):
                 subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not convert video asset: %s' % error_message)
+                raise OperatorError('Could not trim asset: %s' % error_message)
 
         return Asset(essence=result, mime_type=asset.mime_type,
                      width=asset.width, height=asset.height, duration=duration)
@@ -447,7 +447,7 @@ class FFmpegProcessor(Processor):
                 subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not convert video asset: %s' % error_message)
+                raise OperatorError('Could not extract frame from asset: %s' % error_message)
 
         return Asset(essence=result, mime_type=mime_type,
                      width=asset.width, height=asset.height)
@@ -501,7 +501,7 @@ class FFmpegProcessor(Processor):
                 subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not convert video asset: %s' % error_message)
+                raise OperatorError('Could not crop asset: %s' % error_message)
 
         return Asset(essence=result, mime_type=mime_type,
                      width=width, height=height)
@@ -560,7 +560,7 @@ class FFmpegProcessor(Processor):
                 subprocess_run(command, stderr=subprocess.PIPE, check=True)
             except CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not convert video asset: %s' % error_message)
+                raise OperatorError('Could not rotate asset: %s' % error_message)
 
         return Asset(essence=result, mime_type=mime_type,
                      width=width, height=height)
