@@ -61,6 +61,21 @@ class PillowProcessor(Processor):
         ),
     }
 
+    __pillow_mode_to_bit_depth = {
+        '1': 1,
+        'L': 8,
+        'P': 8,
+        'RGB': 8,
+        'RGBA': 8,
+        'RGBX': 8,
+        'CMYK': 8,
+        'YCbCr': 8,
+        'LAB': 8,
+        'HSV': 8,
+        'I': 32,
+        'F': 32,
+    }
+
     def __init__(self):
         """
         Initializes a new `PillowProcessor`.
@@ -70,10 +85,12 @@ class PillowProcessor(Processor):
     def read(self, file):
         image = PIL.Image.open(file)
         mime_type = PillowProcessor.__mime_type_to_pillow_type.inv[image.format]
+        bit_depth = PillowProcessor.__pillow_mode_to_bit_depth[image.mode]
         metadata = dict(
             mime_type=str(mime_type),
             width=image.width,
-            height=image.height
+            height=image.height,
+            depth=bit_depth,
         )
         file.seek(0)
         asset = Asset(file, **metadata)

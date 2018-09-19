@@ -131,6 +131,16 @@ def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     assert asset.height == DEFAULT_HEIGHT
 
 
+def test_read_returns_image_asset_containing_bit_depth_metadata(madam, image_asset):
+    image_data = image_asset.essence
+
+    asset = madam.read(image_data)
+
+    assert isinstance(asset.metadata['depth'], int)
+    assert asset.metadata['depth'] > 0
+    assert asset.metadata['depth'] == image_asset.metadata['depth']
+
+
 def test_read_return_correct_hierarchy_of_metadata(madam, jpeg_image_asset, tmpdir):
     file = tmpdir.join('asset_with_metadata.jpg')
     file.write(jpeg_image_asset.essence.read(), 'wb')
