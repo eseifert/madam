@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from collections import namedtuple
 from math import ceil, cos, pi, radians, sin
 
 from bidict import bidict
@@ -35,6 +36,38 @@ def _combine_metadata(asset, *cloned_keys, **additional_metadata):
     metadata = {key: asset.metadata[key] for key in cloned_keys if key in asset.metadata}
     metadata.update(additional_metadata)
     return metadata
+
+
+_FFmpegMode = namedtuple('_FFmpegMode', 'name, component_count, bits_per_pixel, readable, writeable, '
+                                        'hw_accelerated, paletted, bitstream')
+
+
+def _supported_modes():
+    command = 'ffprobe -loglevel error -pix_fmts'.split()
+    result = subprocess_run(command, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, check=True)
+
+    lines = result.stdout.decode('utf-8').splitlines()
+    found_start = False
+    for line in lines:
+        # Skip header
+        if not found_start:
+            found_start = line.startswith('-----')
+            continue
+
+        # Parse FFmpeg output
+        info_flags = line[:5]
+        mode_name, component_count, bits_per_pixel = line[5:].strip().split(maxsplit=3)
+        yield _FFmpegMode(
+            name=mode_name,
+            component_count=int(component_count),
+            bits_per_pixel=int(bits_per_pixel),
+            readable=(info_flags[0] == 'I'),
+            writeable=(info_flags[1] == 'O'),
+            hw_accelerated=(info_flags[2] == 'H'),
+            paletted=(info_flags[3] == 'P'),
+            bitstream=(info_flags[4] == 'B'),
+        )
 
 
 def _get_decoder_and_stream_type(probe_data):
@@ -167,6 +200,10 @@ class FFmpegProcessor(Processor):
         ],
     }
 
+    __ffmpeg_mode_to_bit_depth = {
+        mode.name: mode.bits_per_pixel for mode in _supported_modes() if mode.bits_per_pixel > 0
+    }
+
     def __init__(self):
         """
         Initializes a new `FFmpegProcessor`.
@@ -228,6 +265,8 @@ class FFmpegProcessor(Processor):
                 metadata[stream_type]['codec'] = stream['codec_name']
             if 'bit_rate' in stream:
                 metadata[stream_type]['bitrate'] = float(stream['bit_rate'])/1000.0
+            if 'pix_fmt' in stream:
+                metadata[stream_type]['depth'] = FFmpegProcessor.__ffmpeg_mode_to_bit_depth[stream['pix_fmt']]
 
         return Asset(essence=file, **metadata)
 
