@@ -61,21 +61,21 @@ class PillowProcessor(Processor):
         ),
     }
 
-    __pillow_mode_to_bit_depth = {
-        '1': 1,
-        'L': 8,
-        'P': 8,
-        'RGB': 8,
-        'RGBA': 8,
-        'RGBX': 8,
-        'CMYK': 8,
-        'YCbCr': 8,
-        'LAB': 8,
-        'HSV': 8,
-        'I;16': 16,
-        'I': 32,
-        'F': 32,
-    }
+    __pillow_mode_to_color_mode = bidict({
+        '1': ('LUMA', 1, 'int'),
+        'L': ('LUMA', 8, 'int'),
+        'P': ('PALETTE', 8, 'int'),
+        'RGB': ('RGB', 8, 'int'),
+        'RGBA': ('RGBA', 8, 'int'),
+        'RGBX': ('RGBX', 8, 'int'),
+        'CMYK': ('CMYK', 8, 'int'),
+        'YCbCr': ('YCbCr', 8, 'int'),
+        'LAB': ('LAB', 8, 'int'),
+        'HSV': ('HSV', 8, 'int'),
+        'I;16': ('LUMA', 16, 'int'),
+        'I': ('LUMA', 32, 'int'),
+        'F': ('LUMA', 32, 'float'),
+    })
 
     def __init__(self):
         """
@@ -86,12 +86,14 @@ class PillowProcessor(Processor):
     def read(self, file):
         image = PIL.Image.open(file)
         mime_type = PillowProcessor.__mime_type_to_pillow_type.inv[image.format]
-        bit_depth = PillowProcessor.__pillow_mode_to_bit_depth[image.mode]
+        color_space, bit_depth, data_type = PillowProcessor.__pillow_mode_to_color_mode[image.mode]
         metadata = dict(
             mime_type=str(mime_type),
             width=image.width,
             height=image.height,
+            color_space=color_space,
             depth=bit_depth,
+            data_type=data_type,
         )
         file.seek(0)
         asset = Asset(file, **metadata)

@@ -97,6 +97,16 @@ def test_read_returns_asset_whose_essence_is_filled(read_asset):
     assert read_asset.essence.read()
 
 
+def test_read_returns_image_asset_with_correct_color_mode(madam, image_asset):
+    asset = image_asset
+
+    read_asset = madam.read(asset.essence)
+
+    assert read_asset.color_space == asset.color_space
+    assert read_asset.depth == asset.depth
+    assert read_asset.data_type == asset.data_type
+
+
 def test_read_jpeg_does_not_alter_the_original_file(madam):
     jpeg_data = jpeg_image_asset().essence
     original_image_data = jpeg_data.read()
