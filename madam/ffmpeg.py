@@ -357,16 +357,7 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not convert video asset: %s' % error_message)
 
-        metadata = {
-            'mime_type': str(mime_type)
-        }
-        if mime_type.type in ('image', 'video'):
-            metadata['width'] = asset.width
-            metadata['height'] = asset.height
-        if mime_type.type in ('audio', 'video'):
-            metadata['duration'] = asset.duration
-
-        return Asset(essence=result, **metadata)
+        return self.read(result)
 
     @operator
     def trim(self, asset, from_seconds=0, to_seconds=0):
