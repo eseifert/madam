@@ -255,7 +255,7 @@ class PillowProcessor(Processor):
         return oriented_asset
 
     @operator
-    def convert(self, asset, mime_type):
+    def convert(self, asset, mime_type, color_space=None, depth=None, data_type=None):
         """
         Creates a new asset of the specified MIME type from the essence of the
         specified asset.
@@ -264,12 +264,22 @@ class PillowProcessor(Processor):
         :type asset: Asset
         :param mime_type: Target MIME type
         :type mime_type: MimeType or str
+        :param color_space: Name of color space
+        :type color_space: str or None
+        :param depth: Bit depth per channel
+        :type depth: int or None
+        :param data_type: Data type of pixels ('int' or 'float')
+        :type data_type: str or None
         :return: New asset with converted essence
         :rtype: Asset
         """
         mime_type = MimeType(mime_type)
         try:
             image = PIL.Image.open(asset.essence)
+            color_mode = color_space or asset.color_space, depth or asset.depth, data_type or asset.data_type
+            pil_mode = PillowProcessor.__pillow_mode_to_color_mode.inv.get(color_mode)
+            if pil_mode is not None:
+                image = image.convert(pil_mode)
             converted_asset = self._image_to_asset(image, mime_type)
         except (IOError, KeyError) as pil_error:
             raise OperatorError('Could not convert image to %s: %s' %

@@ -170,6 +170,15 @@ class TestPillowProcessor:
         image = PIL.Image.open(converted_asset.essence)
         assert image.format == 'PNG'
 
+    def test_convert_returns_essence_with_specified_color_mode(self, pillow_processor, tiff_image_asset):
+        asset = tiff_image_asset
+        conversion_operator = pillow_processor.convert(mime_type='image/tiff', color_space='CMYK', depth=8, data_type='int')
+
+        converted_asset = conversion_operator(asset)
+
+        image = PIL.Image.open(converted_asset.essence)
+        assert image.mode == 'CMYK'
+
     def test_convert_maintains_dimensions(self, pillow_processor):
         asset = jpeg_image_asset()
         conversion_operator = pillow_processor.convert(mime_type='image/png')
