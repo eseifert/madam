@@ -10,7 +10,7 @@ from madam.core import Asset, UnsupportedFormatError
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import asset, unknown_asset
 from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_gray, png_image_asset, \
-    gif_image_asset, bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_gray_8bit, \
+    gif_image_asset, bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit, \
     tiff_image_asset,  webp_image_asset, svg_vector_asset, jpeg_data_with_exif
 from assets import audio_asset, mp3_audio_asset, opus_audio_asset, wav_audio_asset
 from assets import video_asset, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_video_asset, ogg_video_asset

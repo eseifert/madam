@@ -72,6 +72,7 @@ class PillowProcessor(Processor):
         'YCbCr': 8,
         'LAB': 8,
         'HSV': 8,
+        'I;16': 16,
         'I': 32,
         'F': 32,
     }
@@ -134,8 +135,10 @@ class PillowProcessor(Processor):
                 resize_factor = height / image.height
             resized_width = round(resize_factor * image.width)
             resized_height = round(resize_factor * image.height)
+        # Pillow supports resampling only for 8-bit images
+        resampling_method = PIL.Image.LANCZOS if asset.depth == 8 else PIL.Image.NEAREST
         resized_image = image.resize((resized_width, resized_height),
-                                     resample=PIL.Image.LANCZOS)
+                                     resample=resampling_method)
         resized_asset = self._image_to_asset(resized_image, mime_type=mime_type)
         return resized_asset
 

@@ -6,7 +6,7 @@ import madam.image
 from madam.core import OperatorError
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT
 from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_gray, png_image_asset, \
-    gif_image_asset, bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_gray_8bit, \
+    gif_image_asset, bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit, \
     tiff_image_asset, webp_image_asset, unknown_asset
 
 
