@@ -189,7 +189,7 @@ def bmp_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 
 
 @pytest.fixture(scope='session')
-def tiff_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+def tiff_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
     image.save(essence, 'TIFF')
@@ -201,6 +201,31 @@ def tiff_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         depth=8,
     )
     return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
+def tiff_image_asset_gray_8bit(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    depth = 8
+    image = image_gray(width=width, height=height, depth=depth)
+    essence = io.BytesIO()
+    image.save(essence, 'TIFF')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/tiff',
+        width=image.width,
+        height=image.height,
+        depth=depth,
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session', params=['tiff_image_asset_rgb', 'tiff_image_asset_gray_8bit'])
+def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_gray_8bit):
+    if request.param == 'tiff_image_asset_rgb':
+        return tiff_image_asset_rgb
+    if request.param == 'tiff_image_asset_gray_8bit':
+        return tiff_image_asset_gray_8bit
+    raise ValueError()
 
 
 @pytest.fixture(scope='session')
