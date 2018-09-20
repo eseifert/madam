@@ -117,7 +117,9 @@ def jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=
         mime_type='image/jpeg',
         width=width,
         height=height,
+        color_space='RGB',
         depth=8,
+        data_type='int',
     )
     metadata.update(additional_metadata)
     return madam.core.Asset(essence, **metadata)
@@ -140,7 +142,9 @@ def png_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/png',
         width=image.width,
         height=image.height,
+        color_space='RGB',
         depth=8,
+        data_type='int',
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -156,7 +160,9 @@ def png_image_asset_gray(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/png',
         width=image.width,
         height=image.height,
+        color_space='LUMA',
         depth=depth,
+        data_type='int',
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -180,7 +186,9 @@ def gif_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/gif',
         width=image.width,
         height=image.height,
+        color_space='PALETTE',
         depth=8,
+        data_type='int',
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -195,7 +203,9 @@ def bmp_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/bmp',
         width=image.width,
         height=image.height,
+        color_space='RGB',
         depth=8,
+        data_type='int',
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -210,7 +220,9 @@ def tiff_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/tiff',
         width=image.width,
         height=image.height,
+        color_space='RGB',
         depth=8,
+        data_type='int',
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -226,7 +238,9 @@ def tiff_image_asset_gray_8bit(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/tiff',
         width=image.width,
         height=image.height,
+        color_space='LUMA',
         depth=depth,
+        data_type='int',
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -242,7 +256,9 @@ def tiff_image_asset_gray_16bit(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/tiff',
         width=image.width,
         height=image.height,
+        color_space='LUMA',
         depth=depth,
+        data_type='int',
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -257,7 +273,9 @@ def tiff_image_asset_cmyk(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/tiff',
         width=image.width,
         height=image.height,
+        color_space='CMYK',
         depth=8,
+        data_type='int',
     )
     return madam.core.Asset(essence, **metadata)
 
@@ -287,7 +305,9 @@ def webp_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/webp',
         width=image.width,
         height=image.height,
+        color_space='RGBX',
         depth=8,
+        data_type='int',
     )
     return madam.core.Asset(essence, **metadata)
 
