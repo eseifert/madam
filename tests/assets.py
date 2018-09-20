@@ -46,6 +46,18 @@ def image_gray(width, height, depth=8):
     return image
 
 
+def image_cmyk(width, height):
+    image = PIL.Image.new('CMYK', (width, height))
+    # Fill the image with a shape which is (probably) not invariant towards
+    # rotations or flips as long as the image has a size of (2, 2) or greater
+    max_value = 2 ** 8 - 1
+    for y in range(0, height):
+        for x in range(0, width):
+            color = (0, 0, 0, max_value) if y == 0 or x == 0 else (0, 0, 0, 0)
+            image.putpixel((x, y), color)
+    return image
+
+
 @pytest.fixture(scope='session')
 def jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, **additional_metadata):
     if not transpositions:
@@ -235,15 +247,33 @@ def tiff_image_asset_gray_16bit(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     return madam.core.Asset(essence, **metadata)
 
 
+@pytest.fixture(scope='session')
+def tiff_image_asset_cmyk(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_cmyk(width=width, height=height)
+    essence = io.BytesIO()
+    image.save(essence, 'TIFF')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/tiff',
+        width=image.width,
+        height=image.height,
+        depth=8,
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
 @pytest.fixture(scope='session', params=['tiff_image_asset_rgb', 'tiff_image_asset_gray_8bit',
-                                         'tiff_image_asset_gray_16bit'])
-def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit):
+                                         'tiff_image_asset_gray_16bit', 'tiff_image_asset_cmyk'])
+def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_gray_8bit,
+                     tiff_image_asset_gray_16bit, tiff_image_asset_cmyk):
     if request.param == 'tiff_image_asset_rgb':
         return tiff_image_asset_rgb
     if request.param == 'tiff_image_asset_gray_8bit':
         return tiff_image_asset_gray_8bit
     if request.param == 'tiff_image_asset_gray_16bit':
         return tiff_image_asset_gray_16bit
+    if request.param == 'tiff_image_asset_cmyk':
+        return tiff_image_asset_cmyk
     raise ValueError()
 
 
