@@ -138,7 +138,7 @@ class TestPillowProcessor:
         oriented_asset = auto_orient_operator(asset_without_orientation_metadata)
         assert oriented_asset is asset_without_orientation_metadata
 
-    def test_converted_asset_receives_correct_mime_type(self, pillow_processor):
+    def test_convert_returns_asset_with_correct_mime_type(self, pillow_processor):
         asset = jpeg_image_asset()
         conversion_operator = pillow_processor.convert(mime_type='image/png')
 
@@ -161,7 +161,7 @@ class TestPillowProcessor:
         with pytest.raises(OperatorError):
             conversion_operator(unknown_asset)
 
-    def test_converted_essence_is_of_specified_type(self, pillow_processor):
+    def test_convert_returns_essence_is_of_specified_type(self, pillow_processor):
         asset = jpeg_image_asset()
         conversion_operator = pillow_processor.convert(mime_type='image/png')
 
