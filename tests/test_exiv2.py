@@ -2,7 +2,7 @@ import io
 import pyexiv2
 import pytest
 
-from assets import jpeg_image_asset, png_image_asset
+from assets import jpeg_image_asset, png_image_asset_rgb, png_image_asset_gray, png_image_asset
 from madam.core import UnsupportedFormatError
 from madam.exiv2 import Exiv2MetadataProcessor
 

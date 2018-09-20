@@ -21,12 +21,28 @@ def image_rgb(width, height, transpositions=None):
     image = PIL.Image.new('RGB', (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
     # rotations or flips as long as the image has a size of (2, 2) or greater
+    max_value = 255
     for y in range(0, height):
         for x in range(0, width):
-            color = (255, 255, 255) if y == 0 or x == 0 else (0, 0, 0)
+            color = (max_value, max_value, max_value) if y == 0 or x == 0 else (0, 0, 0)
             image.putpixel((x, y), color)
     for transposition in transpositions:
         image = image.transpose(transposition)
+    return image
+
+
+def image_gray(width, height, depth=8):
+    pil_mode = {8: 'L', 16: 'I;16', 32: 'I'}.get(depth)
+    if pil_mode is None:
+        raise ValueError('Unsupported bit depth: %d' % depth)
+    image = PIL.Image.new(pil_mode, (width, height))
+    # Fill the image with a shape which is (probably) not invariant towards
+    # rotations or flips as long as the image has a size of (2, 2) or greater
+    max_value = 2 ** depth - 1
+    for y in range(0, height):
+        for x in range(0, width):
+            color = max_value if y == 0 or x == 0 else 0
+            image.putpixel((x, y), color)
     return image
 
 
@@ -103,7 +119,7 @@ def jpeg_data_with_exif():
 
 
 @pytest.fixture(scope='session')
-def png_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+def png_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
     image.save(essence, 'PNG')
@@ -115,6 +131,31 @@ def png_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         depth=8,
     )
     return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
+def png_image_asset_gray(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    depth = 8
+    image = image_gray(width=width, height=height, depth=depth)
+    essence = io.BytesIO()
+    image.save(essence, 'PNG')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/png',
+        width=image.width,
+        height=image.height,
+        depth=depth,
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session', params=['png_image_asset_rgb', 'png_image_asset_gray'])
+def png_image_asset(request, png_image_asset_rgb, png_image_asset_gray):
+    if request.param == 'png_image_asset_rgb':
+        return png_image_asset_rgb
+    if request.param == 'png_image_asset_gray':
+        return png_image_asset_gray
+    raise ValueError()
 
 
 @pytest.fixture(scope='session')
