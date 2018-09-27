@@ -62,18 +62,18 @@ class PillowProcessor(Processor):
     }
 
     __pillow_mode_to_color_mode = bidict({
-        '1': ('LUMA', 1, 'int'),
-        'L': ('LUMA', 8, 'int'),
-        'P': ('PALETTE', 8, 'int'),
-        'RGB': ('RGB', 8, 'int'),
-        'RGBA': ('RGBA', 8, 'int'),
-        'RGBX': ('RGBX', 8, 'int'),
-        'CMYK': ('CMYK', 8, 'int'),
-        'YCbCr': ('YCbCr', 8, 'int'),
-        'LAB': ('LAB', 8, 'int'),
-        'HSV': ('HSV', 8, 'int'),
-        'I;16': ('LUMA', 16, 'int'),
-        'I': ('LUMA', 32, 'int'),
+        '1': ('LUMA', 1, 'uint'),
+        'L': ('LUMA', 8, 'uint'),
+        'P': ('PALETTE', 8, 'uint'),
+        'RGB': ('RGB', 8, 'uint'),
+        'RGBA': ('RGBA', 8, 'uint'),
+        'RGBX': ('RGBX', 8, 'uint'),
+        'CMYK': ('CMYK', 8, 'uint'),
+        'YCbCr': ('YCbCr', 8, 'uint'),
+        'LAB': ('LAB', 8, 'uint'),
+        'HSV': ('HSV', 8, 'uint'),
+        'I;16': ('LUMA', 16, 'uint'),
+        'I': ('LUMA', 32, 'uint'),
         'F': ('LUMA', 32, 'float'),
     })
 
@@ -268,7 +268,7 @@ class PillowProcessor(Processor):
         :type color_space: str or None
         :param depth: Bit depth per channel
         :type depth: int or None
-        :param data_type: Data type of pixels ('int' or 'float')
+        :param data_type: Data type of the pixels, e.g. 'uint' or 'float'
         :type data_type: str or None
         :return: New asset with converted essence
         :rtype: Asset
