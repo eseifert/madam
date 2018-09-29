@@ -96,11 +96,13 @@ class FFmpegProcessor(Processor):
         ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): MimeType('video/quicktime'),
         ('avi', 'video'): MimeType('video/x-msvideo'),
         ('mpegts', 'video'): MimeType('video/mp2t'),
+        ('nut', 'video'): MimeType('video/x-nut'),
         ('ogg', 'video'): MimeType('video/ogg'),
         ('mp3', 'audio'): MimeType('audio/mpeg'),
+        ('nut', 'audio'): MimeType('audio/x-nut'),
         ('ogg', 'audio'): MimeType('audio/ogg'),
-        ('webvtt', 'subtitle'): MimeType('text/vtt'),
         ('wav', 'audio'): MimeType('audio/wav'),
+        ('webvtt', 'subtitle'): MimeType('text/vtt'),
     }
 
     __mime_type_to_encoder = {
@@ -108,8 +110,10 @@ class FFmpegProcessor(Processor):
         MimeType('video/quicktime'): 'mov',
         MimeType('video/x-msvideo'): 'avi',
         MimeType('video/mp2t'): 'mpegts',
+        MimeType('video/x-nut'): 'nut',
         MimeType('video/ogg'): 'ogg',
         MimeType('audio/mpeg'): 'mp3',
+        MimeType('audio/x-nut'): 'nut',
         MimeType('audio/ogg'): 'ogg',
         MimeType('audio/wav'): 'wav',
         MimeType('image/bmp'): 'image2',

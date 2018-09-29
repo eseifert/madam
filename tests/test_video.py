@@ -13,7 +13,7 @@ from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image
     gif_image_asset, bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit, \
     tiff_image_asset_cmyk, tiff_image_asset, webp_image_asset
 from assets import video_asset_with_subtitle, video_asset, avi_video_asset, mp2_video_asset, mp4_video_asset, \
-    mkv_video_asset, ogg_video_asset
+    mkv_video_asset, nut_video_asset, ogg_video_asset
 from assets import unknown_asset
 
 
@@ -130,14 +130,13 @@ class TestFFmpegProcessor:
         assert 'video' in converted_asset.metadata
 
     def test_convert_returns_video_asset_with_correct_color_mode(self, processor, video_asset):
-        conversion_operator = processor.convert(mime_type='video/x-matroska',
-                                                video=dict(codec='vp9', bitrate=50, color_space='YUV', depth=10, data_type='uint'),
-                                                audio=dict(codec='libopus', bitrate=16))
+        conversion_operator = processor.convert(mime_type='video/x-nut',
+                                                video=dict(codec='ffv1', color_space='RGBX', depth=8, data_type='uint'))
 
         converted_asset = conversion_operator(video_asset)
 
-        assert converted_asset.video['color_space'] == 'YUV'
-        assert converted_asset.video['depth'] == 10
+        assert converted_asset.video['color_space'] == 'RGBX'
+        assert converted_asset.video['depth'] == 8
         assert converted_asset.video['data_type'] == 'uint'
 
     def test_convert_can_process_all_streams(self, processor, video_asset_with_subtitle):

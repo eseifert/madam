@@ -427,10 +427,12 @@ def nut_audio_asset(tmpdir_factory):
                             duration=duration, audio=dict(codec='pcm_s16le'))
 
 
-@pytest.fixture(scope='session', params=['mp3_audio_asset', 'opus_audio_asset', 'wav_audio_asset'])
-def audio_asset(request, mp3_audio_asset, opus_audio_asset, wav_audio_asset):
+@pytest.fixture(scope='session', params=['mp3_audio_asset', 'nut_audio_asset', 'opus_audio_asset', 'wav_audio_asset'])
+def audio_asset(request, mp3_audio_asset, nut_audio_asset, opus_audio_asset, wav_audio_asset):
     if request.param == 'mp3_audio_asset':
         return mp3_audio_asset
+    if request.param == 'nut_audio_asset':
+        return nut_audio_asset
     if request.param == 'opus_audio_asset':
         return opus_audio_asset
     if request.param == 'wav_audio_asset':
@@ -581,8 +583,8 @@ def nut_video_asset():
                             audio=dict(codec='pcm_s16le'))
 
 
-@pytest.fixture(scope='session', params=['mp2_video_asset', 'mp4_video_asset', 'mkv_video_asset'])
-def video_asset(request, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_video_asset):
+@pytest.fixture(scope='session', params=['mp2_video_asset', 'mp4_video_asset', 'mkv_video_asset', 'nut_video_asset'])
+def video_asset(request, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_video_asset, nut_video_asset):
     if request.param == 'avi_video_asset':
         return avi_video_asset
     elif request.param == 'mp2_video_asset':
@@ -591,6 +593,8 @@ def video_asset(request, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_
         return mp4_video_asset
     elif request.param == 'mkv_video_asset':
         return mkv_video_asset
+    elif request.param == 'nut_video_asset':
+        return nut_video_asset
     else:
         raise ValueError()
 
