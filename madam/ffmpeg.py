@@ -136,29 +136,24 @@ class FFmpegProcessor(Processor):
             'libx264': [
                 '-preset', 'slow',
                 '-crf', '23',
-                '-pix_fmt', 'yuv420p',
             ],
             'libx265': [
                 '-preset', 'slow',
                 '-crf', '28',
-                '-pix_fmt', 'yuv420p',
             ],
             'libvpx': [
                 '-speed', '1',
                 '-crf', '10',
-                '-pix_fmt', 'yuv420p',
             ],
             'libvpx-vp9': [
                 '-speed', '1',
                 '-tile-columns', '6',
                 '-crf', '32',
-                '-pix_fmt', 'yuv420p',
             ],
             'vp9': [
                 '-speed', '1',
                 '-tile-columns', '6',
                 '-crf', '32',
-                '-pix_fmt', 'yuv420p',
             ],
         }
     }
