@@ -140,6 +140,16 @@ def test_read_returns_video_asset_containing_video_stream_metadata(madam, video_
     assert 'video' in read_asset.metadata
 
 
+def test_read_returns_video_asset_containing_color_mode_metadata(madam, video_asset):
+    asset = video_asset
+
+    read_asset = madam.read(asset.essence)
+
+    assert read_asset.video['color_space'] == asset.video['color_space']
+    assert read_asset.video['depth'] == asset.video['depth']
+    assert read_asset.video['data_type'] == asset.video['data_type']
+
+
 def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     image_data = image_asset.essence
 

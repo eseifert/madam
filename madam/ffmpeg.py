@@ -42,34 +42,6 @@ _FFmpegMode = namedtuple('_FFmpegMode', 'name, component_count, bits_per_pixel, 
                                         'hw_accelerated, paletted, bitstream')
 
 
-def _supported_modes():
-    command = 'ffprobe -loglevel error -pix_fmts'.split()
-    result = subprocess_run(command, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, check=True)
-
-    lines = result.stdout.decode('utf-8').splitlines()
-    found_start = False
-    for line in lines:
-        # Skip header
-        if not found_start:
-            found_start = line.startswith('-----')
-            continue
-
-        # Parse FFmpeg output
-        info_flags = line[:5]
-        mode_name, component_count, bits_per_pixel = line[5:].strip().split(maxsplit=3)
-        yield _FFmpegMode(
-            name=mode_name,
-            component_count=int(component_count),
-            bits_per_pixel=int(bits_per_pixel),
-            readable=(info_flags[0] == 'I'),
-            writeable=(info_flags[1] == 'O'),
-            hw_accelerated=(info_flags[2] == 'H'),
-            paletted=(info_flags[3] == 'P'),
-            bitstream=(info_flags[4] == 'B'),
-        )
-
-
 def _get_decoder_and_stream_type(probe_data):
     decoder_name = probe_data['format']['format_name']
 
@@ -200,8 +172,184 @@ class FFmpegProcessor(Processor):
         ],
     }
 
-    __ffmpeg_mode_to_bit_depth = {
-        mode.name: mode.bits_per_pixel for mode in _supported_modes() if mode.bits_per_pixel > 0
+    __ffmpeg_pix_fmt_to_color_mode = {
+        # Luminance
+        'gray': ('LUMA', 8, 'uint'),
+        'gray9be': ('LUMA', 9, 'uint'),
+        'gray9le': ('LUMA', 9, 'uint'),
+        'gray10be': ('LUMA', 10, 'uint'),
+        'gray10le': ('LUMA', 10, 'uint'),
+        'gray12be': ('LUMA', 12, 'uint'),
+        'gray12le': ('LUMA', 12, 'uint'),
+        'gray16be': ('LUMA', 16, 'uint'),
+        'gray16le': ('LUMA', 16, 'uint'),
+        # Luminance, alpha
+        'monob': ('LUMA', 1, 'uint'),
+        'monow': ('LUMA', 1, 'uint'),
+        'ya8': ('LUMAA', 8, 'uint'),
+        'ya16be': ('LUMAA', 16, 'uint'),
+        'ya16le': ('LUMAA', 16, 'uint'),
+        # Palette
+        'pal8': ('PALETTE', 8, 'uint'),
+        # Red, green, blue
+        'bayer_bggr8': ('RGB', 8, 'uint'),
+        'bayer_bggr16be': ('RGB', 16, 'uint'),
+        'bayer_bggr16le': ('RGB', 16, 'uint'),
+        'bayer_gbrg8': ('RGB', 8, 'uint'),
+        'bayer_gbrg16be': ('RGB', 16, 'uint'),
+        'bayer_gbrg16le': ('RGB', 16, 'uint'),
+        'bayer_grbg8': ('RGB', 8, 'uint'),
+        'bayer_grbg16be': ('RGB', 16, 'uint'),
+        'bayer_grbg16le': ('RGB', 16, 'uint'),
+        'bayer_rggb8': ('RGB', 8, 'uint'),
+        'bayer_rggb16be': ('RGB', 16, 'uint'),
+        'bayer_rggb16le': ('RGB', 16, 'uint'),
+        'bgr4': ('RGB', 8, 'uint'),
+        'bgr4_byte': ('RGB', 8, 'uint'),
+        'bgr24': ('RGB', 8, 'uint'),
+        'bgr48be': ('RGB', 16, 'uint'),
+        'bgr48le': ('RGB', 16, 'uint'),
+        'bgr444be': ('RGB', 8, 'uint'),
+        'bgr444le': ('RGB', 8, 'uint'),
+        'bgr555be': ('RGB', 8, 'uint'),
+        'bgr555le': ('RGB', 8, 'uint'),
+        'bgr565be': ('RGB', 8, 'uint'),
+        'bgr565le': ('RGB', 8, 'uint'),
+        'bgr8': ('RGB', 8, 'uint'),
+        'gbrp': ('RGB', 8, 'uint'),
+        'gbrp9be': ('RGB', 9, 'uint'),
+        'gbrp9le': ('RGB', 9, 'uint'),
+        'gbrp10be': ('RGB', 10, 'uint'),
+        'gbrp10le': ('RGB', 10, 'uint'),
+        'gbrp12be': ('RGB', 12, 'uint'),
+        'gbrp12le': ('RGB', 12, 'uint'),
+        'gbrp14be': ('RGB', 14, 'uint'),
+        'gbrp14le': ('RGB', 14, 'uint'),
+        'gbrp16be': ('RGB', 16, 'uint'),
+        'gbrp16le': ('RGB', 16, 'uint'),
+        'gbrpf32be': ('RGB', 32, 'float'),
+        'gbrpf32le': ('RGB', 32, 'float'),
+        'rgb4': ('RGB', 8, 'uint'),
+        'rgb4_byte': ('RGB', 8, 'uint'),
+        'rgb24': ('RGB', 8, 'uint'),
+        'rgb48be': ('RGB', 16, 'uint'),
+        'rgb48le': ('RGB', 16, 'uint'),
+        'rgb444be': ('RGB', 8, 'uint'),
+        'rgb444le': ('RGB', 8, 'uint'),
+        'rgb555be': ('RGB', 8, 'uint'),
+        'rgb555le': ('RGB', 8, 'uint'),
+        'rgb565be': ('RGB', 8, 'uint'),
+        'rgb565le': ('RGB', 8, 'uint'),
+        'rgb8': ('RGB', 8, 'uint'),
+        # Red, green, blue, alpha
+        'abgr': ('RGBA', 8, 'uint'),
+        'argb': ('RGBA', 8, 'uint'),
+        'bgra': ('RGBA', 8, 'uint'),
+        'bgra64be': ('RGBA', 16, 'uint'),
+        'bgra64le': ('RGBA', 16, 'uint'),
+        'gbrap': ('RGBA', 8, 'uint'),
+        'gbrap10be': ('RGBA', 16, 'uint'),
+        'gbrap10le': ('RGBA', 16, 'uint'),
+        'gbrap12be': ('RGBA', 16, 'uint'),
+        'gbrap12le': ('RGBA', 16, 'uint'),
+        'gbrap16be': ('RGBA', 16, 'uint'),
+        'gbrap16le': ('RGBA', 16, 'uint'),
+        'gbrapf32be': ('RGBA', 32, 'float'),
+        'gbrapf32le': ('RGBA', 32, 'float'),
+        'rgba': ('RGBA', 8, 'uint'),
+        'rgba64be': ('RGBA', 16, 'uint'),
+        'rgba64le': ('RGBA', 16, 'uint'),
+        # Red, green, blue, padding
+        '0bgr': ('RGBX', 8, 'uint'),
+        '0rgb': ('RGBX', 8, 'uint'),
+        'bgr0': ('RGBX', 8, 'uint'),
+        'rgb0': ('RGBX', 8, 'uint'),
+        # X, Y, Z
+        'xyz12be': ('XYZ', 12, 'uint'),
+        'xyz12le': ('XYZ', 12, 'uint'),
+        # Luminance, blue-difference chrominance, red-difference chrominance
+        'nv12': ('YUV', 8, 'uint'),
+        'nv16': ('YUV', 8, 'uint'),
+        'nv20be': ('YUV', 8, 'uint'),
+        'nv20le': ('YUV', 8, 'uint'),
+        'nv21': ('YUV', 8, 'uint'),
+        'p010be': ('YUV', 10, 'uint'),
+        'p010le': ('YUV', 10, 'uint'),
+        'p016be': ('YUV', 16, 'uint'),
+        'p016le': ('YUV', 16, 'uint'),
+        'uyvy422': ('YUV', 8, 'uint'),
+        'uyyvyy411': ('YUV', 8, 'uint'),
+        'yuv410p': ('YUV', 8, 'uint'),
+        'yuv411p': ('YUV', 8, 'uint'),
+        'yuv420p': ('YUV', 8, 'uint'),
+        'yuv420p9be': ('YUV', 9, 'uint'),
+        'yuv420p9le': ('YUV', 9, 'uint'),
+        'yuv420p10be': ('YUV', 10, 'uint'),
+        'yuv420p10le': ('YUV', 10, 'uint'),
+        'yuv420p12be': ('YUV', 12, 'uint'),
+        'yuv420p12le': ('YUV', 12, 'uint'),
+        'yuv420p14be': ('YUV', 14, 'uint'),
+        'yuv420p14le': ('YUV', 14, 'uint'),
+        'yuv420p16be': ('YUV', 16, 'uint'),
+        'yuv420p16le': ('YUV', 16, 'uint'),
+        'yuv422p': ('YUV', 8, 'uint'),
+        'yuv422p9be': ('YUV', 9, 'uint'),
+        'yuv422p9le': ('YUV', 9, 'uint'),
+        'yuv422p10be': ('YUV', 10, 'uint'),
+        'yuv422p10le': ('YUV', 10, 'uint'),
+        'yuv422p12be': ('YUV', 12, 'uint'),
+        'yuv422p12le': ('YUV', 12, 'uint'),
+        'yuv422p14be': ('YUV', 14, 'uint'),
+        'yuv422p14le': ('YUV', 14, 'uint'),
+        'yuv422p16be': ('YUV', 16, 'uint'),
+        'yuv422p16le': ('YUV', 16, 'uint'),
+        'yuv440p': ('YUV', 8, 'uint'),
+        'yuv440p10be': ('YUV', 10, 'uint'),
+        'yuv440p10le': ('YUV', 10, 'uint'),
+        'yuv440p12be': ('YUV', 12, 'uint'),
+        'yuv440p12le': ('YUV', 12, 'uint'),
+        'yuv444p': ('YUV', 8, 'uint'),
+        'yuv444p9be': ('YUV', 9, 'uint'),
+        'yuv444p9le': ('YUV', 9, 'uint'),
+        'yuv444p10be': ('YUV', 10, 'uint'),
+        'yuv444p10le': ('YUV', 10, 'uint'),
+        'yuv444p12be': ('YUV', 12, 'uint'),
+        'yuv444p12le': ('YUV', 12, 'uint'),
+        'yuv444p14be': ('YUV', 14, 'uint'),
+        'yuv444p14le': ('YUV', 14, 'uint'),
+        'yuv444p16be': ('YUV', 16, 'uint'),
+        'yuv444p16le': ('YUV', 16, 'uint'),
+        'yuvj411p': ('YUV', 8, 'uint'),
+        'yuvj420p': ('YUV', 8, 'uint'),
+        'yuvj422p': ('YUV', 8, 'uint'),
+        'yuvj440p': ('YUV', 8, 'uint'),
+        'yuvj444p': ('YUV', 8, 'uint'),
+        'yuyv422': ('YUV', 8, 'uint'),
+        'yvyu422': ('YUV', 8, 'uint'),
+        # Luminance, blue-difference chrominance, red-difference chrominance, alpha
+        'ayuv64be': ('YUVA', 16, 'uint'),
+        'ayuv64le': ('YUVA', 16, 'uint'),
+        'yuva420p': ('YUVA', 8, 'uint'),
+        'yuva420p9be': ('YUVA', 9, 'uint'),
+        'yuva420p9le': ('YUVA', 9, 'uint'),
+        'yuva420p10be': ('YUVA', 10, 'uint'),
+        'yuva420p10le': ('YUVA', 10, 'uint'),
+        'yuva420p16be': ('YUVA', 16, 'uint'),
+        'yuva420p16le': ('YUVA', 16, 'uint'),
+        'yuva422p': ('YUVA', 8, 'uint'),
+        'yuva422p9be': ('YUVA', 9, 'uint'),
+        'yuva422p9le': ('YUVA', 9, 'uint'),
+        'yuva422p10be': ('YUVA', 10, 'uint'),
+        'yuva422p10le': ('YUVA', 10, 'uint'),
+        'yuva422p16be': ('YUVA', 16, 'uint'),
+        'yuva422p16le': ('YUVA', 16, 'uint'),
+        'yuva444p': ('YUVA', 8, 'uint'),
+        'yuva444p9be': ('YUVA', 9, 'uint'),
+        'yuva444p9le': ('YUVA', 9, 'uint'),
+        'yuva444p10be': ('YUVA', 10, 'uint'),
+        'yuva444p10le': ('YUVA', 10, 'uint'),
+        'yuva444p16be': ('YUVA', 16, 'uint'),
+        'yuva444p16le': ('YUVA', 16, 'uint'),
     }
 
     def __init__(self):
@@ -266,7 +414,10 @@ class FFmpegProcessor(Processor):
             if 'bit_rate' in stream:
                 metadata[stream_type]['bitrate'] = float(stream['bit_rate'])/1000.0
             if 'pix_fmt' in stream:
-                metadata[stream_type]['depth'] = FFmpegProcessor.__ffmpeg_mode_to_bit_depth[stream['pix_fmt']]
+                color_space, depth, data_type = FFmpegProcessor.__ffmpeg_pix_fmt_to_color_mode[stream['pix_fmt']]
+                metadata[stream_type]['color_space'] = color_space
+                metadata[stream_type]['depth'] = depth
+                metadata[stream_type]['data_type'] = data_type
 
         return Asset(essence=file, **metadata)
 
