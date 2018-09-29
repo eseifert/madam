@@ -126,6 +126,9 @@ class TestFFmpegProcessor:
     def test_converted_essence_stream_has_same_duration_as_source(self, converted_asset):
         assert converted_asset.duration == pytest.approx(DEFAULT_DURATION, rel=0.2)
 
+    def test_convert_returns_video_asset_with_video_stream_metadata(self, processor, converted_asset):
+        assert 'video' in converted_asset.metadata
+
     def test_convert_can_process_all_streams(self, processor, video_asset_with_subtitle):
         conversion_operator = processor.convert(mime_type='video/quicktime',
                                                 video=dict(codec='h264', bitrate=50),
