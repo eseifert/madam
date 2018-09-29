@@ -459,7 +459,7 @@ def mp4_video_asset(tmpdir_factory):
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/quicktime',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='h264', depth=8),
+                            video=dict(codec='h264', color_space='YUV', depth=8, data_type='uint'),
                             audio=dict(codec='aac'),
                             subtitle=dict(codec='mov_text'))
 
@@ -483,7 +483,7 @@ def avi_video_asset(tmpdir_factory):
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-msvideo',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='h264', depth=8),
+                            video=dict(codec='h264', color_space='YUV', depth=8, data_type='uint'),
                             audio=dict(codec='mp3'))
 
 
@@ -508,7 +508,7 @@ def mkv_video_asset(tmpdir_factory):
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-matroska',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='vp9', depth=8),
+                            video=dict(codec='vp9', color_space='YUV', depth=8, data_type='uint'),
                             audio=dict(codec='libopus'),
                             subtitle=dict(codec='webvtt'))
 
@@ -534,7 +534,7 @@ def mp2_video_asset(tmpdir_factory):
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/mp2t',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='mpeg2video', depth=8),
+                            video=dict(codec='mpeg2video', color_space='YUV', depth=8, data_type='uint'),
                             audio=dict(codec='mp2'),
                             subtitle=dict(codec='dvbsub'))
 
@@ -558,7 +558,7 @@ def ogg_video_asset(tmpdir_factory):
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/ogg',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='theora', depth=8),
+                            video=dict(codec='theora', color_space='YUV', depth=8, data_type='uint'),
                             audio=dict(codec='vorbis'))
 
 
@@ -577,7 +577,7 @@ def nut_video_asset():
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='ffv1', depth=8),
+                            video=dict(codec='ffv1', color_space='YUV', depth=8, data_type='uint'),
                             audio=dict(codec='pcm_s16le'))
 
 
