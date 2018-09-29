@@ -126,8 +126,19 @@ class TestFFmpegProcessor:
     def test_converted_essence_stream_has_same_duration_as_source(self, converted_asset):
         assert converted_asset.duration == pytest.approx(DEFAULT_DURATION, rel=0.2)
 
-    def test_convert_returns_video_asset_with_video_stream_metadata(self, processor, converted_asset):
+    def test_convert_returns_video_asset_with_video_stream_metadata(self, converted_asset):
         assert 'video' in converted_asset.metadata
+
+    def test_convert_returns_video_asset_with_correct_color_mode(self, processor, video_asset):
+        conversion_operator = processor.convert(mime_type='video/x-matroska',
+                                                video=dict(codec='vp9', bitrate=50, color_space='YUV', depth=10, data_type='uint'),
+                                                audio=dict(codec='libopus', bitrate=16))
+
+        converted_asset = conversion_operator(video_asset)
+
+        assert converted_asset.video['color_space'] == 'YUV'
+        assert converted_asset.video['depth'] == 10
+        assert converted_asset.video['data_type'] == 'uint'
 
     def test_convert_can_process_all_streams(self, processor, video_asset_with_subtitle):
         conversion_operator = processor.convert(mime_type='video/quicktime',

@@ -352,6 +352,39 @@ class FFmpegProcessor(Processor):
         'yuva444p16le': ('YUVA', 16, 'uint'),
     }
 
+    __color_mode_to_ffmpeg_pix_fmt = {
+        ('LUMA', 1, 'uint'): 'monob',
+        ('LUMA', 8, 'uint'): 'gray',
+        ('LUMA', 9, 'uint'): 'gray9le',
+        ('LUMA', 10, 'uint'): 'gray10le',
+        ('LUMA', 12, 'uint'): 'gray12le',
+        ('LUMA', 16, 'uint'): 'gray16le',
+        ('LUMAA', 8, 'uint'): 'ya8',
+        ('LUMAA', 16, 'uint'): 'ya16le',
+        ('PALETTE', 8, 'uint'): 'pal8',
+        ('RGB', 8, 'uint'): 'rgb24',
+        ('RGB', 9, 'uint'): 'gbrp9le',
+        ('RGB', 10, 'uint'): 'gbrp10le',
+        ('RGB', 12, 'uint'): 'gbrp12le',
+        ('RGB', 16, 'uint'): 'rgb48le',
+        ('RGB', 32, 'float'): 'gbrpf32le',
+        ('RGBA', 8, 'uint'): 'rgba',
+        ('RGBA', 16, 'uint'): 'rgba64le',
+        ('RGBA', 32, 'float'): 'gbrapf32le',
+        ('RGBX', 8, 'uint'): 'rgb0',
+        ('XYZ', 12, 'uint'): 'xyz12le',
+        ('YUV', 8, 'uint'): 'yuv420p',
+        ('YUV', 9, 'uint'): 'yuv420p9le',
+        ('YUV', 10, 'uint'): 'yuv420p10le',
+        ('YUV', 12, 'uint'): 'yuv420p12le',
+        ('YUV', 14, 'uint'): 'yuv420p14le',
+        ('YUV', 16, 'uint'): 'yuv420p16le',
+        ('YUVA', 8, 'uint'): 'yuva420p',
+        ('YUVA', 9, 'uint'): 'yuva420p9le',
+        ('YUVA', 10, 'uint'): 'yuva420p10le',
+        ('YUVA', 16, 'uint'): 'yuva420p16le',
+    }
+
     def __init__(self):
         """
         Initializes a new `FFmpegProcessor`.
@@ -532,6 +565,15 @@ class FFmpegProcessor(Processor):
                     command.extend(['-minrate', '%dk' % round(0.5*video['bitrate']),
                                     '-b:v', '%dk' % video['bitrate'],
                                     '-maxrate', '%dk' % round(1.45*video['bitrate'])])
+                if video.get('color_space') or video.get('depth') or video.get('data_type'):
+                    color_mode = (
+                        video.get('color_space', asset.video.get('color_space', 'YUV')),
+                        video.get('depth', asset.video.get('depth', 8)),
+                        video.get('data_type', asset.video.get('data_type', 'uint')),
+                    )
+                    ffmpeg_pix_fmt = FFmpegProcessor.__color_mode_to_ffmpeg_pix_fmt.get(color_mode)
+                    if ffmpeg_pix_fmt:
+                        command.extend(['-pix_fmt', ffmpeg_pix_fmt])
             if audio:
                 if 'codec' in audio:
                     if audio['codec']:
