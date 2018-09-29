@@ -572,7 +572,7 @@ def nut_video_asset():
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v ffv1 -level 3 -a:c pcm_s16le -sn '
+               '-c:v ffv1 -level 3 -c:a pcm_s16le -sn '
                '-f nut pipe:' % ffmpeg_params).split()
     ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
