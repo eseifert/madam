@@ -150,8 +150,12 @@ class FFmpegProcessor(Processor):
                 '-tile-columns', '6',
                 '-crf', '32',
             ],
+            'opus': [
+                '-strict', '-2',
+            ],
             'vorbis': [
                 '-ac', '2',
+                '-strict', '-2',
             ],
             'vp9': [
                 '-speed', '1',
