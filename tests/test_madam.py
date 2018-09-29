@@ -132,6 +132,14 @@ def test_read_video_returns_asset_containing_video_size_metadata(madam, video_as
     assert asset.height == DEFAULT_HEIGHT
 
 
+def test_read_returns_video_asset_containing_video_stream_metadata(madam, video_asset):
+    asset = video_asset
+
+    read_asset = madam.read(asset.essence)
+
+    assert 'video' in read_asset.metadata
+
+
 def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     image_data = image_asset.essence
 
@@ -141,7 +149,7 @@ def test_read_returns_asset_containing_image_size_metadata(madam, image_asset):
     assert asset.height == DEFAULT_HEIGHT
 
 
-def test_read_returns_image_asset_containing_bit_depth_metadata(madam, image_asset):
+def test_read_returns_image_asset_containing_color_depth_metadata(madam, image_asset):
     image_data = image_asset.essence
 
     asset = madam.read(image_data)
