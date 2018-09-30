@@ -41,6 +41,16 @@ class TestSVGProcessor:
         with pytest.raises(UnsupportedFormatError):
             shrink_operator(unknown_asset)
 
+    def test_shrink_returns_valid_svg_xml(self, processor, svg_vector_asset):
+        asset = svg_vector_asset
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        tree = ET.parse(shrunk_asset.essence)
+        root = tree.getroot()
+        assert root.tag == '{http://www.w3.org/2000/svg}svg'
+
 
 class TestSVGMetadataProcessor:
     VALID_RDF_METADATA =\

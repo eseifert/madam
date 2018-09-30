@@ -63,6 +63,9 @@ class SVGProcessor(Processor):
         super().__init__()
 
     def can_read(self, file):
+        for ns_prefix, ns_uri in XML_NS.items():
+            ET.register_namespace(ns_prefix, ns_uri)
+
         try:
             ET.parse(file)
             return True
@@ -70,6 +73,9 @@ class SVGProcessor(Processor):
             return False
 
     def read(self, file):
+        for ns_prefix, ns_uri in XML_NS.items():
+            ET.register_namespace(ns_prefix, ns_uri)
+
         try:
             tree = ET.parse(file)
         except ET.ParseError as e:
@@ -94,12 +100,24 @@ class SVGProcessor(Processor):
         :type asset: Asset
         :return: Shrunk vector asset
         """
+        for ns_prefix, ns_uri in XML_NS.items():
+            ET.register_namespace(ns_prefix, ns_uri)
+
         try:
             tree = ET.parse(asset.essence)
         except ET.ParseError as e:
             raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
 
-        return asset
+        xml_result = io.BytesIO()
+        tree.write(xml_result, xml_declaration=True, encoding='utf-8')
+        xml_result.seek(0)
+
+        metadata = dict(mime_type='image/svg+xml')
+        for metadata_key in ('width', 'height'):
+            if metadata_key in asset.metadata:
+                metadata[metadata_key] = asset.metadata[metadata_key]
+
+        return Asset(essence=xml_result, **metadata)
 
 
 class SVGMetadataProcessor(MetadataProcessor):
