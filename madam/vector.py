@@ -66,6 +66,8 @@ def _parse_svg(file):
     except ET.ParseError as e:
         raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
     root = tree.getroot()
+    if root.tag not in ('{%s}svg' % XML_NS['svg'], 'svg'):
+        raise UnsupportedFormatError('XML file is not an SVG file.')
     return tree, root
 
 
