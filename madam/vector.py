@@ -145,6 +145,9 @@ class SVGProcessor(Processor):
         # Remove all empty circles with radius 0
         SVGProcessor.__remove_elements(root, 'svg:circle',
                                        lambda e: list(e) or e.get('r') != '0')
+        # Remove all empty ellipses with x-axis or y-axis radius 0
+        SVGProcessor.__remove_elements(root, 'svg:ellipse',
+                                       lambda e: list(e) or e.get('rx') != '0' and e.get('ry') != '0')
 
         essence = _write_svg(tree)
 
