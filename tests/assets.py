@@ -338,6 +338,8 @@ def svg_vector_asset():
         svg='http://www.w3.org/2000/svg'
     )
     for ns_prefix, ns_uri in xml_ns.items():
+        if ns_prefix == 'svg':
+            ns_prefix = ''
         ET.register_namespace(ns_prefix, ns_uri)
 
     with open('tests/resources/svg_with_metadata.svg', 'rb') as file:
