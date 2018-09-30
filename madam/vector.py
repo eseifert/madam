@@ -169,6 +169,9 @@ class SVGProcessor(Processor):
         # Remove all invisible or hidden elements
         SVGProcessor.__remove_elements(root, '*',
                                        lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and e.get('opacity') != '0')
+        # Remove empty groups
+        SVGProcessor.__remove_elements(root, 'svg:g',
+                                       lambda e: list(e))
 
         essence = _write_svg(tree)
 
