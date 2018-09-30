@@ -52,6 +52,13 @@ XML_NS = dict(
 )
 
 
+def _register_xml_namespaces():
+    for prefix, uri in XML_NS.items():
+        if prefix == 'svg':
+            prefix = ''
+        ET.register_namespace(prefix, uri)
+
+
 class SVGProcessor(Processor):
     """
     Represents a processor that handles *Scalable Vector Graphics* (SVG) data.
@@ -62,25 +69,25 @@ class SVGProcessor(Processor):
         """
         super().__init__()
 
-    def can_read(self, file):
-        for ns_prefix, ns_uri in XML_NS.items():
-            ET.register_namespace(ns_prefix, ns_uri)
-
-        try:
-            ET.parse(file)
-            return True
-        except ET.ParseError:
-            return False
-
-    def read(self, file):
-        for ns_prefix, ns_uri in XML_NS.items():
-            ET.register_namespace(ns_prefix, ns_uri)
-
+    @staticmethod
+    def __parse(file):
+        _register_xml_namespaces()
         try:
             tree = ET.parse(file)
         except ET.ParseError as e:
             raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
         root = tree.getroot()
+        return tree, root
+
+    def can_read(self, file):
+        try:
+            SVGProcessor.__parse(file)
+            return True
+        except UnsupportedFormatError:
+            return False
+
+    def read(self, file):
+        _, root = SVGProcessor.__parse(file)
 
         metadata = dict(mime_type='image/svg+xml')
         if 'width' in root.keys():
@@ -100,13 +107,7 @@ class SVGProcessor(Processor):
         :type asset: Asset
         :return: Shrunk vector asset
         """
-        for ns_prefix, ns_uri in XML_NS.items():
-            ET.register_namespace(ns_prefix, ns_uri)
-
-        try:
-            tree = ET.parse(asset.essence)
-        except ET.ParseError as e:
-            raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
+        tree, root = SVGProcessor.__parse(asset.essence)
 
         xml_result = io.BytesIO()
         tree.write(xml_result, xml_declaration=True, encoding='utf-8')
@@ -139,19 +140,13 @@ class SVGMetadataProcessor(MetadataProcessor):
 
     @staticmethod
     def __parse(file):
+        _register_xml_namespaces()
         try:
             tree = ET.parse(file)
         except ET.ParseError as e:
-            raise UnsupportedFormatError('Error while parsing XML: %s' % e)
+            raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
         root = tree.getroot()
         return tree, root, root.find('./svg:metadata', XML_NS)
-
-    @staticmethod
-    def __register_xml_namespaces():
-        for prefix, uri in XML_NS.items():
-            if prefix == 'svg':
-                prefix = ''
-            ET.register_namespace(prefix, uri)
 
     def read(self, file):
         _, _, metadata_elem = SVGMetadataProcessor.__parse(file)
@@ -166,7 +161,6 @@ class SVGMetadataProcessor(MetadataProcessor):
             root.remove(metadata_elem)
 
         result = io.BytesIO()
-        SVGMetadataProcessor.__register_xml_namespaces()
         tree.write(result, xml_declaration=True, encoding='utf-8')
         result.seek(0)
         return result
@@ -187,7 +181,6 @@ class SVGMetadataProcessor(MetadataProcessor):
         metadata_elem.append(ET.fromstring(rdf['xml']))
 
         result = io.BytesIO()
-        SVGMetadataProcessor.__register_xml_namespaces()
         tree.write(result, xml_declaration=True, encoding='utf-8')
         result.seek(0)
         return result
