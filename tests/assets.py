@@ -359,6 +359,14 @@ def svg_vector_asset():
                             **metadata)
 
 
+@pytest.fixture(scope='session')
+def unknown_xml_asset():
+    essence = io.BytesIO()
+    essence.write('<foo><bar/></foo>'.encode('utf-8'))
+    essence.seek(0)
+    return madam.core.Asset(essence, mime_type='text/xml')
+
+
 @pytest.fixture(scope='session', params=['jpeg_image_asset', 'png_image_asset', 'gif_image_asset',
                                          'bmp_image_asset', 'tiff_image_asset', 'webp_image_asset'])
 def image_asset(request, jpeg_image_asset, png_image_asset, gif_image_asset,
