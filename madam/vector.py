@@ -1,7 +1,7 @@
 import io
 from xml.etree import ElementTree as ET
 
-from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError, operator, OperatorError
+from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError, operator
 
 
 _INCH_TO_MM = 1 / 25.4
@@ -59,6 +59,23 @@ def _register_xml_namespaces():
         ET.register_namespace(prefix, uri)
 
 
+def _parse_svg(file):
+    _register_xml_namespaces()
+    try:
+        tree = ET.parse(file)
+    except ET.ParseError as e:
+        raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
+    root = tree.getroot()
+    return tree, root
+
+
+def _write_svg(tree):
+    file = io.BytesIO()
+    tree.write(file, xml_declaration=True, encoding='utf-8')
+    file.seek(0)
+    return file
+
+
 class SVGProcessor(Processor):
     """
     Represents a processor that handles *Scalable Vector Graphics* (SVG) data.
@@ -69,25 +86,15 @@ class SVGProcessor(Processor):
         """
         super().__init__()
 
-    @staticmethod
-    def __parse(file):
-        _register_xml_namespaces()
-        try:
-            tree = ET.parse(file)
-        except ET.ParseError as e:
-            raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
-        root = tree.getroot()
-        return tree, root
-
     def can_read(self, file):
         try:
-            SVGProcessor.__parse(file)
+            _parse_svg(file)
             return True
         except UnsupportedFormatError:
             return False
 
     def read(self, file):
-        _, root = SVGProcessor.__parse(file)
+        _, root = _parse_svg(file)
 
         metadata = dict(mime_type='image/svg+xml')
         if 'width' in root.keys():
@@ -107,18 +114,16 @@ class SVGProcessor(Processor):
         :type asset: Asset
         :return: Shrunk vector asset
         """
-        tree, root = SVGProcessor.__parse(asset.essence)
+        tree, root = _parse_svg(asset.essence)
 
-        xml_result = io.BytesIO()
-        tree.write(xml_result, xml_declaration=True, encoding='utf-8')
-        xml_result.seek(0)
+        essence = _write_svg(tree)
 
         metadata = dict(mime_type='image/svg+xml')
         for metadata_key in ('width', 'height'):
             if metadata_key in asset.metadata:
                 metadata[metadata_key] = asset.metadata[metadata_key]
 
-        return Asset(essence=xml_result, **metadata)
+        return Asset(essence=essence, **metadata)
 
 
 class SVGMetadataProcessor(MetadataProcessor):
@@ -138,31 +143,21 @@ class SVGMetadataProcessor(MetadataProcessor):
     def formats(self):
         return {'rdf'}
 
-    @staticmethod
-    def __parse(file):
-        _register_xml_namespaces()
-        try:
-            tree = ET.parse(file)
-        except ET.ParseError as e:
-            raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
-        root = tree.getroot()
-        return tree, root, root.find('./svg:metadata', XML_NS)
-
     def read(self, file):
-        _, _, metadata_elem = SVGMetadataProcessor.__parse(file)
+        _, root = _parse_svg(file)
+        metadata_elem = root.find('./svg:metadata', XML_NS)
         if metadata_elem is None or len(metadata_elem) == 0:
             return {'rdf': {}}
         return {'rdf': {'xml': ET.tostring(metadata_elem[0], encoding='unicode')}}
 
     def strip(self, file):
-        tree, root, metadata_elem = SVGMetadataProcessor.__parse(file)
+        tree, root = _parse_svg(file)
+        metadata_elem = root.find('./svg:metadata', XML_NS)
 
         if metadata_elem is not None:
             root.remove(metadata_elem)
 
-        result = io.BytesIO()
-        tree.write(result, xml_declaration=True, encoding='utf-8')
-        result.seek(0)
+        result = _write_svg(tree)
         return result
 
     def combine(self, file, metadata):
@@ -174,13 +169,12 @@ class SVGMetadataProcessor(MetadataProcessor):
         if 'xml' not in rdf:
             raise ValueError('XML string missing from RDF metadata.')
 
-        tree, root, metadata_elem = SVGMetadataProcessor.__parse(file)
+        tree, root = _parse_svg(file)
+        metadata_elem = root.find('./svg:metadata', XML_NS)
 
         if metadata_elem is None:
             metadata_elem = ET.SubElement(root, '{%(svg)s}metadata' % XML_NS)
         metadata_elem.append(ET.fromstring(rdf['xml']))
 
-        result = io.BytesIO()
-        tree.write(result, xml_declaration=True, encoding='utf-8')
-        result.seek(0)
+        result = _write_svg(tree)
         return result
