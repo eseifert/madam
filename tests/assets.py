@@ -334,16 +334,24 @@ def svg_vector_asset():
         )
     )
 
+    xml_ns = dict(
+        svg='http://www.w3.org/2000/svg'
+    )
+    for ns_prefix, ns_uri in xml_ns.items():
+        ET.register_namespace(ns_prefix, ns_uri)
+
     with open('tests/resources/svg_with_metadata.svg', 'rb') as file:
         tree = ET.parse(file)
 
     # Remove metadata from essence
     root = tree.getroot()
-    metadata_elem = root.find('./{http://www.w3.org/2000/svg}metadata')
+    metadata_elem = root.find('./svg:metadata', xml_ns)
     if metadata_elem is not None:
         root.remove(metadata_elem)
+
+    # Write SVG without metadata
     essence = io.BytesIO()
-    tree.write(essence)
+    tree.write(essence, xml_declaration=True, encoding='utf-8')
     essence.seek(0)
 
     return madam.core.Asset(essence=essence, mime_type='image/svg+xml',
