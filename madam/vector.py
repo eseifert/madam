@@ -151,6 +151,9 @@ class SVGProcessor(Processor):
         # Remove all empty rectangles with width or height 0
         SVGProcessor.__remove_elements(root, 'svg:rect',
                                        lambda e: list(e) or e.get('width') != '0' and e.get('height') != '0')
+        # Remove all patterns with width or height 0
+        SVGProcessor.__remove_elements(root, 'svg:pattern',
+                                       lambda e: e.get('width') != '0' and e.get('height') != '0')
 
         essence = _write_svg(tree)
 

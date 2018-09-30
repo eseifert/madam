@@ -71,8 +71,8 @@ class TestSVGProcessor:
 
         tree = ET.parse(shrunk_asset.essence)
         root = tree.getroot()
-        text_elems = root.findall('.//{http://www.w3.org/2000/svg}text')
-        assert text_elems[0].text == 'Hello MADAM!'
+        elems = root.findall('.//{http://www.w3.org/2000/svg}text')
+        assert elems[0].text == 'Hello MADAM!'
 
     def test_shrink_removes_empty_texts(self, processor, svg_vector_asset):
         asset = svg_vector_asset
@@ -82,7 +82,8 @@ class TestSVGProcessor:
 
         tree = ET.parse(shrunk_asset.essence)
         root = tree.getroot()
-        assert all(elem.text for elem in root.findall('.//{http://www.w3.org/2000/svg}text'))
+        elems = root.findall('.//{http://www.w3.org/2000/svg}text')
+        assert all(elem.text for elem in elems)
 
     def test_shrink_removes_circles_with_radius_zero(self, processor, svg_vector_asset):
         asset = svg_vector_asset
@@ -92,7 +93,8 @@ class TestSVGProcessor:
 
         tree = ET.parse(shrunk_asset.essence)
         root = tree.getroot()
-        assert all(elem.get('r') != '0' for elem in root.findall('.//{http://www.w3.org/2000/svg}circle'))
+        elems = root.findall('.//{http://www.w3.org/2000/svg}circle')
+        assert all(elem.get('r') != '0' for elem in elems)
 
     def test_shrink_removes_ellipses_with_radius_zero(self, processor, svg_vector_asset):
         asset = svg_vector_asset
@@ -115,6 +117,18 @@ class TestSVGProcessor:
         tree = ET.parse(shrunk_asset.essence)
         root = tree.getroot()
         elems = root.findall('.//{http://www.w3.org/2000/svg}rect')
+        assert all(elem.get('width') != '0' for elem in elems)
+        assert all(elem.get('height') != '0' for elem in elems)
+
+    def test_shrink_removes_patterns_with_width_or_height_zero(self, processor, svg_vector_asset):
+        asset = svg_vector_asset
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        tree = ET.parse(shrunk_asset.essence)
+        root = tree.getroot()
+        elems = root.findall('.//{http://www.w3.org/2000/svg}pattern')
         assert all(elem.get('width') != '0' for elem in elems)
         assert all(elem.get('height') != '0' for elem in elems)
 
