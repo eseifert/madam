@@ -74,6 +74,16 @@ class TestSVGProcessor:
         text_elems = root.findall('.//{http://www.w3.org/2000/svg}text')
         assert text_elems[0].text == 'Hello MADAM!'
 
+    def test_shrink_removes_empty_texts(self, processor, svg_vector_asset):
+        asset = svg_vector_asset
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        tree = ET.parse(shrunk_asset.essence)
+        root = tree.getroot()
+        assert all(elem.text for elem in root.findall('.//{http://www.w3.org/2000/svg}text'))
+
 
 class TestSVGMetadataProcessor:
     VALID_RDF_METADATA =\

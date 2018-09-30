@@ -139,6 +139,9 @@ class SVGProcessor(Processor):
 
         # Minify XML
         SVGProcessor.__remove_xml_whitespace(root)
+        # Remove empty texts
+        SVGProcessor.__remove_elements(root, 'svg:text',
+                                       lambda e: e.text.strip() or list(e))
 
         essence = _write_svg(tree)
 
