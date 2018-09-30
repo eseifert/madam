@@ -166,6 +166,9 @@ class SVGProcessor(Processor):
         # Remove all polylines without points
         SVGProcessor.__remove_elements(root, 'svg:polyline',
                                        lambda e: e.get('points', '').strip())
+        # Remove all invisible or hidden elements
+        SVGProcessor.__remove_elements(root, '*',
+                                       lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and e.get('opacity') != '0')
 
         essence = _write_svg(tree)
 

@@ -177,6 +177,19 @@ class TestSVGProcessor:
         elems = root.findall('.//{http://www.w3.org/2000/svg}polyline')
         assert all(elem.get('points', '').strip() for elem in elems)
 
+    def test_shrink_removes_hidden_elements(self, processor, svg_vector_asset):
+        asset = svg_vector_asset
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        tree = ET.parse(shrunk_asset.essence)
+        root = tree.getroot()
+        elems = root.findall('.//*')
+        assert all(elem.get('display') != 'none' for elem in elems)
+        assert all(elem.get('visibility') != 'hidden' for elem in elems)
+        assert all(elem.get('opacity') != '0' for elem in elems)
+
 
 class TestSVGMetadataProcessor:
     VALID_RDF_METADATA =\
