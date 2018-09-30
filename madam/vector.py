@@ -163,6 +163,9 @@ class SVGProcessor(Processor):
         # Remove all polygons without points
         SVGProcessor.__remove_elements(root, 'svg:polygon',
                                        lambda e: e.get('points', '').strip())
+        # Remove all polylines without points
+        SVGProcessor.__remove_elements(root, 'svg:polyline',
+                                       lambda e: e.get('points', '').strip())
 
         essence = _write_svg(tree)
 
