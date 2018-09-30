@@ -1,7 +1,7 @@
 import io
 from xml.etree import ElementTree as ET
 
-from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError
+from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError, operator, OperatorError
 
 
 _INCH_TO_MM = 1 / 25.4
@@ -84,6 +84,22 @@ class SVGProcessor(Processor):
 
         file.seek(0)
         return Asset(essence=file, **metadata)
+
+    @operator
+    def shrink(self, asset):
+        """
+        Shrinks the size of an SVG asset.
+
+        :param asset: Media asset to be shrunk
+        :type asset: Asset
+        :return: Shrunk vector asset
+        """
+        try:
+            tree = ET.parse(asset.essence)
+        except ET.ParseError as e:
+            raise UnsupportedFormatError('Unsupported asset type: %s' % asset.mime_type)
+
+        return asset
 
 
 class SVGMetadataProcessor(MetadataProcessor):

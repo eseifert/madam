@@ -1,4 +1,3 @@
-import io
 from xml.etree import ElementTree as ET
 
 import pytest
@@ -35,6 +34,12 @@ class TestSVGProcessor:
     def test_read_fails_with_invalid_input(self, processor, unknown_asset):
         with pytest.raises(UnsupportedFormatError):
             processor.read(unknown_asset.essence)
+
+    def test_shrink_fails_with_invalid_input(self, processor, unknown_asset):
+        shrink_operator = processor.shrink()
+
+        with pytest.raises(UnsupportedFormatError):
+            shrink_operator(unknown_asset)
 
 
 class TestSVGMetadataProcessor:
