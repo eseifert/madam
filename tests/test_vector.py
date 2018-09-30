@@ -51,6 +51,14 @@ class TestSVGProcessor:
         root = tree.getroot()
         assert root.tag == '{http://www.w3.org/2000/svg}svg'
 
+    def test_shrink_returns_smaller_or_equal_essence(self, processor, svg_vector_asset):
+        asset = svg_vector_asset
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        assert len(shrunk_asset.essence.read()) <= len(asset.essence.read())
+
 
 class TestSVGMetadataProcessor:
     VALID_RDF_METADATA =\
