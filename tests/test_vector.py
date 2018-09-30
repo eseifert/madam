@@ -144,6 +144,17 @@ class TestSVGProcessor:
         assert all(elem.get('width') != '0' for elem in elems)
         assert all(elem.get('height') != '0' for elem in elems)
 
+    def test_shrink_removes_empty_paths(self, processor, svg_vector_asset):
+        asset = svg_vector_asset
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        tree = ET.parse(shrunk_asset.essence)
+        root = tree.getroot()
+        elems = root.findall('.//{http://www.w3.org/2000/svg}path')
+        assert all(elem.get('d', '').strip() for elem in elems)
+
 
 class TestSVGMetadataProcessor:
     VALID_RDF_METADATA =\
