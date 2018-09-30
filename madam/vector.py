@@ -142,6 +142,9 @@ class SVGProcessor(Processor):
         # Remove empty texts
         SVGProcessor.__remove_elements(root, 'svg:text',
                                        lambda e: e.text.strip() or list(e))
+        # Remove all empty circles with radius 0
+        SVGProcessor.__remove_elements(root, 'svg:circle',
+                                       lambda e: list(e) or e.get('r') != '0')
 
         essence = _write_svg(tree)
 

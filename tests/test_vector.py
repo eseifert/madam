@@ -84,6 +84,16 @@ class TestSVGProcessor:
         root = tree.getroot()
         assert all(elem.text for elem in root.findall('.//{http://www.w3.org/2000/svg}text'))
 
+    def test_shrink_removes_circles_with_radius_zero(self, processor, svg_vector_asset):
+        asset = svg_vector_asset
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        tree = ET.parse(shrunk_asset.essence)
+        root = tree.getroot()
+        assert all(elem.get('r') != '0' for elem in root.findall('.//{http://www.w3.org/2000/svg}circle'))
+
 
 class TestSVGMetadataProcessor:
     VALID_RDF_METADATA =\
