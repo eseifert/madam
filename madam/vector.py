@@ -46,9 +46,10 @@ def svg_length_to_px(length):
 
 
 XML_NS = dict(
-    svg='http://www.w3.org/2000/svg',
-    rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#',
     dc='http://purl.org/dc/elements/1.1/',
+    rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+    svg='http://www.w3.org/2000/svg',
+    xlink='http://www.w3.org/1999/xlink',
 )
 
 
@@ -107,6 +108,23 @@ class SVGProcessor(Processor):
         file.seek(0)
         return Asset(essence=file, **metadata)
 
+    @staticmethod
+    def __remove_xml_whitespace(elem):
+        if elem.text:
+            elem.text = elem.text.strip()
+        if elem.tail:
+            elem.tail = elem.tail.strip()
+        for child in elem:
+            SVGProcessor.__remove_xml_whitespace(child)
+
+    @staticmethod
+    def __remove_elements(root, qname, keep_func):
+        parents = root.findall('.//%s/..' % qname, XML_NS)
+        for parent in parents:
+            for elem in parent.findall('./%s' % qname, XML_NS):
+                if not keep_func(elem):
+                    parent.remove(elem)
+
     @operator
     def shrink(self, asset):
         """
@@ -115,8 +133,12 @@ class SVGProcessor(Processor):
         :param asset: Media asset to be shrunk
         :type asset: Asset
         :return: Shrunk vector asset
+        :rtype: Asset
         """
         tree, root = _parse_svg(asset.essence)
+
+        # Minify XML
+        SVGProcessor.__remove_xml_whitespace(root)
 
         essence = _write_svg(tree)
 

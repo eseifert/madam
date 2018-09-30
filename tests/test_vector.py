@@ -63,6 +63,17 @@ class TestSVGProcessor:
 
         assert len(shrunk_asset.essence.read()) <= len(asset.essence.read())
 
+    def test_shrink_strips_whitespace(self, processor, svg_vector_asset):
+        asset = svg_vector_asset
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        tree = ET.parse(shrunk_asset.essence)
+        root = tree.getroot()
+        text_elems = root.findall('.//{http://www.w3.org/2000/svg}text')
+        assert text_elems[0].text == 'Hello MADAM!'
+
 
 class TestSVGMetadataProcessor:
     VALID_RDF_METADATA =\
