@@ -141,7 +141,7 @@ class SVGProcessor(Processor):
         SVGProcessor.__remove_xml_whitespace(root)
         # Remove empty texts
         SVGProcessor.__remove_elements(root, 'svg:text',
-                                       lambda e: e.text.strip() or list(e))
+                                       lambda e: e.text and e.text.strip() or list(e))
         # Remove all empty circles with radius 0
         SVGProcessor.__remove_elements(root, 'svg:circle',
                                        lambda e: list(e) or e.get('r') != '0')
