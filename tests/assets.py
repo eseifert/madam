@@ -353,7 +353,7 @@ def svg_vector_asset():
 
     # Write SVG without metadata
     essence = io.BytesIO()
-    tree.write(essence, xml_declaration=True, encoding='utf-8')
+    tree.write(essence, xml_declaration=False, encoding='utf-8')
     essence.seek(0)
 
     return madam.core.Asset(essence=essence, mime_type='image/svg+xml',

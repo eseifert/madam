@@ -74,7 +74,7 @@ def _parse_svg(file):
 
 def _write_svg(tree):
     file = io.BytesIO()
-    tree.write(file, xml_declaration=True, encoding='utf-8')
+    tree.write(file, xml_declaration=False, encoding='utf-8')
     file.seek(0)
     return file
 
