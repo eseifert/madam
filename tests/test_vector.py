@@ -1,7 +1,9 @@
+import io
 from xml.etree import ElementTree as ET
 
 import pytest
 
+from madam.core import Asset
 from madam.vector import svg_length_to_px, SVGMetadataProcessor, SVGProcessor, UnsupportedFormatError, XML_NS
 from assets import svg_vector_asset, unknown_xml_asset, unknown_asset
 
@@ -24,6 +26,19 @@ def test_svg_length_to_px_fails_for_invalid_values():
         assert svg_length_to_px(None)
     with pytest.raises(ValueError):
         assert svg_length_to_px('')
+
+
+SVG_START = '<svg height="12px" version="1.1" width="24px" xmlns="http://www.w3.org/2000/svg">'
+SVG_END = '</svg>'
+
+
+def create_svg_asset(fragment=''):
+    essence = io.BytesIO()
+    essence.write(SVG_START.encode('utf-8'))
+    essence.write(fragment.encode('utf-8'))
+    essence.write(SVG_END.encode('utf-8'))
+    essence.seek(0)
+    return Asset(essence, mime_type='image/svg+xml')
 
 
 class TestSVGProcessor:
@@ -63,154 +78,135 @@ class TestSVGProcessor:
 
         assert len(shrunk_asset.essence.read()) <= len(asset.essence.read())
 
-    def test_shrink_strips_whitespace(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_strips_whitespace(self, processor):
+        asset = create_svg_asset('\t<text> Hello MADAM! </text>\n'
+                                 '\t<rect height="100%" width="100%" x="0" y="0" />\n')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}text')
-        assert elems[0].text == 'Hello MADAM!'
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == '<text>Hello MADAM!</text><rect height="100%" width="100%" x="0" y="0" />'
 
-    def test_shrink_removes_empty_texts(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_empty_texts(self, processor):
+        asset = create_svg_asset('<text></text>'
+                                 '<text />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}text')
-        assert all(elem.text for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_circles_with_radius_zero(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_circles_with_radius_zero(self, processor):
+        asset = create_svg_asset('<circle r="0" />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}circle')
-        assert all(elem.get('r') != '0' for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_ellipses_with_radius_zero(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_ellipses_with_radius_zero(self, processor):
+        asset = create_svg_asset('<ellipse rx="0" ry="1" />'
+                                 '<ellipse rx="1" ry="0" />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}ellipse')
-        assert all(elem.get('rx') != '0' for elem in elems)
-        assert all(elem.get('ry') != '0' for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_rectangles_with_width_or_height_zero(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_rectangles_with_width_or_height_zero(self, processor):
+        asset = create_svg_asset('<rect height="0" width="1" />'
+                                 '<rect height="1" width="0" />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}rect')
-        assert all(elem.get('width') != '0' for elem in elems)
-        assert all(elem.get('height') != '0' for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_patterns_with_width_or_height_zero(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_patterns_with_width_or_height_zero(self, processor):
+        asset = create_svg_asset('<pattern height="10%" viewBox="0,0,10,10" width="0">'
+                                 '<polygon points="0,0 2,5 0,10 5,8 10,10 8,5 10,0 5,2" />'
+                                 '</pattern>')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}pattern')
-        assert all(elem.get('width') != '0' for elem in elems)
-        assert all(elem.get('height') != '0' for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_images_with_width_or_height_zero(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_images_with_width_or_height_zero(self, processor):
+        asset = create_svg_asset('<image height="0" width="1" />'
+                                 '<image height="1" width="0" />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}image')
-        assert all(elem.get('width') != '0' for elem in elems)
-        assert all(elem.get('height') != '0' for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_empty_paths(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_empty_paths(self, processor):
+        asset = create_svg_asset('<path d="" />'
+                                 '<path d=" " />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}path')
-        assert all(elem.get('d', '').strip() for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_empty_polygons(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_empty_polygons(self, processor):
+        asset = create_svg_asset('<polygon points="" />'
+                                 '<polygon points=" " />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}polygon')
-        assert all(elem.get('points', '').strip() for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_empty_polylines(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_empty_polylines(self, processor):
+        asset = create_svg_asset('<polyline points="" />'
+                                 '<polyline points=" " />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}polyline')
-        assert all(elem.get('points', '').strip() for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_hidden_elements(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_hidden_elements(self, processor):
+        asset = create_svg_asset('<text visibility="hidden">Hidden</text>'
+                                 '<text display="none">Invisible</text>'
+                                 '<text opacity="0">Transparent</text>')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//*')
-        assert all(elem.get('display') != 'none' for elem in elems)
-        assert all(elem.get('visibility') != 'hidden' for elem in elems)
-        assert all(elem.get('opacity') != '0' for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_empty_groups(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_empty_groups(self, processor):
+        asset = create_svg_asset('<g> </g>'
+                                 '<g />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}g')
-        assert all(list(elem) for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
-    def test_shrink_removes_empty_defs(self, processor, svg_vector_asset):
-        asset = svg_vector_asset
+    def test_shrink_removes_empty_defs(self, processor):
+        asset = create_svg_asset('<defs></defs>')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
 
-        tree = ET.parse(shrunk_asset.essence)
-        root = tree.getroot()
-        elems = root.findall('.//{http://www.w3.org/2000/svg}defs')
-        assert all(list(elem) for elem in elems)
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START):-len(SVG_END)]
+        assert shrunk_fragment == ''
 
 
 class TestSVGMetadataProcessor:
