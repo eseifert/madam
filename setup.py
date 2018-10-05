@@ -16,9 +16,10 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     author='Michael Seifert, Erich Seifert',
     author_email='mseifert@error-reports.org, dev@erichseifert.de',
+    python_requires=">=3.4",
     install_requires=['bidict', 'frozendict', 'pillow'],
     setup_requires=['pytest-runner', 'versioneer'],
-    tests_require=['mutagen', 'pillow', 'py3exiv2', 'pytest >=3.0'],
+    tests_require=['mutagen', 'pillow', 'py3exiv2', 'pytest>=3.0'],
     extras_require={
         'doc': ['sphinx >=1.3', 'sphinx_rtd_theme'],
         'exiv2': ['py3exiv2'],
