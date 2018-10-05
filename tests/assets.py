@@ -605,26 +605,24 @@ def nut_video_asset():
 def video_asset(request, avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_video_asset, nut_video_asset):
     if request.param == 'avi_video_asset':
         return avi_video_asset
-    elif request.param == 'mp2_video_asset':
+    if request.param == 'mp2_video_asset':
         return mp2_video_asset
-    elif request.param == 'mp4_video_asset':
+    if request.param == 'mp4_video_asset':
         return mp4_video_asset
-    elif request.param == 'mkv_video_asset':
+    if request.param == 'mkv_video_asset':
         return mkv_video_asset
-    elif request.param == 'nut_video_asset':
+    if request.param == 'nut_video_asset':
         return nut_video_asset
-    else:
-        raise ValueError()
+    raise ValueError()
 
 
 @pytest.fixture(scope='session', params=['mp4_video_asset', 'mkv_video_asset'])
 def video_asset_with_subtitle(request, mp4_video_asset, mkv_video_asset):
     if request.param == 'mp4_video_asset':
         return mp4_video_asset
-    elif request.param == 'mkv_video_asset':
+    if request.param == 'mkv_video_asset':
         return mkv_video_asset
-    else:
-        raise ValueError()
+    raise ValueError()
 
 
 @pytest.fixture(scope='session', params=[
