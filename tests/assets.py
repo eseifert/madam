@@ -305,7 +305,7 @@ def webp_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/webp',
         width=image.width,
         height=image.height,
-        color_space='RGBX',
+        color_space='RGB',
         depth=8,
         data_type='uint',
     )
