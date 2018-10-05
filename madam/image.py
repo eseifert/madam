@@ -46,6 +46,9 @@ class PillowProcessor(Processor):
     })
 
     __format_options = {
+        MimeType('image/gif'): dict(
+            optimize=True,
+        ),
         MimeType('image/jpeg'): dict(
             optimize=True,
             progressive=True,
