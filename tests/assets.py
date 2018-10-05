@@ -46,6 +46,22 @@ def image_gray(width, height, depth=8):
     return image
 
 
+def image_palette(width, height, colors=7):
+    if colors > 256:
+        raise ValueError('Too many colors: maximum is 256')
+    image = PIL.Image.new('P', (width, height))
+    palette = []
+    for i in range(colors):
+        palette.extend((255 - i, i % width, i))
+    image.putpalette(palette)
+    color_index = 0
+    for y in range(0, height):
+        for x in range(0, width):
+            image.putpixel((x, y), color_index)
+            color_index = (color_index + 1) % colors
+    return image
+
+
 def image_cmyk(width, height):
     image = PIL.Image.new('CMYK', (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
@@ -150,6 +166,23 @@ def png_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 
 
 @pytest.fixture(scope='session')
+def png_image_asset_palette(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_palette(width=width, height=height)
+    essence = io.BytesIO()
+    image.save(essence, 'PNG')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/png',
+        width=image.width,
+        height=image.height,
+        color_space='PALETTE',
+        depth=8,
+        data_type='uint',
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
 def png_image_asset_gray(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     depth = 8
     image = image_gray(width=width, height=height, depth=depth)
@@ -167,10 +200,12 @@ def png_image_asset_gray(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     return madam.core.Asset(essence, **metadata)
 
 
-@pytest.fixture(scope='session', params=['png_image_asset_rgb', 'png_image_asset_gray'])
-def png_image_asset(request, png_image_asset_rgb, png_image_asset_gray):
+@pytest.fixture(scope='session', params=['png_image_asset_rgb', 'png_image_asset_palette', 'png_image_asset_gray'])
+def png_image_asset(request, png_image_asset_rgb, png_image_asset_palette, png_image_asset_gray):
     if request.param == 'png_image_asset_rgb':
         return png_image_asset_rgb
+    if request.param == 'png_image_asset_palette':
+        return png_image_asset_palette
     if request.param == 'png_image_asset_gray':
         return png_image_asset_gray
     raise ValueError()
@@ -221,6 +256,23 @@ def tiff_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         width=image.width,
         height=image.height,
         color_space='RGB',
+        depth=8,
+        data_type='uint',
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
+def tiff_image_asset_palette(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_palette(width=width, height=height)
+    essence = io.BytesIO()
+    image.save(essence, 'TIFF')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/tiff',
+        width=image.width,
+        height=image.height,
+        color_space='P',
         depth=8,
         data_type='uint',
     )
@@ -280,12 +332,15 @@ def tiff_image_asset_cmyk(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     return madam.core.Asset(essence, **metadata)
 
 
-@pytest.fixture(scope='session', params=['tiff_image_asset_rgb', 'tiff_image_asset_gray_8bit',
-                                         'tiff_image_asset_gray_16bit', 'tiff_image_asset_cmyk'])
-def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_gray_8bit,
-                     tiff_image_asset_gray_16bit, tiff_image_asset_cmyk):
+@pytest.fixture(scope='session', params=['tiff_image_asset_rgb', 'tiff_image_asset_palette',
+                                         'tiff_image_asset_gray_8bit', 'tiff_image_asset_gray_16bit',
+                                         'tiff_image_asset_cmyk'])
+def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_palette,
+                     tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit, tiff_image_asset_cmyk):
     if request.param == 'tiff_image_asset_rgb':
         return tiff_image_asset_rgb
+    if request.param == 'tiff_image_asset_palette':
+        return tiff_image_asset_cmyk
     if request.param == 'tiff_image_asset_gray_8bit':
         return tiff_image_asset_gray_8bit
     if request.param == 'tiff_image_asset_gray_16bit':

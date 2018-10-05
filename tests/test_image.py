@@ -5,9 +5,10 @@ import pytest
 import madam.image
 from madam.core import OperatorError
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT
-from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_gray, png_image_asset, \
-    gif_image_asset, bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit, \
-    tiff_image_asset_cmyk, tiff_image_asset, webp_image_asset, unknown_asset
+from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_palette, png_image_asset_gray, \
+    png_image_asset, gif_image_asset, bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_palette, \
+    tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit, tiff_image_asset_cmyk, tiff_image_asset, \
+    webp_image_asset, unknown_asset
 
 
 def is_equal_in_black_white_space(result_image, expected_image):
@@ -200,6 +201,18 @@ class TestPillowProcessor:
 
         assert converted_asset.width == asset.width
         assert converted_asset.height == asset.height
+
+    def test_convert_maintains_original_palette(self, pillow_processor, png_image_asset_palette):
+        asset = png_image_asset_palette
+        original_image = PIL.Image.open(asset.essence)
+        conversion_operator = pillow_processor.convert(
+            mime_type='image/png', color_space='PALETTE', depth=8, data_type='uint')
+
+        converted_asset = conversion_operator(asset)
+
+        converted_image = PIL.Image.open(converted_asset.essence)
+        assert converted_image.mode == 'P'
+        assert converted_image.getpalette() == original_image.getpalette()
 
     def test_crop_with_original_dimensions_returns_identical_asset(self, pillow_processor, image_asset):
         crop_operator = pillow_processor.crop(x=0, y=0, width=image_asset.width, height=image_asset.height)

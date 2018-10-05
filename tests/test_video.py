@@ -9,9 +9,9 @@ import madam.video
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.future import subprocess_run
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
-from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_gray, png_image_asset, \
-    gif_image_asset, bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit, \
-    tiff_image_asset_cmyk, tiff_image_asset, webp_image_asset
+from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_palette, png_image_asset_gray, \
+    png_image_asset, gif_image_asset, bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_palette, \
+    tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit, tiff_image_asset_cmyk, tiff_image_asset, webp_image_asset
 from assets import video_asset_with_subtitle, video_asset, avi_video_asset, mp2_video_asset, mp4_video_asset, \
     mkv_video_asset, nut_video_asset, ogg_video_asset
 from assets import unknown_asset
