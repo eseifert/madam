@@ -16,7 +16,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     author='Michael Seifert, Erich Seifert',
     author_email='mseifert@error-reports.org, dev@erichseifert.de',
-    python_requires=">=3.4",
+    python_requires='>=3.4',
     install_requires=['bidict', 'frozendict', 'pillow>=5.0.0'],
     setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['mutagen', 'pillow>=5.0.0', 'py3exiv2', 'pytest>=3.0'],
