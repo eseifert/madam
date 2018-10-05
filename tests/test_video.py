@@ -17,6 +17,9 @@ from assets import video_asset_with_subtitle, video_asset, avi_video_asset, mp2_
 from assets import unknown_asset
 
 
+FFMPEG_PROCESSOR_IMAGE_MIME_TYPES = 'image/bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/tiff', 'image/webp'
+
+
 class TestFFmpegProcessor:
     @pytest.fixture(name='processor', scope='class')
     def ffmpeg_processor(self):
@@ -256,16 +259,16 @@ class TestFFmpegProcessor:
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert bool(video_info.get('format'))
 
-    def test_extract_frame_asset_receives_correct_mime_type(self, processor, video_asset, image_asset):
-        image_mime_type = image_asset.mime_type
+    @pytest.mark.parametrize('image_mime_type', FFMPEG_PROCESSOR_IMAGE_MIME_TYPES)
+    def test_extract_frame_asset_receives_correct_mime_type(self, processor, video_asset, image_mime_type):
         extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
 
         extracted_asset = extract_frame_operator(video_asset)
 
         assert extracted_asset.mime_type == image_mime_type
 
-    def test_extract_frame_asset_is_image_with_same_size_as_source(self, processor, video_asset, image_asset):
-        image_mime_type = image_asset.mime_type
+    @pytest.mark.parametrize('image_mime_type', FFMPEG_PROCESSOR_IMAGE_MIME_TYPES)
+    def test_extract_frame_asset_is_image_with_same_size_as_source(self, processor, video_asset, image_mime_type):
         extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
 
         extracted_asset = extract_frame_operator(video_asset)
@@ -276,8 +279,8 @@ class TestFFmpegProcessor:
         assert extracted_image.height > 0
         assert extracted_image.height == video_asset.height
 
-    def test_extract_frame_raises_error_for_unknown_source_format(self, processor, unknown_asset, image_asset):
-        image_mime_type = image_asset.mime_type
+    @pytest.mark.parametrize('image_mime_type', FFMPEG_PROCESSOR_IMAGE_MIME_TYPES)
+    def test_extract_frame_raises_error_for_unknown_source_format(self, processor, unknown_asset, image_mime_type):
         extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
 
         with pytest.raises(UnsupportedFormatError):
