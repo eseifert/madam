@@ -4,6 +4,7 @@ from enum import Enum
 from bidict import bidict
 import PIL.ExifTags
 import PIL.Image
+import zopfli
 
 from madam.core import operator, OperatorError
 from madam.core import Asset, Processor
@@ -30,6 +31,38 @@ class FlipOrientation(Enum):
     HORIZONTAL = 0
     #: Vertical axis
     VERTICAL = 1
+
+
+def _optimized(asset):
+    """
+    Creates an optimized version of an asset. Metadata from a specified asset
+    will be maintained. In case the asset file format is not supported the
+    original asset will be returned.
+
+    :param asset: Media asset that should be optimized
+    :type asset: Asset
+    :return: Media asset with optimized content
+    :rtype: Asset
+    """
+    mime_type = MimeType(asset.mime_type)
+
+    if mime_type == 'image/png' and asset.color_space != 'PALETTE':
+        zopfli_png = zopfli.ZopfliPNG()
+        # Allow altering hidden colors of fully transparent pixels
+        zopfli_png.lossy_8bit = True
+        # Convert 16-bit per channel images to 8-bit per channel
+        zopfli_png.lossy_transparent = False
+        # Use all available optimization strategies
+        zopfli_png.filter_strategies = '01234mepb'
+        zopfli_png.iterations = 20
+        zopfli_png.iterations_large = 7
+
+        essence_data = asset.essence.read()
+        optimized_data = zopfli_png.optimize(essence_data)
+
+        return Asset(essence=io.BytesIO(optimized_data), **asset.metadata)
+
+    return asset
 
 
 class PillowProcessor(Processor):
@@ -167,7 +200,7 @@ class PillowProcessor(Processor):
         image.save(image_buffer, pil_format, **pil_options)
         image_buffer.seek(0)
         asset = self.read(image_buffer)
-        return asset
+        return _optimized(asset)
 
     def _rotate(self, asset, rotation):
         """
