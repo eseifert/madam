@@ -125,18 +125,19 @@ class PillowProcessor(Processor):
         """
         image = PIL.Image.open(asset.essence)
         mime_type = MimeType(asset.mime_type)
-        width_delta = width - image.width
-        height_delta = height - image.height
-        resized_width = width
-        resized_height = height
-        if mode in (ResizeMode.FIT, ResizeMode.FILL):
-            if mode == ResizeMode.FIT and width_delta < height_delta or \
-               mode == ResizeMode.FILL and width_delta > height_delta:
+        if mode == ResizeMode.EXACT:
+            resized_width = width
+            resized_height = height
+        else:
+            aspect = asset.width / asset.height
+            aspect_target = width / height
+            if mode == ResizeMode.FIT and aspect >= aspect_target or \
+               mode == ResizeMode.FILL and aspect <= aspect_target:
                 resize_factor = width / image.width
             else:
                 resize_factor = height / image.height
-            resized_width = round(resize_factor * image.width)
-            resized_height = round(resize_factor * image.height)
+            resized_width = max(1, round(resize_factor * image.width))
+            resized_height = max(1, round(resize_factor * image.height))
         # Pillow supports resampling only for 8-bit images
         resampling_method = PIL.Image.LANCZOS if asset.depth == 8 else PIL.Image.NEAREST
         resized_image = image.resize((resized_width, resized_height),
