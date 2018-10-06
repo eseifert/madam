@@ -4,6 +4,7 @@ from enum import Enum
 from bidict import bidict
 import PIL.ExifTags
 import PIL.Image
+import pyguetzli
 import zopfli
 
 from madam.core import operator, OperatorError
@@ -48,7 +49,11 @@ def _optimized(image, pil_format, **pil_options):
     """
     image_buffer = io.BytesIO()
 
-    if pil_format == 'PNG' and image.mode != 'P':
+    if pil_format == 'JPEG':
+        jpeg_quality = pil_options.get('quality', 80)
+        optimized_data = pyguetzli.pil_image.process_pil_image(image, quality=jpeg_quality)
+        image_buffer.write(optimized_data)
+    elif pil_format == 'PNG' and image.mode != 'P':
         zopfli_png = zopfli.ZopfliPNG()
         # Convert 16-bit per channel images to 8-bit per channel
         zopfli_png.lossy_8bit = False
