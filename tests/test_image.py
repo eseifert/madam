@@ -182,16 +182,18 @@ class TestPillowProcessor:
         image = PIL.Image.open(converted_asset.essence)
         assert image.mode == 'CMYK'
 
-    def test_convert_returns_asset_with_correct_color_mode_metadata(self, pillow_processor, image_asset):
+    @pytest.mark.parametrize('color_space,depth,data_type', [
+        ('RGB', 8, 'uint'), ('LUMA', 8, 'uint')
+    ])
+    def test_convert_returns_asset_with_correct_color_mode_metadata(self, pillow_processor, image_asset,
+                                                                    color_space, depth, data_type):
         asset = image_asset
         conversion_operator = pillow_processor.convert(
-            mime_type='image/png', color_space='RGB', depth=8, data_type='uint')
+            mime_type='image/tiff', color_space=color_space, depth=depth, data_type=data_type)
 
         converted_asset = conversion_operator(asset)
 
-        assert converted_asset.color_space == 'RGB'
-        assert converted_asset.depth == 8
-        assert converted_asset.data_type == 'uint'
+        assert converted_asset.color_space == color_space
 
     def test_convert_maintains_dimensions(self, pillow_processor, jpeg_image_asset):
         asset = jpeg_image_asset
