@@ -282,7 +282,7 @@ def tiff_image_asset_palette(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         mime_type='image/tiff',
         width=image.width,
         height=image.height,
-        color_space='P',
+        color_space='PALETTE',
         depth=8,
         data_type='uint',
     )
@@ -350,7 +350,7 @@ def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_palette,
     if request.param == 'tiff_image_asset_rgb':
         return tiff_image_asset_rgb
     if request.param == 'tiff_image_asset_palette':
-        return tiff_image_asset_cmyk
+        return tiff_image_asset_palette
     if request.param == 'tiff_image_asset_gray_8bit':
         return tiff_image_asset_gray_8bit
     if request.param == 'tiff_image_asset_gray_16bit':
