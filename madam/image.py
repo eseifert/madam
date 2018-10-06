@@ -50,7 +50,7 @@ def _optimized(image, pil_format, **pil_options):
     image_buffer = io.BytesIO()
 
     if pil_format == 'JPEG':
-        jpeg_quality = pil_options.get('quality', 80)
+        jpeg_quality = pil_options.get('quality', 85)
         optimized_data = pyguetzli.pil_image.process_pil_image(image, quality=jpeg_quality)
         image_buffer.write(optimized_data)
     elif pil_format == 'PNG' and image.mode != 'P':
