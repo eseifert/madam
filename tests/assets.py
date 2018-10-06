@@ -24,7 +24,10 @@ def image_rgb(width, height, transpositions=None):
     max_value = 255
     for y in range(0, height):
         for x in range(0, width):
-            color = (max_value, max_value, max_value) if y == 0 or x == 0 else (0, 0, 0)
+            if y == 0 or x == 0:
+                color = max_value, max_value, max_value
+            else:
+                color = 0, 0, 0
             image.putpixel((x, y), color)
     for transposition in transpositions:
         image = image.transpose(transposition)
@@ -41,7 +44,10 @@ def image_gray(width, height, depth=8):
     max_value = 2 ** depth - 1
     for y in range(0, height):
         for x in range(0, width):
-            color = max_value if y == 0 or x == 0 else 0
+            if y == 0 or x == 0:
+                color = max_value
+            else:
+                color = 0
             image.putpixel((x, y), color)
     return image
 
@@ -50,9 +56,10 @@ def image_palette(width, height, colors=7):
     if colors > 256:
         raise ValueError('Too many colors: maximum is 256')
     image = PIL.Image.new('P', (width, height))
+    max_value = 255
     palette = []
     for i in range(colors):
-        palette.extend((255 - i, i % width, i))
+        palette.extend((max_value - i, i % width, i))
     image.putpalette(palette)
     color_index = 0
     for y in range(0, height):
@@ -66,10 +73,13 @@ def image_cmyk(width, height):
     image = PIL.Image.new('CMYK', (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
     # rotations or flips as long as the image has a size of (2, 2) or greater
-    max_value = 2 ** 8 - 1
+    max_value = 255
     for y in range(0, height):
         for x in range(0, width):
-            color = (0, 0, 0, max_value) if y == 0 or x == 0 else (0, 0, 0, 0)
+            if y == 0 or x == 0:
+                color = 0, 0, 0, 0
+            else:
+                color = 0, 0, 0, max_value
             image.putpixel((x, y), color)
     return image
 
