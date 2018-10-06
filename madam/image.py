@@ -33,37 +33,44 @@ class FlipOrientation(Enum):
     VERTICAL = 1
 
 
-def _optimized(asset):
-    """
-    Creates an optimized version of an asset. Metadata from a specified asset
-    will be maintained. In case the asset file format is not supported the
-    original asset will be returned.
+def _optimized(image, pil_format, **pil_options):
+    r"""
+    Writes an optimized version of a Pillow image to a buffer.
 
-    :param asset: Media asset that should be optimized
-    :type asset: Asset
-    :return: Media asset with optimized content
-    :rtype: Asset
+    :param image: PIL image to be written
+    :type image: PIL.Image.Image
+    :param pil_format: PIL file format name
+    :type pil_format: str
+    :param \\**pil_options: pil_options
+    :type \\**pil_options: dict
+    :return: Buffer with image data
+    :rtype: file-like object
     """
-    mime_type = MimeType(asset.mime_type)
+    image_buffer = io.BytesIO()
 
-    if mime_type == 'image/png' and asset.color_space != 'PALETTE':
+    if pil_format == 'PNG' and image.mode != 'P':
         zopfli_png = zopfli.ZopfliPNG()
-        # Allow altering hidden colors of fully transparent pixels
-        zopfli_png.lossy_8bit = True
         # Convert 16-bit per channel images to 8-bit per channel
-        zopfli_png.lossy_transparent = False
+        zopfli_png.lossy_8bit = False
+        # Allow altering hidden colors of fully transparent pixels
+        zopfli_png.lossy_transparent = True
         # Use all available optimization strategies
-        zopfli_png.filter_strategies = '01234mepb'
-        zopfli_png.iterations = 20
-        zopfli_png.iterations_large = 7
+        zopfli_png.filter_strategies = '0me'
 
-        essence_data = asset.essence.read()
-        optimized_data = zopfli_png.optimize(essence_data)
+        pil_options.pop('optimize', False)
+        essence = io.BytesIO()
+        image.save(essence, 'PNG', optimize=False, **pil_options)
+        essence.seek(0)
+        optimized_data = zopfli_png.optimize(essence.read())
+        image_buffer.write(optimized_data)
+    elif pil_format == 'TIFF' and image.mode == 'P':
+        pil_options.pop('compression', '')
+        image.save(image_buffer, pil_format, **pil_options)
+    else:
+        image.save(image_buffer, pil_format, **pil_options)
 
-        return Asset(essence=io.BytesIO(optimized_data), **asset.metadata)
-
-    return asset
-
+    image_buffer.seek(0)
+    return image_buffer
 
 class PillowProcessor(Processor):
     """
@@ -183,11 +190,11 @@ class PillowProcessor(Processor):
 
     def _image_to_asset(self, image, mime_type):
         """
-        Converts an PIL image to a MADAM asset. THe conversion can also include
-        a conversion in file type.
+        Converts an PIL image to a MADAM asset. The conversion can also include
+        a change in file type.
 
         :param image: PIL image
-        :type image: PIL.Image
+        :type image: PIL.Image.Image
         :param mime_type: MIME type of the target asset
         :type mime_type: MimeType
         :return: MADAM asset with hte specified MIME type
@@ -196,11 +203,9 @@ class PillowProcessor(Processor):
         mime_type = MimeType(mime_type)
         pil_format = PillowProcessor.__mime_type_to_pillow_type[mime_type]
         pil_options = PillowProcessor.__format_options.get(mime_type, {})
-        image_buffer = io.BytesIO()
-        image.save(image_buffer, pil_format, **pil_options)
-        image_buffer.seek(0)
+        image_buffer = _optimized(image, pil_format, **pil_options)
         asset = self.read(image_buffer)
-        return _optimized(asset)
+        return asset
 
     def _rotate(self, asset, rotation):
         """
