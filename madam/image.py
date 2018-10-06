@@ -371,9 +371,6 @@ class PillowProcessor(Processor):
         Creates an asset whose essence is rotated by the specified angle in
         degrees.
 
-        .. warning:: The color model will be changed to RGB when applying
-            this operation
-
         :param asset: Asset whose contents will be rotated
         :type asset: Asset
         :param angle: Angle in degrees, counter clockwise
@@ -388,7 +385,7 @@ class PillowProcessor(Processor):
         if angle % 360.0 == 0.0:
             return asset
 
-        image = PIL.Image.open(asset.essence).convert('RGB')
+        image = PIL.Image.open(asset.essence)
         rotated_image = image.rotate(angle=angle, resample=PIL.Image.BICUBIC, expand=expand)
         rotated_asset = self._image_to_asset(rotated_image, mime_type=asset.mime_type)
 
