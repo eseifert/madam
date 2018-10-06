@@ -533,6 +533,14 @@ class Asset:
     def __hash__(self):
         return hash(self._essence_data) ^ hash(self.metadata)
 
+    def __repr__(self):
+        metadata_str = ' '.join(
+            '{}={!r}'.format(k, v)
+            for k, v in self.metadata.items()
+            if not isinstance(v, frozendict)
+        )
+        return '<{} {}>'.format(self.__class__.__qualname__, metadata_str)
+
 
 class UnsupportedFormatError(Exception):
     """
