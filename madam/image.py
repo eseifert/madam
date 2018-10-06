@@ -77,6 +77,7 @@ def _optimized(image, pil_format, **pil_options):
     image_buffer.seek(0)
     return image_buffer
 
+
 class PillowProcessor(Processor):
     """
     Represents a processor that uses Pillow as a backend.
@@ -325,7 +326,7 @@ class PillowProcessor(Processor):
             image = PIL.Image.open(asset.essence)
             color_mode = color_space or asset.color_space, depth or asset.depth, data_type or asset.data_type
             pil_mode = PillowProcessor.__pillow_mode_to_color_mode.inv.get(color_mode)
-            if pil_mode is not None:
+            if pil_mode is not None and pil_mode != image.mode:
                 image = image.convert(pil_mode)
             converted_asset = self._image_to_asset(image, mime_type)
         except (IOError, KeyError) as pil_error:
