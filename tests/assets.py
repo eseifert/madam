@@ -36,7 +36,7 @@ def image_rgb(width, height, alpha=False, transpositions=None):
             else:
                 color = 0, 0, 0
             if alpha:
-                color = (*color, alpha_value)
+                color = tuple(list(color) + [alpha_value])
             image.putpixel((x, y), color)
     for transposition in transpositions:
         image = image.transpose(transposition)
