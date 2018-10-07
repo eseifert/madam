@@ -37,6 +37,15 @@ def test_asset_string_representation_contains_metadata():
         assert '{}={!r}'.format(key, val) in asset_repr
 
 
+def test_asset_string_representation_does_not_contain_complex_metadata():
+    asset = Asset(essence=io.BytesIO(), mime_type='application/x-empty', complex=dict(k1='v1', k2=42))
+
+    asset_repr = repr(asset)
+
+    assert '{}={!r}'.format('mime_type', asset.mime_type) in asset_repr
+    assert '{}={!r}'.format('complex', asset.complex) not in asset_repr
+
+
 @pytest.fixture(name='madam', scope='class')
 def madam_instance():
     return Madam()
