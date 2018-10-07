@@ -113,6 +113,7 @@ class PillowProcessor(Processor):
     __pillow_mode_to_color_mode = bidict({
         '1': ('LUMA', 1, 'uint'),
         'L': ('LUMA', 8, 'uint'),
+        'LA': ('LUMAA', 8, 'uint'),
         'P': ('PALETTE', 8, 'uint'),
         'RGB': ('RGB', 8, 'uint'),
         'RGBA': ('RGBA', 8, 'uint'),

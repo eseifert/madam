@@ -15,39 +15,58 @@ DEFAULT_HEIGHT = 12
 DEFAULT_DURATION = 0.2
 
 
-def image_rgb(width, height, transpositions=None):
+def image_rgb(width, height, alpha=False, transpositions=None):
     if not transpositions:
         transpositions = []
-    image = PIL.Image.new('RGB', (width, height))
+    pil_mode = {
+        False: 'RGB',
+        True: 'RGBA',
+    }.get(alpha)
+    if pil_mode is None:
+        raise ValueError('Unsupported color mode: %d' % depth)
+    image = PIL.Image.new(pil_mode, (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
     # rotations or flips as long as the image has a size of (2, 2) or greater
     max_value = 255
     for y in range(0, height):
+        alpha_value = round(y / height * max_value)
         for x in range(0, width):
             if y == 0 or x == 0:
                 color = max_value, max_value, max_value
             else:
                 color = 0, 0, 0
+            if alpha:
+                color = (*color, alpha_value)
             image.putpixel((x, y), color)
     for transposition in transpositions:
         image = image.transpose(transposition)
     return image
 
 
-def image_gray(width, height, depth=8):
-    pil_mode = {8: 'L', 16: 'I;16', 32: 'I'}.get(depth)
+def image_gray(width, height, depth=8, alpha=False):
+    pil_mode = {
+        (8, False): 'L',
+        (8, True): 'LA',
+        (16, False): 'I;16',
+        (32, False): 'I',
+    }.get((depth, alpha))
     if pil_mode is None:
-        raise ValueError('Unsupported bit depth: %d' % depth)
+        raise ValueError('Unsupported color mode: %d' % depth)
     image = PIL.Image.new(pil_mode, (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
     # rotations or flips as long as the image has a size of (2, 2) or greater
     max_value = 2 ** depth - 1
+    black = 0
+    white = max_value
     for y in range(0, height):
+        alpha_value = round(y / height * max_value)
         for x in range(0, width):
             if y == 0 or x == 0:
-                color = max_value
+                color = white
             else:
-                color = 0
+                color = black
+            if alpha:
+                color = color, alpha_value
             image.putpixel((x, y), color)
     return image
 
@@ -176,6 +195,23 @@ def png_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 
 
 @pytest.fixture(scope='session')
+def png_image_asset_rgb_alpha(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_rgb(width=width, height=height, alpha=True)
+    essence = io.BytesIO()
+    image.save(essence, 'PNG')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/png',
+        width=image.width,
+        height=image.height,
+        color_space='RGBA',
+        depth=8,
+        data_type='uint',
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
 def png_image_asset_palette(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_palette(width=width, height=height)
     essence = io.BytesIO()
@@ -210,14 +246,38 @@ def png_image_asset_gray(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     return madam.core.Asset(essence, **metadata)
 
 
-@pytest.fixture(scope='session', params=['png_image_asset_rgb', 'png_image_asset_palette', 'png_image_asset_gray'])
-def png_image_asset(request, png_image_asset_rgb, png_image_asset_palette, png_image_asset_gray):
+@pytest.fixture(scope='session')
+def png_image_asset_gray_alpha(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    depth = 8
+    image = image_gray(width=width, height=height, depth=depth, alpha=True)
+    essence = io.BytesIO()
+    image.save(essence, 'PNG')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/png',
+        width=image.width,
+        height=image.height,
+        color_space='LUMAA',
+        depth=depth,
+        data_type='uint',
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session', params=['png_image_asset_rgb', 'png_image_asset_rgb_alpha', 'png_image_asset_palette',
+                                         'png_image_asset_gray', 'png_image_asset_gray_alpha'])
+def png_image_asset(request, png_image_asset_rgb, png_image_asset_rgb_alpha, png_image_asset_palette,
+                    png_image_asset_gray, png_image_asset_gray_alpha):
     if request.param == 'png_image_asset_rgb':
         return png_image_asset_rgb
+    if request.param == 'png_image_asset_rgb_alpha':
+        return png_image_asset_rgb_alpha
     if request.param == 'png_image_asset_palette':
         return png_image_asset_palette
     if request.param == 'png_image_asset_gray':
         return png_image_asset_gray
+    if request.param == 'png_image_asset_gray_alpha':
+        return png_image_asset_gray_alpha
     raise ValueError()
 
 
@@ -273,6 +333,23 @@ def tiff_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 
 
 @pytest.fixture(scope='session')
+def tiff_image_asset_rgb_alpha(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_rgb(width=width, height=height, alpha=True)
+    essence = io.BytesIO()
+    image.save(essence, 'TIFF')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/tiff',
+        width=image.width,
+        height=image.height,
+        color_space='RGBA',
+        depth=8,
+        data_type='uint',
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
 def tiff_image_asset_palette(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_palette(width=width, height=height)
     essence = io.BytesIO()
@@ -301,6 +378,24 @@ def tiff_image_asset_gray_8bit(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         width=image.width,
         height=image.height,
         color_space='LUMA',
+        depth=depth,
+        data_type='uint',
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
+def tiff_image_asset_gray_8bit_alpha(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    depth = 8
+    image = image_gray(width=width, height=height, depth=depth, alpha=True)
+    essence = io.BytesIO()
+    image.save(essence, 'TIFF')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/tiff',
+        width=image.width,
+        height=image.height,
+        color_space='LUMAA',
         depth=depth,
         data_type='uint',
     )
@@ -342,17 +437,23 @@ def tiff_image_asset_cmyk(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     return madam.core.Asset(essence, **metadata)
 
 
-@pytest.fixture(scope='session', params=['tiff_image_asset_rgb', 'tiff_image_asset_palette',
-                                         'tiff_image_asset_gray_8bit', 'tiff_image_asset_gray_16bit',
+@pytest.fixture(scope='session', params=['tiff_image_asset_rgb', 'tiff_image_asset_rgb_alpha',
+                                         'tiff_image_asset_palette', 'tiff_image_asset_gray_8bit',
+                                         'tiff_image_asset_gray_8bit_alpha', 'tiff_image_asset_gray_16bit',
                                          'tiff_image_asset_cmyk'])
-def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_palette,
-                     tiff_image_asset_gray_8bit, tiff_image_asset_gray_16bit, tiff_image_asset_cmyk):
+def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_rgb_alpha, tiff_image_asset_palette,
+                     tiff_image_asset_gray_8bit, tiff_image_asset_gray_8bit_alpha, tiff_image_asset_gray_16bit,
+                     tiff_image_asset_cmyk):
     if request.param == 'tiff_image_asset_rgb':
         return tiff_image_asset_rgb
+    if request.param == 'tiff_image_asset_rgb_alpha':
+        return tiff_image_asset_rgb_alpha
     if request.param == 'tiff_image_asset_palette':
         return tiff_image_asset_palette
     if request.param == 'tiff_image_asset_gray_8bit':
         return tiff_image_asset_gray_8bit
+    if request.param == 'tiff_image_asset_gray_8bit_alpha':
+        return tiff_image_asset_gray_8bit_alpha
     if request.param == 'tiff_image_asset_gray_16bit':
         return tiff_image_asset_gray_16bit
     if request.param == 'tiff_image_asset_cmyk':
@@ -361,7 +462,7 @@ def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_palette,
 
 
 @pytest.fixture(scope='session')
-def webp_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+def webp_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
     image.save(essence, 'WebP')
@@ -375,6 +476,32 @@ def webp_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
         data_type='uint',
     )
     return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
+def webp_image_asset_rgb_alpha(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_rgb(width=width, height=height, alpha=True)
+    essence = io.BytesIO()
+    image.save(essence, 'WebP')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/webp',
+        width=image.width,
+        height=image.height,
+        color_space='RGBA',
+        depth=8,
+        data_type='uint',
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session', params=['webp_image_asset_rgb', 'webp_image_asset_rgb_alpha'])
+def webp_image_asset(request, webp_image_asset_rgb, webp_image_asset_rgb_alpha):
+    if request.param == 'webp_image_asset_rgb':
+        return webp_image_asset_rgb
+    if request.param == 'webp_image_asset_rgb_alpha':
+        return webp_image_asset_rgb_alpha
+    raise ValueError()
 
 
 @pytest.fixture(scope='session')
