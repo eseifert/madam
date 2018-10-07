@@ -20,6 +20,14 @@ from assets import video_asset, avi_video_asset, mp2_video_asset, mp4_video_asse
     ogg_video_asset
 
 
+def test_asset_string_representation_contains_class_name():
+    asset = Asset(essence=io.BytesIO(), mime_type='application/x-empty')
+
+    asset_repr = repr(asset)
+
+    assert asset.__class__.__qualname__ in asset_repr
+
+
 @pytest.fixture(name='madam', scope='class')
 def madam_instance():
     return Madam()
