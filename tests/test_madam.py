@@ -28,6 +28,15 @@ def test_asset_string_representation_contains_class_name():
     assert asset.__class__.__qualname__ in asset_repr
 
 
+def test_asset_string_representation_contains_metadata():
+    asset = Asset(essence=io.BytesIO(), mime_type='application/x-empty', magic=42)
+
+    asset_repr = repr(asset)
+
+    for key, val in asset.metadata.items():
+        assert '{}={!r}'.format(key, val) in asset_repr
+
+
 @pytest.fixture(name='madam', scope='class')
 def madam_instance():
     return Madam()
