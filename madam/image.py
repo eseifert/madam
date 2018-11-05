@@ -93,6 +93,7 @@ class PillowProcessor(Processor):
         MimeType('image/jpeg'): dict(
             optimize=True,
             progressive=True,
+            quality=80,
         ),
         MimeType('image/png'): dict(
             optimize=True,
