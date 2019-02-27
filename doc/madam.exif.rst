@@ -1,5 +1,5 @@
-:mod:`madam.exiv2` module
+:mod:`madam.exif` module
 =========================
 
-.. automodule:: madam.exiv2
+.. automodule:: madam.exif
     :special-members: __init__

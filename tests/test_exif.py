@@ -5,12 +5,12 @@ import pytest
 from assets import jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, png_image_asset_palette, \
     png_image_asset_gray, png_image_asset_gray_alpha, png_image_asset
 from madam.core import UnsupportedFormatError
-from madam.exiv2 import Exiv2MetadataProcessor
+from madam.exif import Exiv2MetadataProcessor
 
 
-class TestExiv2MetadataProcessor:
-    @pytest.fixture(name='processor')
-    def exiv2_metadata_processor(self):
+class TestExifMetadataProcessor:
+    @pytest.fixture
+    def processor(self):
         return Exiv2MetadataProcessor()
 
     def test_supports_exif(self, processor):

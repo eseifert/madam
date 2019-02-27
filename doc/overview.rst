@@ -38,7 +38,7 @@ Metadata processors
     Metadata processors are responsible to read and write metadata only.
     Prominent examples of such metadata could be ID3 in MP3 audio files, or
     Exif in JPEG images. For example, the implementation for Exif metadata is
-    the :class:`madam.exiv2.Exiv2MetadataProcessor` class.
+    the :class:`madam.exif.Exiv2MetadataProcessor` class.
 
 
 Operators

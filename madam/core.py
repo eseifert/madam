@@ -28,7 +28,7 @@ class Madam:
                 'madam.ffmpeg.FFmpegProcessor',
             ],
             metadata_processors=[
-                'madam.exiv2.Exiv2MetadataProcessor',
+                'madam.exif.Exiv2MetadataProcessor',
                 'madam.vector.SVGMetadataProcessor',
                 'madam.ffmpeg.FFmpegMetadataProcessor',
             ]
