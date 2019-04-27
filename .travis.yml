@@ -19,12 +19,12 @@ install:
 before_script:
 # Install ffmpeg
 - mkdir -p ffmpeg
-- wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz.md5 -O ffmpeg-new.md5
+- wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz.md5 -O ffmpeg-new.md5
 - if ! diff -q ffmpeg-new.md5 ffmpeg/ffmpeg.md5 2>/dev/null; then
     rm -Rf ffmpeg/*;
-    wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz.md5 -O ffmpeg/ffmpeg.md5;
-    wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz;
-    tar xf ffmpeg-release-64bit-static.tar.xz --strip-components 1 -C ffmpeg;
+    wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz.md5 -O ffmpeg/ffmpeg.md5;
+    wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz;
+    tar xf ffmpeg-release-amd64-static.tar.xz --strip-components 1 -C ffmpeg;
   fi
 - export PATH=$TRAVIS_BUILD_DIR/ffmpeg:$PATH
 - ffprobe -formats
