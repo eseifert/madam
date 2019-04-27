@@ -24,7 +24,7 @@ Installation
 ============
 MADAM makes use of other software, which needs to be installed on your system. Make sure you have the following packages installed:
 
-    - ``FFmpeg`` >=0.9 for video processing
+    - ``FFmpeg`` >=3.3 for video processing
 
 After you installed these, MADAM can be installed by grabbing the latest release from PyPI:
 

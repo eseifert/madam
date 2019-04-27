@@ -88,7 +88,7 @@ class FFmpegProcessor(Processor):
     """
     Represents a processor that uses FFmpeg to read audio and video data.
 
-    The minimum version of FFmpeg required is v0.9.
+    The minimum version of FFmpeg required is v3.3.
     """
 
     __decoder_and_stream_type_to_mime_type = {
@@ -151,7 +151,7 @@ class FFmpegProcessor(Processor):
             ],
             'libvpx-vp9': [
                 '-speed', '1',
-                '-tile-columns', '6',
+                '-row-mt', '1',
                 '-crf', '32',
             ],
             'opus': [
@@ -399,7 +399,7 @@ class FFmpegProcessor(Processor):
         """
         super().__init__()
 
-        self._min_version = '0.9'
+        self._min_version = '3.3'
         command = 'ffprobe -version'.split()
         result = subprocess_run(command, stdout=subprocess.PIPE)
         string_result = result.stdout.decode('utf-8')
