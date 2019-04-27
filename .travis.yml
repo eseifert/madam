@@ -27,14 +27,11 @@ before_script:
     tar xf ffmpeg-release-64bit-static.tar.xz --strip-components 1 -C ffmpeg;
   fi
 - export PATH=$TRAVIS_BUILD_DIR/ffmpeg:$PATH
-# Install system dependencies for py3exiv2
-- sudo apt-get install libexiv2-dev -y
-- sudo apt-get install libboost-python-dev -y
 - ffprobe -formats
 - ffprobe -codecs
 - ffprobe -pix_fmts
 script:
-- pip install .[exiv2]
+- pip install .
 - tox -e $TOXENV
 - py.test --doctest-modules madam
 - sphinx-build -b html doc/ doc/_build/html

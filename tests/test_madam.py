@@ -2,7 +2,7 @@ import io
 import sys
 from unittest.mock import patch
 
-import pyexiv2
+import piexif
 import pytest
 
 from madam import Madam
@@ -78,9 +78,8 @@ class TestMadam:
 
         essence_file = tmpdir.join('essence_without_metadata.jpg')
         essence_file.write(asset.essence.read(), 'wb')
-        metadata = pyexiv2.metadata.ImageMetadata(str(essence_file))
-        metadata.read()
-        assert not metadata
+        metadata = piexif.load(str(essence_file))
+        assert not any(metadata.values())
 
     def test_read_empty_file_raises_error(self, manager):
         file_data = io.BytesIO()
@@ -181,36 +180,19 @@ class TestMadam:
         assert asset.metadata['depth'] > 0
         assert asset.metadata['depth'] == image_asset.metadata['depth']
 
-    def test_read_return_correct_hierarchy_of_metadata(self, manager, jpeg_image_asset, tmpdir):
-        file = tmpdir.join('asset_with_metadata.jpg')
-        file.write(jpeg_image_asset.essence.read(), 'wb')
-        metadata = pyexiv2.metadata.ImageMetadata(str(file))
-        metadata.read()
-        metadata['Iptc.Application2.Headline'] = ['Foo']
-        metadata['Iptc.Application2.Caption'] = ['Bar']
-        metadata.write()
-
-        asset = manager.read(file.open('rb'))
-
-        assert 'exif' not in asset.metadata
-        assert 'iptc' in asset.metadata
-        assert len(asset.iptc) == 2
-
     def test_read_only_returns_python_types_in_metadata(self, manager, jpeg_image_asset, tmpdir):
         import datetime, fractions, frozendict
         allowed_types = {str, float, int, tuple, frozendict.frozendict,
                          datetime.datetime, fractions.Fraction}
         file = tmpdir.join('asset_with_metadata.jpg')
         file.write(jpeg_image_asset.essence.read(), 'wb')
-        metadata = pyexiv2.metadata.ImageMetadata(str(file))
-        metadata.read()
-        metadata['Exif.Image.Artist'] = b'Test artist'
-        metadata['Iptc.Application2.Caption'] = ['Foo bar']
-        metadata.write()
+        metadata = piexif.load(str(file))
+        metadata['0th'][piexif.ImageIFD.Artist] = 'Test artist'
+        piexif.insert(piexif.dump(metadata), str(file))
 
         asset = manager.read(file.open('rb'))
 
-        for metadata_type in {'exif', 'iptc'}:
+        for metadata_type in {'exif'}:
             values = asset.metadata[metadata_type].values()
             assert values
             for value in values:
@@ -242,13 +224,13 @@ class TestMadam:
 
     def test_config_contains_list_of_all_metadata_processors_by_default(self, manager):
         assert manager.config['metadata_processors'] == [
-            'madam.exiv2.Exiv2MetadataProcessor',
+            'madam.exif.ExifMetadataProcessor',
             'madam.vector.SVGMetadataProcessor',
             'madam.ffmpeg.FFmpegMetadataProcessor',
         ]
 
     def test_config_does_not_contain_metadata_processor_when_it_is_not_installed(self):
-        with patch.dict(sys.modules, {'madam.exiv2': None}):
+        with patch.dict(sys.modules, {'madam.exif': None}):
             manager = Madam()
 
-        assert 'madam.exiv2.Exiv2MetadataProcessor' not in manager.config['metadata_processors']
+        assert 'madam.exif.ExifMetadataProcessor' not in manager.config['metadata_processors']

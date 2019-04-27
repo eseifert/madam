@@ -30,7 +30,7 @@ File format support
 
 MADAM supports a wide range of file formats for video, image, and audio data.
 This is achieved by using several external open source libraries. `Pillow`_
-and `exiv2`_ (for metadata) are used to read, process, or write image files.
+and `piexif`_ (for metadata) are used to read, process, or write image files.
 `FFmpeg`_ is used to read, process, or write audio and video files.
 
 .. note:: The support of file formats heavily depends on the configuration of
@@ -67,4 +67,4 @@ have to be implemented. See :doc:`overview` section for more details.
 
 .. _FFmpeg: https://ffmpeg.org/
 .. _Pillow: https://python-pillow.org/
-.. _exiv2: http://www.exiv2.org/
+.. _piexif: https://piexif.readthedocs.io/

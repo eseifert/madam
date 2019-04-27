@@ -24,9 +24,7 @@ Installation
 ============
 MADAM makes use of other software, which needs to be installed on your system. Make sure you have the following packages installed:
 
-    - FFmpeg >=0.9
-    - libexiv2 >=0.20 (with header files)
-    - boost.python >=1.48 (with header files)
+    - ``FFmpeg`` >=0.9 for video processing
 
 After you installed these, MADAM can be installed by grabbing the latest release from PyPI:
 

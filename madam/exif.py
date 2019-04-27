@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from fractions import Fraction
 
-import pyexiv2
+import piexif
 from bidict import bidict
 
 from madam.core import MetadataProcessor, UnsupportedFormatError
@@ -12,86 +12,70 @@ from madam.mime import MimeType
 
 
 def _convert_sequence(dec_enc):
-    return lambda exiv2_values: tuple(map(dec_enc[0], exiv2_values)), \
+    return lambda exif_values: tuple(map(dec_enc[0], exif_values)), \
            lambda values: list(map(dec_enc[1], values))
 
 
 def _convert_first(dec_enc):
-    return lambda exiv2_values: dec_enc[0](exiv2_values[0]), \
+    return lambda exif_values: dec_enc[0](exif_values[0]), \
            lambda value: [dec_enc[1](value)]
 
 
 def _convert_mapping(mapping):
     bidi = bidict(mapping)
-    return lambda exiv2_value: bidi[exiv2_value], \
+    return lambda exif_value: bidi[exif_value], \
            lambda value: bidi.inv[value]
 
 
-class Exiv2MetadataProcessor(MetadataProcessor):
+class ExifMetadataProcessor(MetadataProcessor):
     """
-    Represents a metadata processor using the exiv2 library.
+    Represents a metadata processor for Exif metadata.
     """
     supported_mime_types = {
-        MimeType('image/jpeg')
+        MimeType('image/jpeg'),
+        MimeType('image/webp'),
     }
 
-    metadata_to_exiv2 = bidict({
-        # Exif
-        'aperture': 'Exif.Photo.ApertureValue',
-        'artist': 'Exif.Image.Artist',
-        'brightness': 'Exif.Photo.BrightnessValue',
-        'camera.manufacturer': 'Exif.Image.Make',
-        'camera.model': 'Exif.Image.Model',
-        'description': 'Exif.Image.ImageDescription',
-        'exposure_time': 'Exif.Photo.ExposureTime',
-        'firmware': 'Exif.Image.Software',
-        'fnumber': 'Exif.Photo.FNumber',
-        'focal_length': 'Exif.Photo.FocalLength',
-        'focal_length_35mm': 'Exif.Photo.FocalLengthIn35mmFilm',
-        'gps.altitude': 'Exif.GPSInfo.GPSAltitude',
-        'gps.altitude_ref': 'Exif.GPSInfo.GPSAltitudeRef',
-        'gps.latitude': 'Exif.GPSInfo.GPSLatitude',
-        'gps.latitude_ref': 'Exif.GPSInfo.GPSLatitudeRef',
-        'gps.longitude': 'Exif.GPSInfo.GPSLongitude',
-        'gps.longitude_ref': 'Exif.GPSInfo.GPSLongitudeRef',
-        'gps.map_datum': 'Exif.GPSInfo.GPSMapDatum',
-        'gps.speed': 'Exif.GPSInfo.GPSSpeed',
-        'gps.speed_ref': 'Exif.GPSInfo.GPSSpeedRef',
-        'gps.date_stamp': 'Exif.GPSInfo.GPSDateStamp',
-        'gps.time_stamp': 'Exif.GPSInfo.GPSTimeStamp',
-        'lens.manufacturer': 'Exif.Photo.LensMake',
-        'lens.model': 'Exif.Photo.LensModel',
-        'orientation': 'Exif.Image.Orientation',
-        'shutter_speed': 'Exif.Photo.ShutterSpeedValue',
-        'software': 'Exif.Image.ProcessingSoftware',
-        # IPTC
-        'bylines': 'Iptc.Application2.Byline',
-        'byline_titles': 'Iptc.Application2.BylineTitle',
-        'caption': 'Iptc.Application2.Caption',
-        'contacts': 'Iptc.Application2.Contact',
-        'copyright': 'Iptc.Application2.Copyright',
-        'creation_date': 'Iptc.Application2.DateCreated',
-        'creation_time': 'Iptc.Application2.TimeCreated',
-        'credit': 'Iptc.Application2.Credit',
-        'expiration_date': 'Iptc.Application2.ExpirationDate',
-        'expiration_time': 'Iptc.Application2.ExpirationTime',
-        'headline': 'Iptc.Application2.Headline',
-        'keywords': 'Iptc.Application2.Keywords',
-        'language': 'Iptc.Application2.Language',
-        'release_date': 'Iptc.Application2.ReleaseDate',
-        'release_time': 'Iptc.Application2.ReleaseTime',
-        'source': 'Iptc.Application2.Source',
-        'subjects': 'Iptc.Application2.Subject',
+    metadata_to_exif = bidict({
+        'aperture': ('Exif', piexif.ExifIFD.ApertureValue),
+        'artist': ('0th', piexif.ImageIFD.Artist),
+        'brightness': ('Exif', piexif.ExifIFD.BrightnessValue),
+        'camera.manufacturer': ('0th', piexif.ImageIFD.Make),
+        'camera.model': ('0th', piexif.ImageIFD.Model),
+        'description': ('0th', piexif.ImageIFD.ImageDescription),
+        'exposure_time': ('Exif', piexif.ExifIFD.ExposureTime),
+        'firmware': ('0th', piexif.ImageIFD.Software),
+        'fnumber': ('Exif', piexif.ExifIFD.FNumber),
+        'focal_length': ('Exif', piexif.ExifIFD.FocalLength),
+        'focal_length_35mm': ('Exif', piexif.ExifIFD.FocalLengthIn35mmFilm),
+        'gps.altitude': ('GPS', piexif.GPSIFD.GPSAltitude),
+        'gps.altitude_ref': ('GPS', piexif.GPSIFD.GPSAltitudeRef),
+        'gps.latitude': ('GPS', piexif.GPSIFD.GPSLatitude),
+        'gps.latitude_ref': ('GPS', piexif.GPSIFD.GPSLatitudeRef),
+        'gps.longitude': ('GPS', piexif.GPSIFD.GPSLongitude),
+        'gps.longitude_ref': ('GPS', piexif.GPSIFD.GPSLongitudeRef),
+        'gps.map_datum': ('GPS', piexif.GPSIFD.GPSMapDatum),
+        'gps.speed': ('GPS', piexif.GPSIFD.GPSSpeed),
+        'gps.speed_ref': ('GPS', piexif.GPSIFD.GPSSpeedRef),
+        'gps.date_stamp': ('GPS', piexif.GPSIFD.GPSDateStamp),
+        'gps.time_stamp': ('GPS', piexif.GPSIFD.GPSTimeStamp),
+        'lens.manufacturer': ('Exif', piexif.ExifIFD.LensMake),
+        'lens.model': ('Exif', piexif.ExifIFD.LensModel),
+        'orientation': ('0th', piexif.ImageIFD.Orientation),
+        'shutter_speed': ('Exif', piexif.ExifIFD.ShutterSpeedValue),
+        'software': ('0th', piexif.ImageIFD.ProcessingSoftware),
     })
 
-    __STRING = str, str
+    __STRING = lambda exif_val: exif_val.decode('utf-8'), lambda value: value.encode('utf-8')
     __INT = int, int
-    __RATIONAL = float, lambda value: Fraction(value).limit_denominator()
-    __DATE = lambda exiv2_value: exiv2_value, lambda value: value
-    __TIME = lambda exiv2_value: exiv2_value.replace(tzinfo=None), lambda value: value
+    __RATIONAL = lambda exif_val: float(Fraction(*exif_val)), \
+                 lambda value: (Fraction(value).limit_denominator().numerator, Fraction(value).limit_denominator().denominator)
+    __DATE = lambda exif_val: datetime.datetime.strptime(exif_val.decode('utf-8'), '%Y:%m:%d').date(), \
+             lambda value: value.strftime('%Y:%m:%d')
+    __TIME = lambda exif_val: datetime.time(*map(lambda v: round(float(Fraction(*v))), exif_val)), \
+             lambda value: ((value.hour, 1), (value.minute, 1), (value.second, 1))
 
     converters = {
-        # Exif
         'aperture': __RATIONAL,
         'artist': __STRING,
         'brightness': __RATIONAL,
@@ -104,100 +88,74 @@ class Exiv2MetadataProcessor(MetadataProcessor):
         'focal_length': __RATIONAL,
         'focal_length_35mm': __INT,
         'gps.altitude': __RATIONAL,
-        'gps.altitude_ref': _convert_mapping({'0': 'm_above_sea_level', '1': 'm_below_sea_level'}),
+        'gps.altitude_ref': _convert_mapping({0: 'm_above_sea_level', 1: 'm_below_sea_level'}),
         'gps.latitude': _convert_sequence(__RATIONAL),
-        'gps.latitude_ref': _convert_mapping({'N': 'north', 'S': 'south'}),
+        'gps.latitude_ref': _convert_mapping({b'N': 'north', b'S': 'south'}),
         'gps.longitude': _convert_sequence(__RATIONAL),
-        'gps.longitude_ref': _convert_mapping({'E': 'east', 'W': 'west'}),
+        'gps.longitude_ref': _convert_mapping({b'E': 'east', b'W': 'west'}),
         'gps.map_datum': __STRING,
         'gps.speed': __RATIONAL,
-        'gps.speed_ref': _convert_mapping({'K': 'km/h', 'M': 'mph', 'N': 'kn'}),
+        'gps.speed_ref': _convert_mapping({b'K': 'km/h', b'M': 'mph', b'N': 'kn'}),
         'gps.date_stamp': __DATE,
-        'gps.time_stamp':
-            (lambda exiv2_val: datetime.time(*map(round, exiv2_val)),
-             lambda val: [Fraction(val.hour), Fraction(val.minute), Fraction(val.second)]),
+        'gps.time_stamp': __TIME,
         'lens.manufacturer': __STRING,
         'lens.model': __STRING,
         'orientation': __INT,
         'shutter_speed': __RATIONAL,
         'software': __STRING,
-        # IPTC
-        'bylines': _convert_sequence(__STRING),
-        'byline_titles': _convert_sequence(__STRING),
-        'caption': _convert_first(__STRING),
-        'contacts': _convert_sequence(__STRING),
-        'copyright': _convert_first(__STRING),
-        'creation_date': _convert_first(__DATE),
-        'creation_time': _convert_first(__TIME),
-        'credit': _convert_first(__STRING),
-        'expiration_date': _convert_first(__DATE),
-        'expiration_time': _convert_first(__TIME),
-        'headline': _convert_first(__STRING),
-        'image_orientation': _convert_first(__STRING),
-        'keywords': _convert_sequence(__STRING),
-        'language': _convert_first(__STRING),
-        'release_date': _convert_first(__DATE),
-        'release_time': _convert_first(__TIME),
-        'source': _convert_first(__STRING),
-        'subjects': _convert_sequence(__STRING),
     }
 
     def __init__(self):
         """
-        Initializes a new `Exiv2MetadataProcessor`.
+        Initializes a new `ExifMetadataProcessor`.
         """
         super().__init__()
 
     @property
     def formats(self):
-        return 'exif', 'iptc'
+        return 'exif',
 
     def read(self, file):
-        with tempfile.NamedTemporaryFile() as tmp:
+        with tempfile.NamedTemporaryFile(mode='wb') as tmp:
             tmp.write(file.read())
             tmp.flush()
-            metadata = pyexiv2.ImageMetadata(tmp.name)
+
             try:
-                metadata.read()
-            except OSError:
-                raise UnsupportedFormatError('Unknown file format.')
-        if MimeType(metadata.mime_type) not in Exiv2MetadataProcessor.supported_mime_types:
-            raise UnsupportedFormatError('Unsupported format: %s' % metadata.mime_type)
+                metadata = piexif.load(tmp.name)
+            except (piexif.InvalidImageDataError, ValueError):
+                raise UnsupportedFormatError('Unsupported file format.')
+
         metadata_by_format = {}
         for metadata_format in self.formats:
             format_metadata = {}
-            for exiv2_key in getattr(metadata, metadata_format + '_keys'):
-                madam_key = Exiv2MetadataProcessor.metadata_to_exiv2.inv.get(exiv2_key)
-                if madam_key is None:
+            for ifd_key, ifd_values in metadata.items():
+                if not isinstance(ifd_values, dict):
                     continue
-                exiv2_value = metadata[exiv2_key].value
-                convert_to_madam, _ = Exiv2MetadataProcessor.converters[madam_key]
-                format_metadata[madam_key] = convert_to_madam(exiv2_value)
+                for exif_key, exif_value in ifd_values.items():
+                    madam_key = ExifMetadataProcessor.metadata_to_exif.inv.get((ifd_key, exif_key))
+                    if madam_key is None:
+                        continue
+                    convert_to_madam, _ = ExifMetadataProcessor.converters[madam_key]
+                    format_metadata[madam_key] = convert_to_madam(exif_value)
             if format_metadata:
                 metadata_by_format[metadata_format] = format_metadata
         return metadata_by_format
 
     def strip(self, file):
         result = io.BytesIO()
-        with tempfile.NamedTemporaryFile() as tmp:
+        with tempfile.NamedTemporaryFile(mode='w+b') as tmp:
             tmp.write(file.read())
             tmp.flush()
-            metadata = pyexiv2.ImageMetadata(tmp.name)
 
             try:
-                metadata.read()
-            except OSError:
-                raise UnsupportedFormatError('Unknown file format.')
-
-            if metadata:
-                try:
-                    metadata.clear()
-                    metadata.write()
-                except OSError:
-                    raise UnsupportedFormatError('Unknown file format.')
+                metadata = piexif.load(tmp.name)
+                if any(metadata.values()):
+                    open(tmp.name, 'rb').read()
+                    piexif.remove(tmp.name)
+            except (piexif.InvalidImageDataError, ValueError, UnboundLocalError):
+                raise UnsupportedFormatError('Unsupported file format.')
 
             tmp.seek(0)
-
             shutil.copyfileobj(tmp, result)
             result.seek(0)
 
@@ -205,33 +163,33 @@ class Exiv2MetadataProcessor(MetadataProcessor):
 
     def combine(self, essence, metadata_by_format):
         result = io.BytesIO()
-        with tempfile.NamedTemporaryFile() as tmp:
+        with tempfile.NamedTemporaryFile(mode='w+b') as tmp:
             tmp.write(essence.read())
             tmp.flush()
-            exiv2_metadata = pyexiv2.ImageMetadata(tmp.name)
 
             try:
-                exiv2_metadata.read()
-            except OSError:
-                raise UnsupportedFormatError('Unknown essence format.')
+                exif_metadata = piexif.load(tmp.name)
+            except (piexif.InvalidImageDataError, ValueError):
+                raise UnsupportedFormatError('Unsupported essence format.')
 
             for metadata_format, metadata in metadata_by_format.items():
                 if metadata_format not in self.formats:
                     raise UnsupportedFormatError('Metadata format %r is not supported.' % metadata_format)
                 for madam_key, madam_value in metadata.items():
-                    exiv2_key = Exiv2MetadataProcessor.metadata_to_exiv2.get(madam_key)
-                    if exiv2_key is None:
+                    if madam_key not in ExifMetadataProcessor.metadata_to_exif:
                         continue
-                    _, convert_to_exiv2 = Exiv2MetadataProcessor.converters[madam_key]
-                    exiv2_metadata[exiv2_key] = convert_to_exiv2(madam_value)
+                    ifd_key, exif_key = ExifMetadataProcessor.metadata_to_exif[madam_key]
+                    if ifd_key not in exif_metadata:
+                        exif_metadata[ifd_key] = {}
+                    _, convert_to_exif = ExifMetadataProcessor.converters[madam_key]
+                    exif_metadata[ifd_key][exif_key] = convert_to_exif(madam_value)
 
             try:
-                exiv2_metadata.write()
-                tmp.flush()
-                tmp.seek(0)
-            except OSError:
+                piexif.insert(piexif.dump(exif_metadata), tmp.name)
+            except (piexif.InvalidImageDataError, ValueError):
                 raise UnsupportedFormatError('Could not write metadata: %r' % metadata_by_format)
 
+            tmp.seek(0)
             shutil.copyfileobj(tmp, result)
             result.seek(0)
 
