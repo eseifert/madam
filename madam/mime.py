@@ -1,4 +1,5 @@
 from functools import total_ordering
+from typing import Optional, Union
 
 
 @total_ordering
@@ -15,7 +16,7 @@ class MimeType:
     """
     __slots__ = 'type', 'subtype'
 
-    def __init__(self, mediatype, subtype=None):
+    def __init__(self, mediatype: Optional[Union[str, 'MimeType']], subtype: Optional[str] = None):
         """
         Initializes a new MIME type with either
 
@@ -60,25 +61,25 @@ class MimeType:
             raise TypeError('%r type is not allowed for initialization of MIME subtype' %
                             type(subtype).__qualname__)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '/'.join((self.type or '*', self.subtype or '*'))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '%s(mediatype=%r, subtype=%r)' % (
             self.__class__.__qualname__, self.type, self.subtype
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(str(self))
 
-    def __eq__(self, other):
+    def __eq__(self, other: Union[str, 'MimeType']) -> bool:
         if isinstance(other, str):
             return self == MimeType(other)
         if isinstance(other, MimeType):
             return self.type == other.type and self.subtype == other.subtype
         return NotImplemented
 
-    def __lt__(self, other):
+    def __lt__(self, other: Union[str, 'MimeType']) -> bool:
         if isinstance(other, str):
             return self < MimeType(other)
         if isinstance(other, MimeType):

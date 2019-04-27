@@ -1,5 +1,6 @@
 import io
 from enum import Enum
+from typing import Any, Callable, IO, Optional, Union
 
 from bidict import bidict
 import PIL.ExifTags
@@ -33,7 +34,7 @@ class FlipOrientation(Enum):
     VERTICAL = 1
 
 
-def _optimized(image, pil_format, **pil_options):
+def _optimized(image: PIL.Image.Image, pil_format: str, **pil_options: Any) -> IO:
     r"""
     Writes an optimized version of a Pillow image to a buffer.
 
@@ -42,9 +43,8 @@ def _optimized(image, pil_format, **pil_options):
     :param pil_format: PIL file format name
     :type pil_format: str
     :param \\**pil_options: pil_options
-    :type \\**pil_options: dict
     :return: Buffer with image data
-    :rtype: file-like object
+    :rtype: IO
     """
     image_buffer = io.BytesIO()
 
@@ -123,13 +123,13 @@ class PillowProcessor(Processor):
         'F': ('LUMA', 32, 'float'),
     })
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes a new `PillowProcessor`.
         """
         super().__init__()
 
-    def read(self, file):
+    def read(self, file: IO) -> Asset:
         image = PIL.Image.open(file)
         mime_type = PillowProcessor.__mime_type_to_pillow_type.inv[image.format]
         color_space, bit_depth, data_type = PillowProcessor.__pillow_mode_to_color_mode[image.mode]
@@ -145,7 +145,7 @@ class PillowProcessor(Processor):
         asset = Asset(file, **metadata)
         return asset
 
-    def can_read(self, file):
+    def can_read(self, file: IO) -> bool:
         try:
             PIL.Image.open(file)
             file.seek(0)
@@ -154,7 +154,7 @@ class PillowProcessor(Processor):
             return False
 
     @operator
-    def resize(self, asset, width, height, mode=ResizeMode.EXACT):
+    def resize(self, asset: Asset, width: int, height: int, mode: ResizeMode = ResizeMode.EXACT) -> Asset:
         """
         Creates a new Asset whose essence is resized according to the specified parameters.
 
@@ -191,7 +191,7 @@ class PillowProcessor(Processor):
         resized_asset = self._image_to_asset(resized_image, mime_type=mime_type)
         return resized_asset
 
-    def _image_to_asset(self, image, mime_type):
+    def _image_to_asset(self, image: PIL.Image.Image, mime_type: Union[MimeType, str]) -> Asset:
         """
         Converts an PIL image to a MADAM asset. The conversion can also include
         a change in file type.
@@ -200,7 +200,7 @@ class PillowProcessor(Processor):
         :type image: PIL.Image.Image
         :param mime_type: MIME type of the target asset
         :type mime_type: MimeType
-        :return: MADAM asset with hte specified MIME type
+        :return: MADAM asset with the specified MIME type
         :rtype: Asset
         """
         mime_type = MimeType(mime_type)
@@ -210,7 +210,7 @@ class PillowProcessor(Processor):
         asset = self.read(image_buffer)
         return asset
 
-    def _rotate(self, asset, rotation):
+    def _rotate(self, asset: Asset, rotation: int) -> Asset:
         """
         Creates a new image asset from specified asset whose essence is rotated
         by the specified rotation.
@@ -231,7 +231,7 @@ class PillowProcessor(Processor):
         return transposed_asset
 
     @operator
-    def transpose(self, asset):
+    def transpose(self, asset: Asset) -> Asset:
         """
         Creates a new image asset whose essence is the transpose of the
         specified asset's essence.
@@ -244,7 +244,7 @@ class PillowProcessor(Processor):
         return self._rotate(asset, PIL.Image.TRANSPOSE)
 
     @operator
-    def flip(self, asset, orientation):
+    def flip(self, asset: Asset, orientation: FlipOrientation) -> Asset:
         """
         Creates a new asset whose essence is flipped according the specified orientation.
 
@@ -262,7 +262,7 @@ class PillowProcessor(Processor):
         return self._rotate(asset, flip_orientation)
 
     @operator
-    def auto_orient(self, asset):
+    def auto_orient(self, asset: Asset) -> Asset:
         """
         Creates a new asset whose essence is rotated according to the Exif
         orientation. If no orientation metadata exists or asset is not rotated,
@@ -277,8 +277,8 @@ class PillowProcessor(Processor):
         if orientation is None or orientation == 1:
             return asset
 
-        flip_horizontally = self.flip(orientation=FlipOrientation.HORIZONTAL)
-        flip_vertically = self.flip(orientation=FlipOrientation.VERTICAL)
+        flip_horizontally = self.flip(orientation=FlipOrientation.HORIZONTAL)  # type: Callable[[Asset], Asset]
+        flip_vertically = self.flip(orientation=FlipOrientation.VERTICAL)  # type: Callable[[Asset], Asset]
 
         if orientation == 2:
             oriented_asset = flip_horizontally(asset)
@@ -300,7 +300,9 @@ class PillowProcessor(Processor):
         return oriented_asset
 
     @operator
-    def convert(self, asset, mime_type, color_space=None, depth=None, data_type=None):
+    def convert(self, asset: Asset, mime_type: Union[MimeType, str],
+                color_space: Optional[str] = None, depth: Optional[int] = None,
+                data_type: Optional[str] = None):
         """
         Creates a new asset of the specified MIME type from the essence of the
         specified asset.
@@ -333,7 +335,7 @@ class PillowProcessor(Processor):
         return converted_asset
 
     @operator
-    def crop(self, asset, x, y, width, height):
+    def crop(self, asset: Asset, x: int, y: int, width: int, height: int) -> Asset:
         """
         Creates a new asset whose essence is cropped to the specified
         rectangular area.
@@ -369,7 +371,7 @@ class PillowProcessor(Processor):
         return cropped_asset
 
     @operator
-    def rotate(self, asset, angle, expand=False):
+    def rotate(self, asset: Asset, angle: float, expand: bool = False):
         """
         Creates an asset whose essence is rotated by the specified angle in
         degrees.

@@ -103,7 +103,10 @@ class TestPillowProcessor:
 
         assert transposed_asset.mime_type == asset.mime_type
 
-    @pytest.mark.parametrize('orientation', [madam.image.FlipOrientation.HORIZONTAL, madam.image.FlipOrientation.VERTICAL])
+    @pytest.mark.parametrize('orientation', [
+        madam.image.FlipOrientation.HORIZONTAL,
+        madam.image.FlipOrientation.VERTICAL
+    ])
     def test_flip_is_reversible(self, processor, orientation):
         asset = get_jpeg_image_asset()
         flip_operator = processor.flip(orientation=orientation)
@@ -130,7 +133,10 @@ class TestPillowProcessor:
 
         oriented_asset = auto_orient_operator(misoriented_asset)
 
-        assert is_equal_in_black_white_space(PIL.Image.open(reference_asset.essence), PIL.Image.open(oriented_asset.essence))
+        assert is_equal_in_black_white_space(
+            PIL.Image.open(reference_asset.essence),
+            PIL.Image.open(oriented_asset.essence)
+        )
 
     def test_auto_orient_without_orientation_returns_identical_asset(self, processor, jpeg_image_asset):
         asset_without_orientation_metadata = jpeg_image_asset

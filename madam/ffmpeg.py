@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 from collections import namedtuple
 from math import ceil, cos, pi, radians, sin
+from typing import Any, IO, Iterable, Mapping, MutableMapping, Optional, Tuple, Union
 
 from bidict import bidict
 
@@ -14,7 +15,7 @@ from madam.core import Asset, MetadataProcessor, Processor, operator, OperatorEr
 from madam.mime import MimeType
 
 
-def _probe(file):
+def _probe(file: IO) -> Any:
     with tempfile.NamedTemporaryFile(mode='wb') as temp_in:
         shutil.copyfileobj(file, temp_in.file)
         temp_in.flush()
@@ -31,7 +32,7 @@ def _probe(file):
     return json_obj
 
 
-def _combine_metadata(asset, *cloned_keys, **additional_metadata):
+def _combine_metadata(asset, *cloned_keys: str, **additional_metadata: Any) -> MutableMapping[str, Any]:
     metadata = {key: asset.metadata[key] for key in cloned_keys if key in asset.metadata}
     metadata.update(additional_metadata)
     return metadata
@@ -41,7 +42,7 @@ _FFmpegMode = namedtuple('_FFmpegMode', 'name, component_count, bits_per_pixel, 
                                         'hw_accelerated, paletted, bitstream')
 
 
-def _get_decoder_and_stream_type(probe_data):
+def _get_decoder_and_stream_type(probe_data: Mapping[str, Any]) -> Tuple[str, str]:
     decoder_name = probe_data['format']['format_name']
 
     stream_types = {stream['codec_type'] for stream in probe_data['streams']}
@@ -58,12 +59,12 @@ def _get_decoder_and_stream_type(probe_data):
 
 
 class _FFmpegContext(tempfile.TemporaryDirectory):
-    def __init__(self, source, result):
+    def __init__(self, source: IO, result: IO) -> None:
         super().__init__(prefix='madam')
         self.__source = source
         self.__result = result
 
-    def __enter__(self):
+    def __enter__(self) -> '_FFmpegContext':
         tmpdir_path = super().__enter__()
         self.input_path = os.path.join(tmpdir_path, 'input_file')
         self.output_path = os.path.join(tmpdir_path, 'output_file')
@@ -74,7 +75,7 @@ class _FFmpegContext(tempfile.TemporaryDirectory):
 
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if os.path.exists(self.output_path):
             with open(self.output_path, 'rb') as temp_out:
                 shutil.copyfileobj(temp_out, self.__result)
@@ -390,7 +391,7 @@ class FFmpegProcessor(Processor):
         ('YUVA', 16, 'uint'): 'yuva420p16le',
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes a new `FFmpegProcessor`.
 
@@ -409,14 +410,14 @@ class FFmpegProcessor(Processor):
 
         self.__threads = multiprocessing.cpu_count()
 
-    def can_read(self, file):
+    def can_read(self, file: IO) -> bool:
         try:
             probe_data = _probe(file)
             return bool(probe_data)
         except subprocess.CalledProcessError:
             return False
 
-    def read(self, file):
+    def read(self, file: IO) -> Asset:
         try:
             probe_data = _probe(file)
         except subprocess.CalledProcessError:
@@ -460,7 +461,7 @@ class FFmpegProcessor(Processor):
         return Asset(essence=file, **metadata)
 
     @operator
-    def resize(self, asset, width, height):
+    def resize(self, asset: Asset, width: int, height: int) -> Asset:
         """
         Creates a new image or video asset of the specified width and height
         from the essence of the specified image or video asset.
@@ -511,7 +512,10 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
     @operator
-    def convert(self, asset, mime_type, video=None, audio=None, subtitle=None):
+    def convert(self, asset: Asset, mime_type: Union[MimeType, str],
+                video: Optional[Mapping[str, Any]] = None,
+                audio: Optional[Mapping[str, Any]] = None,
+                subtitle: Optional[Mapping[str, Any]] = None) -> Asset:
         """
         Creates a new asset of the specified MIME type from the essence of the
         specified asset.
@@ -613,7 +617,7 @@ class FFmpegProcessor(Processor):
         return self.read(result)
 
     @operator
-    def trim(self, asset, from_seconds=0, to_seconds=0):
+    def trim(self, asset: Asset, from_seconds: float = 0, to_seconds: float = 0) -> Asset:
         """
         Creates a trimmed audio or video asset that only contains the data
         between from_seconds and to_seconds.
@@ -660,7 +664,7 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
     @operator
-    def extract_frame(self, asset, mime_type, seconds=0):
+    def extract_frame(self, asset: Asset, mime_type: Union[MimeType, str], seconds: float = 0) -> Asset:
         """
         Creates a new image asset of the specified MIME type from the essence
         of the specified video asset.
@@ -707,7 +711,7 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
     @operator
-    def crop(self, asset, x, y, width, height):
+    def crop(self, asset: Asset, x: int, y: int, width: int, height: int) -> Asset:
         """
         Creates a cropped video asset whose essence is cropped to the specified
         rectangular area.
@@ -764,7 +768,7 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
     @operator
-    def rotate(self, asset, angle, expand=False):
+    def rotate(self, asset: Asset, angle: float, expand: bool = False) -> Asset:
         """
         Creates an asset whose essence is rotated by the specified angle in
         degrees.
@@ -940,17 +944,17 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         MimeType('audio/wav'): bidict({}),
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes a new `FFmpegMetadataProcessor`.
         """
         super().__init__()
 
     @property
-    def formats(self):
-        return 'ffmetadata',
+    def formats(self) -> Iterable[str]:
+        return {'ffmetadata'}
 
-    def read(self, file):
+    def read(self, file: IO) -> Mapping[str, Mapping]:
         try:
             probe_data = _probe(file)
         except subprocess.CalledProcessError:
@@ -976,7 +980,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         return {'ffmetadata': metadata}
 
-    def strip(self, file):
+    def strip(self, file: IO) -> IO:
         try:
             probe_data = _probe(file)
         except subprocess.CalledProcessError:
@@ -1003,7 +1007,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         return result
 
-    def combine(self, file, metadata_by_type):
+    def combine(self, file: IO, metadata_by_type: Mapping[str, Mapping]) -> IO:
         try:
             probe_data = _probe(file)
         except subprocess.CalledProcessError:

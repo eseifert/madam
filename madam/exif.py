@@ -3,6 +3,7 @@ import io
 import shutil
 import tempfile
 from fractions import Fraction
+from typing import Callable, IO, Iterable, Mapping, Tuple
 
 import piexif
 from bidict import bidict
@@ -11,17 +12,17 @@ from madam.core import MetadataProcessor, UnsupportedFormatError
 from madam.mime import MimeType
 
 
-def _convert_sequence(dec_enc):
+def _convert_sequence(dec_enc: Tuple[Callable, Callable]) -> Tuple[Callable, Callable]:
     return lambda exif_values: tuple(map(dec_enc[0], exif_values)), \
            lambda values: list(map(dec_enc[1], values))
 
 
-def _convert_first(dec_enc):
+def _convert_first(dec_enc: Tuple[Callable, Callable]) -> Tuple[Callable, Callable]:
     return lambda exif_values: dec_enc[0](exif_values[0]), \
            lambda value: [dec_enc[1](value)]
 
 
-def _convert_mapping(mapping):
+def _convert_mapping(mapping: Mapping) -> Tuple[Callable, Callable]:
     bidi = bidict(mapping)
     return lambda exif_value: bidi[exif_value], \
            lambda value: bidi.inv[value]
@@ -69,7 +70,8 @@ class ExifMetadataProcessor(MetadataProcessor):
     __STRING = lambda exif_val: exif_val.decode('utf-8'), lambda value: value.encode('utf-8')
     __INT = int, int
     __RATIONAL = lambda exif_val: float(Fraction(*exif_val)), \
-                 lambda value: (Fraction(value).limit_denominator().numerator, Fraction(value).limit_denominator().denominator)
+                 lambda value: (Fraction(value).limit_denominator().numerator,
+                                Fraction(value).limit_denominator().denominator)
     __DATE = lambda exif_val: datetime.datetime.strptime(exif_val.decode('utf-8'), '%Y:%m:%d').date(), \
              lambda value: value.strftime('%Y:%m:%d')
     __TIME = lambda exif_val: datetime.time(*map(lambda v: round(float(Fraction(*v))), exif_val)), \
@@ -105,17 +107,17 @@ class ExifMetadataProcessor(MetadataProcessor):
         'software': __STRING,
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes a new `ExifMetadataProcessor`.
         """
         super().__init__()
 
     @property
-    def formats(self):
-        return 'exif',
+    def formats(self) -> Iterable[str]:
+        return {'exif'}
 
-    def read(self, file):
+    def read(self, file: IO) -> Mapping[str, Mapping]:
         with tempfile.NamedTemporaryFile(mode='wb') as tmp:
             tmp.write(file.read())
             tmp.flush()
@@ -141,7 +143,7 @@ class ExifMetadataProcessor(MetadataProcessor):
                 metadata_by_format[metadata_format] = format_metadata
         return metadata_by_format
 
-    def strip(self, file):
+    def strip(self, file: IO) -> IO:
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile(mode='w+b') as tmp:
             tmp.write(file.read())
@@ -161,7 +163,7 @@ class ExifMetadataProcessor(MetadataProcessor):
 
         return result
 
-    def combine(self, essence, metadata_by_format):
+    def combine(self, essence: IO, metadata_by_format: Mapping[str, Mapping]) -> IO:
         result = io.BytesIO()
         with tempfile.NamedTemporaryFile(mode='w+b') as tmp:
             tmp.write(essence.read())
