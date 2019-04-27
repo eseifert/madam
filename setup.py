@@ -17,7 +17,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     author='Michael Seifert, Erich Seifert',
     author_email='mseifert@error-reports.org, dev@erichseifert.de',
-    python_requires='>=3.4',
+    python_requires='>=3.5',
     install_requires=['bidict', 'frozendict', 'piexif', 'pillow>=5.0.0', 'zopflipy>=1.1'],
     setup_requires=['pytest-runner', 'versioneer'],
     tests_require=['mutagen', 'piexif', 'pillow>=5.0.0', 'pytest>=3.0'],
@@ -38,9 +38,9 @@ setup(
         'Topic :: Multimedia :: Video :: Conversion',
         'License :: OSI Approved :: GNU Affero General Public License v3',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     keywords='asset media processing'
 )
