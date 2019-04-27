@@ -7,7 +7,6 @@ import PIL.Image
 import pytest
 
 import madam.core
-from madam.future import subprocess_run
 
 
 DEFAULT_WIDTH = 24
@@ -591,7 +590,7 @@ def wav_audio_asset(tmpdir_factory):
                '-vn -sn -c:a pcm_s16le -f wav' % duration).split()
     tmpfile = tmpdir_factory.mktemp('wav_asset').join('without_metadata.wav')
     command.append(str(tmpfile))
-    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/wav',
@@ -606,7 +605,7 @@ def mp3_audio_asset(tmpdir_factory):
                '-vn -sn -f mp3' % duration).split()
     tmpfile = tmpdir_factory.mktemp('mp3_asset').join('without_metadata.mp3')
     command.append(str(tmpfile))
-    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/mpeg',
@@ -620,7 +619,7 @@ def opus_audio_asset(tmpdir_factory):
                '-vn -sn -f opus' % duration).split()
     tmpfile = tmpdir_factory.mktemp('opus_asset').join('without_metadata.opus')
     command.append(str(tmpfile))
-    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/ogg',
@@ -634,7 +633,7 @@ def nut_audio_asset(tmpdir_factory):
                '-vn -sn -c:a pcm_s16le -f nut' % duration).split()
     tmpfile = tmpdir_factory.mktemp('nut_asset').join('without_metadata.nut')
     command.append(str(tmpfile))
-    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/x-nut',
@@ -670,7 +669,7 @@ def mp4_video_asset(tmpdir_factory):
                '-f mp4' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('mp4_video_asset').join('h264-aac-mov_text.mp4')
     command.append(str(tmpfile))
-    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/quicktime',
@@ -694,7 +693,7 @@ def avi_video_asset(tmpdir_factory):
                '-f avi' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('avi_video_asset').join('h264-mp3.avi')
     command.append(str(tmpfile))
-    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-msvideo',
@@ -719,7 +718,7 @@ def mkv_video_asset(tmpdir_factory):
                '-f matroska' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('vp9-opus-webvtt.mkv')
     command.append(str(tmpfile))
-    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-matroska',
@@ -743,7 +742,7 @@ def mp2_video_asset(tmpdir_factory):
                '-f mpegts' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('mp2_video_asset').join('mpeg2-mp2-dvbsub.ts')
     command.append(str(tmpfile))
-    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/mp2t',
@@ -766,7 +765,7 @@ def ogg_video_asset(tmpdir_factory):
                '-f ogg' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('ogg_video_asset').join('theora-vorbis.ogg')
     command.append(str(tmpfile))
-    subprocess_run(command, check=True, stderr=subprocess.PIPE)
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/ogg',
@@ -787,7 +786,7 @@ def nut_video_asset():
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
                '-c:v ffv1 -level 3 -c:a pcm_s16le -sn '
                '-f nut pipe:' % ffmpeg_params).split()
-    ffmpeg = subprocess_run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ffmpeg = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
                             video=dict(codec='ffv1', color_space='YUV', depth=8, data_type='uint'),

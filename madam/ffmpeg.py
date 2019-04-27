@@ -11,7 +11,6 @@ from math import ceil, cos, pi, radians, sin
 from bidict import bidict
 
 from madam.core import Asset, MetadataProcessor, Processor, operator, OperatorError, UnsupportedFormatError
-from madam.future import CalledProcessError, subprocess_run
 from madam.mime import MimeType
 
 
@@ -23,7 +22,7 @@ def _probe(file):
 
         command = 'ffprobe -loglevel error -print_format json -show_format -show_streams'.split()
         command.append(temp_in.name)
-        result = subprocess_run(command, stdout=subprocess.PIPE,
+        result = subprocess.run(command, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
 
     string_result = result.stdout.decode('utf-8')
@@ -401,7 +400,7 @@ class FFmpegProcessor(Processor):
 
         self._min_version = '3.3'
         command = 'ffprobe -version'.split()
-        result = subprocess_run(command, stdout=subprocess.PIPE)
+        result = subprocess.run(command, stdout=subprocess.PIPE)
         string_result = result.stdout.decode('utf-8')
         version_string = string_result.split()[2]
         if version_string < self._min_version:
@@ -414,13 +413,13 @@ class FFmpegProcessor(Processor):
         try:
             probe_data = _probe(file)
             return bool(probe_data)
-        except CalledProcessError:
+        except subprocess.CalledProcessError:
             return False
 
     def read(self, file):
         try:
             probe_data = _probe(file)
-        except CalledProcessError:
+        except subprocess.CalledProcessError:
             raise UnsupportedFormatError('Unsupported file format.')
 
         decoder_and_stream_type = _get_decoder_and_stream_type(probe_data)
@@ -500,8 +499,8 @@ class FFmpegProcessor(Processor):
                        '-f', encoder_name, '-y', ctx.output_path]
 
             try:
-                subprocess_run(command, stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not resize asset: %s' % error_message)
 
@@ -606,8 +605,8 @@ class FFmpegProcessor(Processor):
                             '-f', encoder_name, '-y', ctx.output_path])
 
             try:
-                subprocess_run(command, stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not convert asset: %s' % error_message)
 
@@ -649,8 +648,8 @@ class FFmpegProcessor(Processor):
                        '-f', encoder_name, '-y', ctx.output_path]
 
             try:
-                subprocess_run(command, stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not trim asset: %s' % error_message)
 
@@ -694,8 +693,8 @@ class FFmpegProcessor(Processor):
                        '-f', encoder_name, '-y', ctx.output_path]
 
             try:
-                subprocess_run(command, stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not extract frame from asset: %s' % error_message)
 
@@ -753,8 +752,8 @@ class FFmpegProcessor(Processor):
                        '-f', encoder_name, '-y', ctx.output_path]
 
             try:
-                subprocess_run(command, stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not crop asset: %s' % error_message)
 
@@ -815,8 +814,8 @@ class FFmpegProcessor(Processor):
                        '-f', encoder_name, '-y', ctx.output_path]
 
             try:
-                subprocess_run(command, stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not rotate asset: %s' % error_message)
 
@@ -954,7 +953,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     def read(self, file):
         try:
             probe_data = _probe(file)
-        except CalledProcessError:
+        except subprocess.CalledProcessError:
             raise UnsupportedFormatError('Unsupported file format.')
 
         decoder_and_stream_type = _get_decoder_and_stream_type(probe_data)
@@ -980,7 +979,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     def strip(self, file):
         try:
             probe_data = _probe(file)
-        except CalledProcessError:
+        except subprocess.CalledProcessError:
             raise UnsupportedFormatError('Unsupported file format.')
 
         decoder_and_stream_type = _get_decoder_and_stream_type(probe_data)
@@ -997,8 +996,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                        '-map_metadata', '-1', '-codec', 'copy',
                        '-y', '-f', encoder_name, ctx.output_path]
             try:
-                subprocess_run(command, stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not strip metadata: %s' % error_message)
 
@@ -1007,7 +1006,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     def combine(self, file, metadata_by_type):
         try:
             probe_data = _probe(file)
-        except CalledProcessError:
+        except subprocess.CalledProcessError:
             raise UnsupportedFormatError('Unsupported file format.')
 
         decoder_and_stream_type = _get_decoder_and_stream_type(probe_data)
@@ -1044,8 +1043,8 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                             '-y', '-f', encoder_name, ctx.output_path])
 
             try:
-                subprocess_run(command, stderr=subprocess.PIPE, check=True)
-            except CalledProcessError as ffmpeg_error:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError('Could not add metadata: %s' % error_message)
 

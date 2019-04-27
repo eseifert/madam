@@ -7,7 +7,6 @@ import pytest
 
 import madam.video
 from madam.core import OperatorError, UnsupportedFormatError
-from madam.future import subprocess_run
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, \
     png_image_asset_palette, png_image_asset_gray, png_image_asset_gray_alpha, png_image_asset, gif_image_asset, \
@@ -29,7 +28,7 @@ class TestFFmpegProcessor:
 
     def __probe_streams_by_type(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
-        result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
+        result = subprocess.run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         ffprobe_info = json.loads(result.stdout.decode('utf-8'))
 
@@ -59,7 +58,7 @@ class TestFFmpegProcessor:
         resized_asset = resize(mkv_video_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
-        result = subprocess_run(command, input=resized_asset.essence.read(), stdout=subprocess.PIPE,
+        result = subprocess.run(command, input=resized_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('format', {}).get('format_name') == 'matroska,webm'
@@ -70,7 +69,7 @@ class TestFFmpegProcessor:
         resized_asset = resize_operator(video_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
-        result = subprocess_run(command, input=resized_asset.essence.read(), stdout=subprocess.PIPE,
+        result = subprocess.run(command, input=resized_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         first_stream = video_info.get('streams', [{}])[0]
@@ -110,7 +109,7 @@ class TestFFmpegProcessor:
 
     def test_converted_essence_is_of_specified_type(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
-        result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
+        result = subprocess.run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('format', {}).get('format_name') == 'matroska,webm'
@@ -256,7 +255,7 @@ class TestFFmpegProcessor:
         trimmed_asset = trim_operator(video_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
-        result = subprocess_run(command, input=trimmed_asset.essence.read(), stdout=subprocess.PIPE,
+        result = subprocess.run(command, input=trimmed_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert bool(video_info.get('format'))

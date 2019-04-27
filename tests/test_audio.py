@@ -7,7 +7,6 @@ from mutagen.oggopus import OggOpus
 
 import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
-from madam.future import subprocess_run
 from assets import DEFAULT_DURATION
 from assets import audio_asset, mp3_audio_asset, nut_audio_asset, opus_audio_asset, wav_audio_asset
 from assets import unknown_asset
@@ -32,14 +31,14 @@ class TestFFmpegProcessor:
 
     def test_converted_essence_is_of_specified_type(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
-        result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
+        result = subprocess.run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('format', {}).get('format_name') == 'mp3'
 
     def test_converted_essence_stream_has_specified_codec(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
-        result = subprocess_run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
+        result = subprocess.run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('streams', [{}])[0].get('codec_name') == 'mp3'
