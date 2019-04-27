@@ -9,7 +9,7 @@ from madam import Madam
 from madam.core import Asset, UnsupportedFormatError
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
 from assets import asset, unknown_asset
-from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, \
+from assets import get_jpeg_image_asset, image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, \
     png_image_asset_palette, png_image_asset_gray, png_image_asset_gray_alpha, png_image_asset, gif_image_asset, \
     bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_rgb_alpha, tiff_image_asset_palette, \
     tiff_image_asset_gray_8bit, tiff_image_asset_gray_8bit_alpha, tiff_image_asset_gray_16bit, tiff_image_asset_cmyk, \
@@ -126,7 +126,7 @@ class TestMadam:
         assert read_asset.data_type == asset.data_type
 
     def test_read_jpeg_does_not_alter_the_original_file(self, manager):
-        jpeg_data = jpeg_image_asset().essence
+        jpeg_data = get_jpeg_image_asset().essence
         original_image_data = jpeg_data.read()
         jpeg_data.seek(0)
 

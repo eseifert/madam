@@ -103,8 +103,7 @@ def image_cmyk(width, height):
     return image
 
 
-@pytest.fixture(scope='session')
-def jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, **additional_metadata):
+def get_jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None, **additional_metadata):
     if not transpositions:
         transpositions = []
     image = image_rgb(width=width, height=height, transpositions=transpositions)
@@ -168,6 +167,11 @@ def jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=
     )
     metadata.update(additional_metadata)
     return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
+def jpeg_image_asset():
+    return get_jpeg_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, transpositions=None)
 
 
 @pytest.fixture(scope='session')
@@ -731,13 +735,11 @@ def mp2_video_asset(tmpdir_factory):
         width=DEFAULT_WIDTH,
         height=DEFAULT_HEIGHT,
         duration=DEFAULT_DURATION,
-        subtitle_path='tests/resources/subtitle.vtt',
     )
     command = ('ffmpeg -loglevel error '
                '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-f webvtt -i %(subtitle_path)s '
-               '-c:v mpeg2video -c:a mp2 -c:s dvbsub '
+               '-c:v mpeg2video -c:a mp2 -sn '
                '-f mpegts' % ffmpeg_params).split()
     tmpfile = tmpdir_factory.mktemp('mp2_video_asset').join('mpeg2-mp2-dvbsub.ts')
     command.append(str(tmpfile))
@@ -747,8 +749,7 @@ def mp2_video_asset(tmpdir_factory):
     return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/mp2t',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
                             video=dict(codec='mpeg2video', color_space='YUV', depth=8, data_type='uint'),
-                            audio=dict(codec='mp2'),
-                            subtitle=dict(codec='dvbsub'))
+                            audio=dict(codec='mp2'))
 
 
 @pytest.fixture(scope='session')

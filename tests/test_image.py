@@ -5,7 +5,7 @@ import pytest
 import madam.image
 from madam.core import OperatorError
 from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT
-from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, \
+from assets import image_asset, get_jpeg_image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, \
     png_image_asset_palette, png_image_asset_gray, png_image_asset_gray_alpha, png_image_asset, gif_image_asset, \
     bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_rgb_alpha, tiff_image_asset_palette, \
     tiff_image_asset_gray_8bit, tiff_image_asset_gray_8bit_alpha, tiff_image_asset_gray_16bit, tiff_image_asset_cmyk,\
@@ -25,7 +25,7 @@ class TestPillowProcessor:
 
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_landscape_image(self, processor, width, height):
-        jpeg_image_asset_landscape = jpeg_image_asset(width=width, height=height)
+        jpeg_image_asset_landscape = get_jpeg_image_asset(width=width, height=height)
         resize_operator = processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FIT)
 
         resized_asset = resize_operator(jpeg_image_asset_landscape)
@@ -35,7 +35,7 @@ class TestPillowProcessor:
 
     @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
     def test_resize_in_fit_mode_preserves_aspect_ratio_for_portrait_image(self, processor, width, height):
-        jpeg_image_asset_portrait = jpeg_image_asset(width=width, height=height)
+        jpeg_image_asset_portrait = get_jpeg_image_asset(width=width, height=height)
         resize_operator = processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FIT)
 
         resized_asset = resize_operator(jpeg_image_asset_portrait)
@@ -45,7 +45,7 @@ class TestPillowProcessor:
 
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
     def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image(self, processor, width, height):
-        jpeg_image_asset_landscape = jpeg_image_asset(width=width, height=height)
+        jpeg_image_asset_landscape = get_jpeg_image_asset(width=width, height=height)
         resize_operator = processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FILL)
 
         resized_asset = resize_operator(jpeg_image_asset_landscape)
@@ -55,7 +55,7 @@ class TestPillowProcessor:
 
     @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
     def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image(self, processor, width, height):
-        jpeg_image_asset_portrait = jpeg_image_asset(width=width, height=height)
+        jpeg_image_asset_portrait = get_jpeg_image_asset(width=width, height=height)
         resize_operator = processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FILL)
 
         resized_asset = resize_operator(jpeg_image_asset_portrait)
@@ -80,7 +80,7 @@ class TestPillowProcessor:
         assert resized_asset.mime_type == image_asset.mime_type
 
     def test_transpose_flips_dimensions(self, processor):
-        asset = jpeg_image_asset()
+        asset = get_jpeg_image_asset()
         transpose_operator = processor.transpose()
 
         transposed_asset = transpose_operator(asset)
@@ -88,7 +88,7 @@ class TestPillowProcessor:
         assert asset.width == transposed_asset.height and asset.height == transposed_asset.width
 
     def test_transpose_is_reversible(self, processor):
-        asset = jpeg_image_asset()
+        asset = get_jpeg_image_asset()
         transpose_operator = processor.transpose()
 
         transposed_asset = transpose_operator(transpose_operator(asset))
@@ -96,7 +96,7 @@ class TestPillowProcessor:
         assert is_equal_in_black_white_space(PIL.Image.open(transposed_asset.essence), PIL.Image.open(asset.essence))
 
     def test_transpose_keeps_original_mime_type(self, processor):
-        asset = jpeg_image_asset()
+        asset = get_jpeg_image_asset()
         transpose_operator = processor.transpose()
 
         transposed_asset = transpose_operator(asset)
@@ -105,7 +105,7 @@ class TestPillowProcessor:
 
     @pytest.mark.parametrize('orientation', [madam.image.FlipOrientation.HORIZONTAL, madam.image.FlipOrientation.VERTICAL])
     def test_flip_is_reversible(self, processor, orientation):
-        asset = jpeg_image_asset()
+        asset = get_jpeg_image_asset()
         flip_operator = processor.flip(orientation=orientation)
 
         flipped_asset = flip_operator(flip_operator(asset))
@@ -123,9 +123,9 @@ class TestPillowProcessor:
         (8, [PIL.Image.ROTATE_270])
     ])
     def test_auto_orient_rotates_asset_correctly(self, processor, exif_orientation, image_transpositions):
-        reference_asset = jpeg_image_asset()
-        misoriented_asset = jpeg_image_asset(transpositions=image_transpositions,
-                                       exif={'orientation': exif_orientation})
+        reference_asset = get_jpeg_image_asset()
+        misoriented_asset = get_jpeg_image_asset(transpositions=image_transpositions,
+                                                 exif={'orientation': exif_orientation})
         auto_orient_operator = processor.auto_orient()
 
         oriented_asset = auto_orient_operator(misoriented_asset)
@@ -150,7 +150,7 @@ class TestPillowProcessor:
         assert converted_asset.mime_type == 'image/png'
 
     def test_convert_creates_new_asset(self, processor):
-        asset = jpeg_image_asset()
+        asset = get_jpeg_image_asset()
         conversion_operator = processor.convert(mime_type='image/png')
 
         converted_asset = conversion_operator(asset)
