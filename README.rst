@@ -75,4 +75,4 @@ Converting an image to a different file format and saving it to a file:
     >>> convert_to_png = processor.convert(mime_type='image/png')
     >>> png_asset = convert_to_png(asset)
     >>> with open('path/to/file.png', 'wb') as file:
-    ...     madam.write(png_asset, file)
+    ...     manager.write(png_asset, file)
