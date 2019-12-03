@@ -3,7 +3,7 @@ import io
 import shutil
 import tempfile
 from fractions import Fraction
-from typing import Callable, IO, Iterable, Mapping, Tuple
+from typing import Any, Callable, IO, Iterable, Mapping, Optional, Tuple
 
 import piexif
 from bidict import bidict
@@ -107,11 +107,13 @@ class ExifMetadataProcessor(MetadataProcessor):
         'software': __STRING,
     }
 
-    def __init__(self) -> None:
+    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new `ExifMetadataProcessor`.
+
+        :param config: Mapping with settings
         """
-        super().__init__()
+        super().__init__(config)
 
     @property
     def formats(self) -> Iterable[str]:

@@ -1,6 +1,6 @@
 import io
 from enum import Enum
-from typing import Any, Callable, IO, Optional, Union
+from typing import Any, Callable, IO, Mapping, Optional, Union
 
 from bidict import bidict
 import PIL.ExifTags
@@ -123,11 +123,13 @@ class PillowProcessor(Processor):
         'F': ('LUMA', 32, 'float'),
     })
 
-    def __init__(self) -> None:
+    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new `PillowProcessor`.
+
+        :param config: Mapping with settings.
         """
-        super().__init__()
+        super().__init__(config)
 
     def read(self, file: IO) -> Asset:
         image = PIL.Image.open(file)

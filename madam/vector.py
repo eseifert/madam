@@ -1,5 +1,5 @@
 import io
-from typing import Callable, IO, Iterable, Mapping, Tuple
+from typing import Any, Callable, IO, Iterable, Mapping, Optional, Tuple
 from xml.etree import ElementTree as ET
 
 from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError, operator
@@ -84,11 +84,13 @@ class SVGProcessor(Processor):
     """
     Represents a processor that handles *Scalable Vector Graphics* (SVG) data.
     """
-    def __init__(self) -> None:
+    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new `SVGProcessor`.
+
+        :param config: Mapping with settings.
         """
-        super().__init__()
+        super().__init__(config)
 
     def can_read(self, file: IO) -> bool:
         try:
@@ -205,11 +207,13 @@ class SVGMetadataProcessor(MetadataProcessor):
 
     It is assumed that the SVG XML uses UTF-8 encoding.
     """
-    def __init__(self) -> None:
+    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new `SVGMetadataProcessor`.
+
+        :param config: Mapping with settings.
         """
-        super().__init__()
+        super().__init__(config)
 
     @property
     def formats(self) -> Iterable[str]:

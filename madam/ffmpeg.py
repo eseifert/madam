@@ -391,13 +391,14 @@ class FFmpegProcessor(Processor):
         ('YUVA', 16, 'uint'): 'yuva420p16le',
     }
 
-    def __init__(self) -> None:
+    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new `FFmpegProcessor`.
 
+        :param config: Mapping with settings.
         :raises EnvironmentError: if the installed version of ffprobe does not match the minimum version requirement
         """
-        super().__init__()
+        super().__init__(config)
 
         self._min_version = '3.3'
         command = 'ffprobe -version'.split()
@@ -944,11 +945,13 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         MimeType('audio/wav'): bidict({}),
     }
 
-    def __init__(self) -> None:
+    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new `FFmpegMetadataProcessor`.
+
+        :param config: Mapping with settings.
         """
-        super().__init__()
+        super().__init__(config)
 
     @property
     def formats(self) -> Iterable[str]:
