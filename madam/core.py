@@ -363,7 +363,8 @@ class Madam:
         # Initialize processors
         for processor_path in self.processors:
             processor_class = Madam._import_from(processor_path)
-            self._processors.append(processor_class())
+            processor = processor_class(self.config)
+            self._processors.append(processor)
 
         # Initialize metadata processors
         for processor_path in self.metadata_processors:
@@ -372,7 +373,7 @@ class Madam:
             except ImportError:
                 self.metadata_processors.remove(processor_path)
                 continue
-            processor = processor_class()
+            processor = processor_class(self.config)
             self._metadata_processors.append(processor)
 
     @staticmethod
