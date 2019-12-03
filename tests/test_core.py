@@ -113,7 +113,7 @@ class TestStorages:
     def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
         tagged_asset_keys = storage.filter_by_tags('some tag')
 
-        assert len(tagged_asset_keys) == 0
+        assert len(list(tagged_asset_keys)) == 0
 
     def test_filter_by_tags_returns_all_assets_when_no_tags_are_specified(self, storage, asset):
         asset_key = str(hash(asset))
@@ -216,7 +216,6 @@ class TestAsset:
 
         with pytest.raises(NotImplementedError):
             asset_with_metadata.SomeMetadata = 43
-
 
     def test_asset_essence_can_be_read_multiple_times(self, asset):
         essence_contents = asset.essence.read()
