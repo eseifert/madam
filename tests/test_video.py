@@ -38,6 +38,12 @@ class TestFFmpegProcessor:
 
         return streams_by_type
 
+    def test_stores_configuration(self):
+        config = dict(foo='bar')
+        processor = madam.video.FFmpegProcessor(config)
+
+        assert processor.config['foo'] == 'bar'
+
     def test_resize_raises_error_for_invalid_dimensions(self, processor, video_asset):
         resize = processor.resize(width=12, height=-34)
 

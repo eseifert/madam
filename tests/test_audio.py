@@ -17,6 +17,12 @@ class TestFFmpegProcessor:
     def ffmpeg_processor(self):
         return madam.audio.FFmpegProcessor()
 
+    def test_stores_configuration(self):
+        config = dict(foo='bar')
+        processor = madam.audio.FFmpegProcessor(config)
+
+        assert processor.config['foo'] == 'bar'
+
     def test_cannot_resize_audio(self, processor, audio_asset):
         resize_operator = processor.resize(width=12, height=34)
 
@@ -51,6 +57,12 @@ class TestFFmpegMetadataProcessor:
     @pytest.fixture(name='processor')
     def ffmpeg_metadata_processor(self):
         return madam.audio.FFmpegMetadataProcessor()
+
+    def test_stores_configuration(self):
+        config = dict(foo='bar')
+        processor = madam.audio.FFmpegMetadataProcessor(config)
+
+        assert processor.config['foo'] == 'bar'
 
     def test_supports_ffmetadata(self, processor):
         assert 'ffmetadata' in processor.formats

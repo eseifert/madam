@@ -4,14 +4,20 @@ import pytest
 
 from assets import jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, png_image_asset_palette, \
     png_image_asset_gray, png_image_asset_gray_alpha, png_image_asset
+import madam.exif
 from madam.core import UnsupportedFormatError
-from madam.exif import ExifMetadataProcessor
 
 
 class TestExifMetadataProcessor:
     @pytest.fixture
     def processor(self):
-        return ExifMetadataProcessor()
+        return madam.exif.ExifMetadataProcessor()
+
+    def test_stores_configuration(self):
+        config = dict(foo='bar')
+        processor = madam.exif.ExifMetadataProcessor(config)
+
+        assert processor.config['foo'] == 'bar'
 
     def test_supports_exif(self, processor):
         assert 'exif' in processor.formats

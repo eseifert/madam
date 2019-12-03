@@ -46,6 +46,12 @@ class TestSVGProcessor:
     def processor(self):
         return SVGProcessor()
 
+    def test_stores_configuration(self):
+        config = dict(foo='bar')
+        processor = SVGProcessor(config)
+
+        assert processor.config['foo'] == 'bar'
+
     def test_read_fails_with_invalid_input(self, processor, unknown_asset):
         with pytest.raises(UnsupportedFormatError):
             processor.read(unknown_asset.essence)
@@ -226,6 +232,12 @@ class TestSVGMetadataProcessor:
     @pytest.fixture
     def processor(self):
         return SVGMetadataProcessor()
+
+    def test_stores_configuration(self):
+        config = dict(foo='bar')
+        processor = SVGMetadataProcessor(config)
+
+        assert processor.config['foo'] == 'bar'
 
     def test_supports_rdf_metadata(self, processor):
         assert 'rdf' in processor.formats

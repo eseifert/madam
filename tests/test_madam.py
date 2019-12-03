@@ -54,7 +54,7 @@ class TestMadam:
     def read_asset(self, manager, asset):
         return manager.read(asset.essence)
 
-    def test_accepts_parameter_for_configuration(self):
+    def test_stores_configuration(self):
         config = dict(foo='bar')
         manager = Madam(config)
 
