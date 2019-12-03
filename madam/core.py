@@ -347,27 +347,30 @@ class Madam:
         if config:
             self.config.update(config)
 
-        self.processors = [
+        # Initialize processors
+        self.processors = {
             'madam.image.PillowProcessor',
             'madam.vector.SVGProcessor',
             'madam.ffmpeg.FFmpegProcessor',
-        ]
-        self.metadata_processors = [
-            'madam.exif.ExifMetadataProcessor',
-            'madam.vector.SVGMetadataProcessor',
-            'madam.ffmpeg.FFmpegMetadataProcessor',
-        ]
+        }
         self._processors = []
-        self._metadata_processors = []
-
-        # Initialize processors
-        for processor_path in self.processors:
-            processor_class = Madam._import_from(processor_path)
+        for processor_path in set(self.processors):
+            try:
+                processor_class = Madam._import_from(processor_path)
+            except ImportError:
+                self.processors.remove(processor_path)
+                continue
             processor = processor_class(self.config)
             self._processors.append(processor)
 
         # Initialize metadata processors
-        for processor_path in self.metadata_processors:
+        self.metadata_processors = {
+            'madam.exif.ExifMetadataProcessor',
+            'madam.vector.SVGMetadataProcessor',
+            'madam.ffmpeg.FFmpegMetadataProcessor',
+        }
+        self._metadata_processors = []
+        for processor_path in set(self.metadata_processors):
             try:
                 processor_class = Madam._import_from(processor_path)
             except ImportError:
