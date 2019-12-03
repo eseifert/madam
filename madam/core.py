@@ -263,15 +263,17 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     """
     Represents an entity that can manipulate metadata.
 
-    Every `MetadataProcessor` needs to have a no-args `__init__` method in
-    order to be registered correctly.
+    Every `MetadataProcessor` needs to have an `__init__` method with an
+    optional `config` parameter in order to be registered correctly.
     """
     @abc.abstractmethod
-    def __init__(self) -> None:
+    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new `MetadataProcessor`.
         """
-        pass
+        self.config = {}
+        if config:
+            self.config.update(config)
 
     @property
     @abc.abstractmethod
