@@ -414,7 +414,9 @@ class FFmpegProcessor(Processor):
     def can_read(self, file: IO) -> bool:
         try:
             probe_data = _probe(file)
-            return bool(probe_data)
+            decoder_and_stream_type = _get_decoder_and_stream_type(probe_data)
+            mime_type = self.__decoder_and_stream_type_to_mime_type.get(decoder_and_stream_type)
+            return bool(mime_type)
         except subprocess.CalledProcessError:
             return False
 
