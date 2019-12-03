@@ -328,14 +328,18 @@ class Madam:
     """
     Represents an instance of the library.
     """
-    def __init__(self) -> None:
+    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new library instance with default configuration.
 
         The default configuration includes a list of all available Processor
         and MetadataProcessor implementations.
+
+        :param config: Mapping with settings.
         """
         self.config = {}  # type: Dict[str, Any]
+        if config:
+            self.config.update(config)
 
         self.processors = [
             'madam.image.PillowProcessor',

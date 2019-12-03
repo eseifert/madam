@@ -54,6 +54,12 @@ class TestMadam:
     def read_asset(self, manager, asset):
         return manager.read(asset.essence)
 
+    def test_accepts_parameter_for_configuration(self):
+        config = dict(foo='bar')
+        manager = Madam(config)
+
+        assert manager.config['foo'] == 'bar'
+
     def test_get_processor_returns_processor_for_readable_asset(self, manager, asset):
         processor = manager.get_processor(asset.essence)
 
