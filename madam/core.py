@@ -335,32 +335,32 @@ class Madam:
         The default configuration includes a list of all available Processor
         and MetadataProcessor implementations.
         """
-        self.config = dict(
-            processors=[
-                'madam.image.PillowProcessor',
-                'madam.vector.SVGProcessor',
-                'madam.ffmpeg.FFmpegProcessor',
-            ],
-            metadata_processors=[
-                'madam.exif.ExifMetadataProcessor',
-                'madam.vector.SVGMetadataProcessor',
-                'madam.ffmpeg.FFmpegMetadataProcessor',
-            ]
-        )
+        self.config = {}  # type: Dict[str, Any]
+
+        self.processors = [
+            'madam.image.PillowProcessor',
+            'madam.vector.SVGProcessor',
+            'madam.ffmpeg.FFmpegProcessor',
+        ]
+        self.metadata_processors = [
+            'madam.exif.ExifMetadataProcessor',
+            'madam.vector.SVGMetadataProcessor',
+            'madam.ffmpeg.FFmpegMetadataProcessor',
+        ]
         self._processors = []
         self._metadata_processors = []
 
         # Initialize processors
-        for processor_path in self.config['processors']:
+        for processor_path in self.processors:
             processor_class = Madam._import_from(processor_path)
             self._processors.append(processor_class())
 
         # Initialize metadata processors
-        for processor_path in self.config['metadata_processors']:
+        for processor_path in self.metadata_processors:
             try:
                 processor_class = Madam._import_from(processor_path)
             except ImportError:
-                self.config['metadata_processors'].remove(processor_path)
+                self.metadata_processors.remove(processor_path)
                 continue
             processor = processor_class()
             self._metadata_processors.append(processor)

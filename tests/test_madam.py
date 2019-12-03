@@ -215,22 +215,22 @@ class TestMadam:
         file.seek(0)
         assert file.read() != jpeg_image_asset.essence.read()
 
-    def test_config_contains_list_of_all_processors_by_default(self, manager):
-        assert manager.config['processors'] == [
+    def test_contains_list_of_all_processors_by_default(self, manager):
+        assert manager.processors == [
             'madam.image.PillowProcessor',
             'madam.vector.SVGProcessor',
             'madam.ffmpeg.FFmpegProcessor',
         ]
 
-    def test_config_contains_list_of_all_metadata_processors_by_default(self, manager):
-        assert manager.config['metadata_processors'] == [
+    def test_contains_list_of_all_metadata_processors_by_default(self, manager):
+        assert manager.metadata_processors == [
             'madam.exif.ExifMetadataProcessor',
             'madam.vector.SVGMetadataProcessor',
             'madam.ffmpeg.FFmpegMetadataProcessor',
         ]
 
-    def test_config_does_not_contain_metadata_processor_when_it_is_not_installed(self):
+    def test_does_not_contain_metadata_processor_when_it_is_not_installed(self):
         with patch.dict(sys.modules, {'madam.exif': None}):
             manager = Madam()
 
-        assert 'madam.exif.ExifMetadataProcessor' not in manager.config['metadata_processors']
+        assert 'madam.exif.ExifMetadataProcessor' not in manager.metadata_processors
