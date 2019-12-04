@@ -1,7 +1,7 @@
 Module reference
 ================
 
-The main module of MADAM is :mod:`madam`.It contains several submodules.
+The main module of MADAM is :mod:`madam`. It contains several submodules.
 
 .. toctree::
 
