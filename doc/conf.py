@@ -36,7 +36,11 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
 ]
-autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
+autodoc_default_options = {
+    'members': True,
+    'inherited-members': True,
+    'show-inheritance': True,
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -56,8 +60,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'MADAM'
-copyright = '2016, Michael Seifert, Erich Seifert'
-author = 'Michael Seifert, Erich Seifert'
+copyright = '2016 Erich Seifert, Michael Seifert'
+author = 'Erich Seifert, Michael Seifert'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -268,7 +272,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'MADAM.tex', 'MADAM Documentation',
-     'Michael Seifert, Erich Seifert', 'manual'),
+     'Erich Seifert, Michael Seifert', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -325,7 +329,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'MADAM', 'MADAM Documentation',
-     author, 'MADAM', 'One line description of project.',
+     author, 'MADAM', 'Multimedia Advanced Digital Asset Management.',
      'Miscellaneous'),
 ]
 
