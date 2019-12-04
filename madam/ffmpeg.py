@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 from collections import namedtuple
 from math import ceil, cos, pi, radians, sin
-from typing import Any, IO, Iterable, Mapping, MutableMapping, Optional, Tuple, Union
+from typing import Any, IO, Iterable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union
 
 from bidict import bidict
 
@@ -56,6 +56,15 @@ def _get_decoder_and_stream_type(probe_data: Mapping[str, Any]) -> Tuple[str, st
         stream_type = ''
 
     return decoder_name, stream_type
+
+
+def _param_map_to_seq(param_mapping: Mapping[str, Any]) -> Sequence[str]:
+    params = []
+    for param, value in param_mapping.items():
+        params.append('-{}'.format(param))
+        if value is not None:
+            params.append(str(value))
+    return params
 
 
 class _FFmpegContext(tempfile.TemporaryDirectory):
@@ -137,42 +146,39 @@ class FFmpegProcessor(Processor):
 
     __codec_options = {
         'video': {
-            'libx264': [
-                '-preset', 'slow',
-                '-crf', '23',
-            ],
-            'libx265': [
-                '-preset', 'slow',
-                '-crf', '28',
-            ],
-            'libvpx': [
-                '-speed', '1',
-                '-crf', '10',
-            ],
-            'libvpx-vp9': [
-                '-speed', '1',
-                '-row-mt', '1',
-                '-crf', '32',
-            ],
-            'opus': [
-                '-strict', '-2',
-            ],
-            'vorbis': [
-                '-ac', '2',
-                '-strict', '-2',
-            ],
-            'vp9': [
-                '-speed', '1',
-                '-tile-columns', '6',
-                '-crf', '32',
-            ],
+            'libx264': {
+                'preset': 'slow',
+                'crf': 23,
+            },
+            'libx265': {
+                'preset': 'slow',
+                'crf': 28,
+            },
+            'libvpx': {
+                'speed': 1,
+                'crf': 10,
+            },
+            'libvpx-vp9': {
+                'speed': 1,
+                'row-mt': 1,
+                'crf': 32,
+            },
+            'opus': {
+                'strict': -2
+            },
+            'vorbis': {
+                'ac': 2,
+                'strict': -2
+            },
+            'vp9': {
+                'speed': 1,
+                'tile-columns': 6,
+                'crf': 32,
+            },
         }
     }
 
     __container_options = {
-        MimeType('video/quicktime'): [
-            '-movflags', '+faststart',
-        ],
         MimeType('video/x-matroska'): [
             '-avoid_negative_ts', 'make_zero',
         ],
@@ -567,8 +573,11 @@ class FFmpegProcessor(Processor):
                 if 'codec' in video:
                     if video['codec']:
                         command.extend(['-c:v', video['codec']])
-                        codec_options = FFmpegProcessor.__codec_options.get('video', {})
-                        command.extend(codec_options.get(video['codec'], []))
+                        codec_options = dict(FFmpegProcessor.__codec_options.get('video', {}).get(video['codec'], []))
+                        codec_config = self.config.get('codec/{}'.format(video['codec']), {})
+                        if 'crf' in codec_config:
+                            codec_options['crf'] = int(codec_config['crf'])
+                        command.extend(_param_map_to_seq(codec_options))
                     else:
                         command.extend(['-vn'])
                 if video.get('bitrate'):
@@ -590,8 +599,8 @@ class FFmpegProcessor(Processor):
                 if 'codec' in audio:
                     if audio['codec']:
                         command.extend(['-c:a', audio['codec']])
-                        codec_options = FFmpegProcessor.__codec_options.get('audio', {})
-                        command.extend(codec_options.get(audio['codec'], []))
+                        codec_options = FFmpegProcessor.__codec_options.get('audio', {}).get(audio['codec'], [])
+                        command.extend(codec_options)
                     else:
                         command.extend(['-an'])
                 if audio.get('bitrate'):
@@ -606,6 +615,11 @@ class FFmpegProcessor(Processor):
                         command.extend(['-sn'])
 
             container_options = FFmpegProcessor.__container_options.get(mime_type, [])
+            container_config = self.config.get(mime_type, {})
+            if mime_type == 'video/quicktime':
+                use_faststart = container_config.get('faststart', True)
+                if use_faststart:
+                    container_options.extend(['-movflags', '+faststart'])
             command.extend(container_options)
 
             command.extend(['-threads', str(self.__threads),
