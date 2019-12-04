@@ -5,7 +5,6 @@ from typing import Any, Callable, IO, Mapping, Optional, Union
 from bidict import bidict
 import PIL.ExifTags
 import PIL.Image
-import zopfli
 
 from madam.core import operator, OperatorError
 from madam.core import Asset, Processor
@@ -34,45 +33,6 @@ class FlipOrientation(Enum):
     VERTICAL = 1
 
 
-def _optimized(image: PIL.Image.Image, pil_format: str, **pil_options: Any) -> IO:
-    r"""
-    Writes an optimized version of a Pillow image to a buffer.
-
-    :param image: PIL image to be written
-    :type image: PIL.Image.Image
-    :param pil_format: PIL file format name
-    :type pil_format: str
-    :param \\**pil_options: pil_options
-    :return: Buffer with image data
-    :rtype: IO
-    """
-    image_buffer = io.BytesIO()
-
-    if pil_format == 'PNG' and image.mode != 'P':
-        zopfli_png = zopfli.ZopfliPNG()
-        # Convert 16-bit per channel images to 8-bit per channel
-        zopfli_png.lossy_8bit = False
-        # Allow altering hidden colors of fully transparent pixels
-        zopfli_png.lossy_transparent = True
-        # Use all available optimization strategies
-        zopfli_png.filter_strategies = '0me'
-
-        pil_options.pop('optimize', False)
-        essence = io.BytesIO()
-        image.save(essence, 'PNG', optimize=False, **pil_options)
-        essence.seek(0)
-        optimized_data = zopfli_png.optimize(essence.read())
-        image_buffer.write(optimized_data)
-    elif pil_format == 'TIFF' and image.mode == 'P':
-        pil_options.pop('compression', '')
-        image.save(image_buffer, pil_format, **pil_options)
-    else:
-        image.save(image_buffer, pil_format, **pil_options)
-
-    image_buffer.seek(0)
-    return image_buffer
-
-
 class PillowProcessor(Processor):
     """
     Represents a processor that uses Pillow as a backend.
@@ -86,7 +46,7 @@ class PillowProcessor(Processor):
         MimeType('image/webp'): 'WEBP',
     })
 
-    __format_options = {
+    __format_defaults = {
         MimeType('image/gif'): dict(
             optimize=True,
         ),
@@ -103,6 +63,7 @@ class PillowProcessor(Processor):
         ),
         MimeType('image/webp'): dict(
             method=6,
+            quality=80,
         ),
     }
 
@@ -201,14 +162,55 @@ class PillowProcessor(Processor):
         :param image: PIL image
         :type image: PIL.Image.Image
         :param mime_type: MIME type of the target asset
-        :type mime_type: MimeType
+        :type mime_type: MimeType or str
         :return: MADAM asset with the specified MIME type
         :rtype: Asset
         """
         mime_type = MimeType(mime_type)
+
         pil_format = PillowProcessor.__mime_type_to_pillow_type[mime_type]
-        pil_options = PillowProcessor.__format_options.get(mime_type, {})
-        image_buffer = _optimized(image, pil_format, **pil_options)
+        pil_options = dict(PillowProcessor.__format_defaults.get(mime_type, {}))
+        format_config = dict(self.config.get(mime_type.type, {}))
+        format_config.update(self.config.get(str(mime_type), {}))
+
+        image_buffer = io.BytesIO()
+
+        if mime_type == MimeType('image/png') and image.mode != 'P':
+            use_zopfli = format_config.get('zopfli', False)
+            if use_zopfli:
+                import zopfli
+                zopfli_png = zopfli.ZopfliPNG()
+                # Convert 16-bit per channel images to 8-bit per channel
+                zopfli_png.lossy_8bit = False
+                # Allow altering hidden colors of fully transparent pixels
+                zopfli_png.lossy_transparent = True
+                # Use all available optimization strategies
+                zopfli_png.filter_strategies = format_config.get('zopfli_strategies', '0me')
+
+                pil_options.pop('optimize', False)
+                essence = io.BytesIO()
+                image.save(essence, 'PNG', optimize=False, **pil_options)
+                essence.seek(0)
+                optimized_data = zopfli_png.optimize(essence.read())
+                image_buffer.write(optimized_data)
+            else:
+                image.save(image_buffer, pil_format, **pil_options)
+        elif mime_type == MimeType('image/jpeg'):
+            pil_options['progressive'] = int(format_config.get('progressive', pil_options['progressive']))
+            pil_options['quality'] = int(format_config.get('quality', pil_options['quality']))
+            image.save(image_buffer, pil_format, **pil_options)
+        elif mime_type == MimeType('image/tiff') and image.mode == 'P':
+            pil_options.pop('compression', '')
+            image.save(image_buffer, pil_format, **pil_options)
+        elif mime_type == MimeType('image/webp'):
+            pil_options['method'] = int(format_config.get('method', pil_options['method']))
+            pil_options['quality'] = int(format_config.get('quality', pil_options['quality']))
+            image.save(image_buffer, pil_format, **pil_options)
+        else:
+            image.save(image_buffer, pil_format, **pil_options)
+
+        image_buffer.seek(0)
+
         asset = self.read(image_buffer)
         return asset
 
