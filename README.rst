@@ -43,6 +43,17 @@ Initialization:
     >>> from madam import Madam
     >>> manager = Madam()
 
+Define settings for different file formats:
+
+.. code:: pycon
+
+    >>> config = {
+    ...     'image/jpeg': dict(
+    ...         quality=85,
+    ...     ),
+    ... }
+    >>> manager = Madam(config)
+
 Reading a JPEG image and extracting metadata:
 
 .. code:: pycon

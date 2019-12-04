@@ -7,5 +7,6 @@ Table of contents
     intro
     overview
     quickstart
+    configuration
     madam
     genindex
