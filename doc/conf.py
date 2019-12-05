@@ -37,9 +37,9 @@ extensions = [
     'sphinx.ext.viewcode',
 ]
 autodoc_default_options = {
-    'members': True,
-    'inherited-members': True,
-    'show-inheritance': True,
+    'members': None,
+    'inherited-members': None,
+    'show-inheritance': None,
 }
 
 # Add any paths that contain templates here, relative to this directory.
