@@ -99,7 +99,9 @@ class TestPillowProcessor:
 
         transposed_asset = transpose_operator(transpose_operator(asset))
 
-        assert is_equal_in_black_white_space(PIL.Image.open(transposed_asset.essence), PIL.Image.open(asset.essence))
+        with PIL.Image.open(transposed_asset.essence) as transposed_image, \
+                PIL.Image.open(asset.essence) as image:
+            assert is_equal_in_black_white_space(transposed_image, image)
 
     def test_transpose_keeps_original_mime_type(self, processor):
         asset = get_jpeg_image_asset()
@@ -119,7 +121,9 @@ class TestPillowProcessor:
 
         flipped_asset = flip_operator(flip_operator(asset))
 
-        assert is_equal_in_black_white_space(PIL.Image.open(flipped_asset.essence), PIL.Image.open(asset.essence))
+        with PIL.Image.open(flipped_asset.essence) as flipped_image, \
+                PIL.Image.open(asset.essence) as image:
+            assert is_equal_in_black_white_space(flipped_image, image)
 
     @pytest.mark.parametrize('exif_orientation, image_transpositions', [
         (1, []),
@@ -139,10 +143,9 @@ class TestPillowProcessor:
 
         oriented_asset = auto_orient_operator(misoriented_asset)
 
-        assert is_equal_in_black_white_space(
-            PIL.Image.open(reference_asset.essence),
-            PIL.Image.open(oriented_asset.essence)
-        )
+        with PIL.Image.open(reference_asset.essence) as reference_image, \
+                PIL.Image.open(oriented_asset.essence) as oriented_image:
+            assert is_equal_in_black_white_space(reference_image, oriented_image)
 
     def test_auto_orient_without_orientation_returns_identical_asset(self, processor, jpeg_image_asset):
         asset_without_orientation_metadata = jpeg_image_asset
@@ -183,8 +186,8 @@ class TestPillowProcessor:
 
         converted_asset = conversion_operator(asset)
 
-        image = PIL.Image.open(converted_asset.essence)
-        assert image.format == 'PNG'
+        with PIL.Image.open(converted_asset.essence) as image:
+            assert image.format == 'PNG'
 
     def test_convert_returns_essence_with_specified_color_mode(self, processor, tiff_image_asset):
         asset = tiff_image_asset
@@ -192,8 +195,8 @@ class TestPillowProcessor:
 
         converted_asset = conversion_operator(asset)
 
-        image = PIL.Image.open(converted_asset.essence)
-        assert image.mode == 'CMYK'
+        with PIL.Image.open(converted_asset.essence) as image:
+            assert image.mode == 'CMYK'
 
     @pytest.mark.parametrize('color_space,depth,data_type', [
         ('RGB', 8, 'uint'), ('LUMA', 8, 'uint')
@@ -219,15 +222,15 @@ class TestPillowProcessor:
 
     def test_convert_maintains_original_palette(self, processor, png_image_asset_palette):
         asset = png_image_asset_palette
-        original_image = PIL.Image.open(asset.essence)
+        with PIL.Image.open(asset.essence) as original_image:
+            original_palette = original_image.getpalette()
         conversion_operator = processor.convert(
             mime_type='image/png', color_space='PALETTE', depth=8, data_type='uint')
-
         converted_asset = conversion_operator(asset)
 
-        converted_image = PIL.Image.open(converted_asset.essence)
-        assert converted_image.mode == 'P'
-        assert converted_image.getpalette() == original_image.getpalette()
+        with PIL.Image.open(converted_asset.essence) as converted_image:
+            assert converted_image.mode == 'P'
+            assert converted_image.getpalette() == original_palette
 
     def test_crop_with_original_dimensions_returns_identical_asset(self, processor, image_asset):
         crop_operator = processor.crop(x=0, y=0, width=image_asset.width, height=image_asset.height)

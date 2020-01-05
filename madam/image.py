@@ -93,17 +93,17 @@ class PillowProcessor(Processor):
         super().__init__(config)
 
     def read(self, file: IO) -> Asset:
-        image = PIL.Image.open(file)
-        mime_type = PillowProcessor.__mime_type_to_pillow_type.inv[image.format]
-        color_space, bit_depth, data_type = PillowProcessor.__pillow_mode_to_color_mode[image.mode]
-        metadata = dict(
-            mime_type=str(mime_type),
-            width=image.width,
-            height=image.height,
-            color_space=color_space,
-            depth=bit_depth,
-            data_type=data_type,
-        )
+        with PIL.Image.open(file) as image:
+            mime_type = PillowProcessor.__mime_type_to_pillow_type.inv[image.format]
+            color_space, bit_depth, data_type = PillowProcessor.__pillow_mode_to_color_mode[image.mode]
+            metadata = dict(
+                mime_type=str(mime_type),
+                width=image.width,
+                height=image.height,
+                color_space=color_space,
+                depth=bit_depth,
+                data_type=data_type,
+            )
         file.seek(0)
         asset = Asset(file, **metadata)
         return asset
@@ -111,10 +111,11 @@ class PillowProcessor(Processor):
     def can_read(self, file: IO) -> bool:
         try:
             PIL.Image.open(file)
-            file.seek(0)
             return True
         except IOError:
             return False
+        finally:
+            file.seek(0)
 
     @operator
     def resize(self, asset: Asset, width: int, height: int, mode: ResizeMode = ResizeMode.EXACT) -> Asset:
@@ -132,26 +133,27 @@ class PillowProcessor(Processor):
         :return: Asset with resized essence
         :rtype: Asset
         """
-        image = PIL.Image.open(asset.essence)
         mime_type = MimeType(asset.mime_type)
-        if mode == ResizeMode.EXACT:
-            resized_width = width
-            resized_height = height
-        else:
-            aspect = asset.width / asset.height
-            aspect_target = width / height
-            if mode == ResizeMode.FIT and aspect >= aspect_target or \
-               mode == ResizeMode.FILL and aspect <= aspect_target:
-                resize_factor = width / image.width
+        with PIL.Image.open(asset.essence) as image:
+            if mode == ResizeMode.EXACT:
+                resized_width = width
+                resized_height = height
             else:
-                resize_factor = height / image.height
-            resized_width = max(1, round(resize_factor * image.width))
-            resized_height = max(1, round(resize_factor * image.height))
-        # Pillow supports resampling only for 8-bit images
-        resampling_method = PIL.Image.LANCZOS if asset.depth == 8 else PIL.Image.NEAREST
-        resized_image = image.resize((resized_width, resized_height),
-                                     resample=resampling_method)
-        resized_asset = self._image_to_asset(resized_image, mime_type=mime_type)
+                aspect = asset.width / asset.height
+                aspect_target = width / height
+                if mode == ResizeMode.FIT and aspect >= aspect_target or \
+                   mode == ResizeMode.FILL and aspect <= aspect_target:
+                    resize_factor = width / image.width
+                else:
+                    resize_factor = height / image.height
+                resized_width = max(1, round(resize_factor * image.width))
+                resized_height = max(1, round(resize_factor * image.height))
+            # Pillow supports resampling only for 8-bit images
+            resampling_method = PIL.Image.LANCZOS if asset.depth == 8 else PIL.Image.NEAREST
+            resized_image = image.resize((resized_width, resized_height),
+                                         resample=resampling_method)
+        with resized_image:
+            resized_asset = self._image_to_asset(resized_image, mime_type=mime_type)
         return resized_asset
 
     def _image_to_asset(self, image: PIL.Image.Image, mime_type: Union[MimeType, str]) -> Asset:
@@ -228,10 +230,11 @@ class PillowProcessor(Processor):
         :return: New image asset with rotated essence
         :rtype: Asset
         """
-        image = PIL.Image.open(asset.essence)
         mime_type = MimeType(asset.mime_type)
-        transposed_image = image.transpose(rotation)
-        transposed_asset = self._image_to_asset(transposed_image, mime_type=mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            transposed_image = image.transpose(rotation)
+        with transposed_image:
+            transposed_asset = self._image_to_asset(transposed_image, mime_type=mime_type)
         return transposed_asset
 
     @operator
@@ -326,12 +329,12 @@ class PillowProcessor(Processor):
         """
         mime_type = MimeType(mime_type)
         try:
-            image = PIL.Image.open(asset.essence)
-            color_mode = color_space or asset.color_space, depth or asset.depth, data_type or asset.data_type
-            pil_mode = PillowProcessor.__pillow_mode_to_color_mode.inv.get(color_mode)
-            if pil_mode is not None and pil_mode != image.mode:
-                image = image.convert(pil_mode)
-            converted_asset = self._image_to_asset(image, mime_type)
+            with PIL.Image.open(asset.essence) as image:
+                color_mode = color_space or asset.color_space, depth or asset.depth, data_type or asset.data_type
+                pil_mode = PillowProcessor.__pillow_mode_to_color_mode.inv.get(color_mode)
+                if pil_mode is not None and pil_mode != image.mode:
+                    image = image.convert(pil_mode)
+                converted_asset = self._image_to_asset(image, mime_type)
         except (IOError, KeyError) as pil_error:
             raise OperatorError('Could not convert image to %s: %s' %
                                 (mime_type, pil_error))
@@ -368,9 +371,10 @@ class PillowProcessor(Processor):
         if min_x == asset.width or min_y == asset.height or max_x <= min_x or max_y <= min_y:
             raise OperatorError('Invalid cropping area: <x=%r, y=%r, width=%r, height=%r>' % (x, y, width, height))
 
-        image = PIL.Image.open(asset.essence)
-        cropped_image = image.crop(box=(min_x, min_y, max_x, max_y))
-        cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            cropped_image = image.crop(box=(min_x, min_y, max_x, max_y))
+        with cropped_image:
+            cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)
 
         return cropped_asset
 
@@ -394,8 +398,9 @@ class PillowProcessor(Processor):
         if angle % 360.0 == 0.0:
             return asset
 
-        image = PIL.Image.open(asset.essence)
-        rotated_image = image.rotate(angle=angle, resample=PIL.Image.BICUBIC, expand=expand)
-        rotated_asset = self._image_to_asset(rotated_image, mime_type=asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            rotated_image = image.rotate(angle=angle, resample=PIL.Image.BICUBIC, expand=expand)
+        with rotated_image:
+            rotated_asset = self._image_to_asset(rotated_image, mime_type=asset.mime_type)
 
         return rotated_asset

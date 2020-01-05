@@ -280,11 +280,11 @@ class TestFFmpegProcessor:
 
         extracted_asset = extract_frame_operator(video_asset)
 
-        extracted_image = PIL.Image.open(extracted_asset.essence)
-        assert extracted_image.width > 0
-        assert extracted_image.width == video_asset.width
-        assert extracted_image.height > 0
-        assert extracted_image.height == video_asset.height
+        with PIL.Image.open(extracted_asset.essence) as extracted_image:
+            assert extracted_image.width > 0
+            assert extracted_image.width == video_asset.width
+            assert extracted_image.height > 0
+            assert extracted_image.height == video_asset.height
 
     @pytest.mark.parametrize('image_mime_type', FFMPEG_PROCESSOR_IMAGE_MIME_TYPES)
     def test_extract_frame_raises_error_for_unknown_source_format(self, processor, unknown_asset, image_mime_type):
