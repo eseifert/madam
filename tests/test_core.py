@@ -37,13 +37,13 @@ class TestStorages:
 
     def test_contains_is_true_when_asset_was_added(self, storage, asset):
         asset_key = str(hash(asset))
-        storage[asset_key] = asset, None
+        storage[asset_key] = asset, set()
 
         assert asset_key in storage
 
     def test_contains_is_false_when_asset_was_deleted(self, storage, asset):
         asset_key = str(hash(asset))
-        storage[asset_key] = asset, None
+        storage[asset_key] = asset, set()
 
         del storage[asset_key]
 
@@ -57,7 +57,7 @@ class TestStorages:
 
     def test_remove_deletes_asset_from_storage(self, storage, asset):
         asset_key = str(hash(asset))
-        storage[asset_key] = asset, None
+        storage[asset_key] = asset, set()
 
         del storage[asset_key]
 
@@ -71,7 +71,7 @@ class TestStorages:
         )
         for asset in assets:
             asset_key = str(hash(asset))
-            storage[asset_key] = asset, None
+            storage[asset_key] = asset, set()
 
         iterator = iter(storage)
 
@@ -85,13 +85,13 @@ class TestStorages:
             Asset(io.BytesIO(b'3')),
         )
         asset_keys = tuple(str(hash(asset)) for asset in assets)
-        storage[asset_keys[0]] = assets[0], None
-        storage[asset_keys[1]] = assets[1], None
+        storage[asset_keys[0]] = assets[0], set()
+        storage[asset_keys[1]] = assets[1], set()
         iterator = iter(storage)
 
         del storage[asset_keys[0]]
-        storage[asset_keys[2]] = assets[2], None
-        storage[asset_keys[3]] = assets[3], None
+        storage[asset_keys[2]] = assets[2], set()
+        storage[asset_keys[3]] = assets[3], set()
 
         assert set(iterator) == {asset_keys[0], asset_keys[1]}
 
@@ -156,7 +156,7 @@ class TestStorages:
     def test_filter_returns_assets_with_specified_madam_metadata(self, storage):
         asset = Asset(io.BytesIO(b'TestEssence'), duration=1)
         asset_key = str(hash(asset))
-        storage[asset_key] = asset, None
+        storage[asset_key] = asset, set()
 
         asset_keys_with_1s_duration = storage.filter(duration=1)
 
@@ -176,7 +176,7 @@ class TestShelveStorage:
 
     def test_set_writes_data_to_storage_path(self, storage, asset):
         asset_key = str(hash(asset))
-        storage[asset_key] = asset, None
+        storage[asset_key] = asset, set()
 
         assert os.path.exists(storage.path)
 
