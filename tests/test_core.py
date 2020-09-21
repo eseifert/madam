@@ -108,7 +108,7 @@ class TestStorages:
         unstored_asset_key = str(0)
 
         with pytest.raises(KeyError):
-            storage[unstored_asset_key]
+            asset_and_tags = storage[unstored_asset_key]
 
     def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
         tagged_asset_keys = storage.filter_by_tags('some tag')

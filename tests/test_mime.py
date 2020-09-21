@@ -28,10 +28,10 @@ def test_mime_type_accepts_none_in_constructor():
 
 def test_mime_type_cannot_be_initialized_with_anything_but_string_or_none():
     with pytest.raises(TypeError):
-        MimeType(mediatype=42, subtype='bar')
+        MimeType(mediatype=42, subtype='bar')  # noqa
 
     with pytest.raises(TypeError):
-        MimeType(mediatype='foo', subtype=42)
+        MimeType(mediatype='foo', subtype=42)  # noqa
 
 
 def test_mime_type_cannot_be_initialized_with_mime_type_instance_and_subtype_string():
@@ -181,4 +181,4 @@ def test_mime_type_comparison_fails_for_incompatible_types():
     mime = MimeType(mediatype='foo', subtype='bar')
 
     with pytest.raises(TypeError):
-        assert mime < 42
+        assert mime < 42  # noqa

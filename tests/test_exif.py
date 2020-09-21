@@ -115,4 +115,4 @@ class TestExifMetadataProcessor:
         exif = {'123abc': 'Test artist'}
 
         with pytest.raises(UnsupportedFormatError):
-            processor.combine(jpeg_image_asset.essence, exif)
+            processor.combine(jpeg_image_asset.essence, exif)  # noqa

@@ -23,7 +23,7 @@ def test_svg_length_to_px_works_for_valid_values():
 
 def test_svg_length_to_px_fails_for_invalid_values():
     with pytest.raises(ValueError):
-        assert svg_length_to_px(None)
+        assert svg_length_to_px(None)  # noqa
     with pytest.raises(ValueError):
         assert svg_length_to_px('')
 
@@ -317,7 +317,7 @@ class TestSVGMetadataProcessor:
         rdf = {'123abc': 'Test artist'}
 
         with pytest.raises(UnsupportedFormatError):
-            processor.combine(svg_vector_asset.essence, rdf)
+            processor.combine(svg_vector_asset.essence, rdf)  # noqa
 
     def test_combine_raises_error_when_metadata_contains_unsupported_keys(self, processor, svg_vector_asset):
         metadata = dict(rdf=dict(foo='bar'))

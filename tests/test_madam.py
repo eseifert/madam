@@ -97,7 +97,7 @@ class TestMadam:
         invalid_file = None
 
         with pytest.raises(TypeError):
-            manager.read(invalid_file)
+            manager.read(invalid_file)  # noqa
 
     def test_read_raises_error_when_format_is_unknown(self, manager, unknown_asset):
         with pytest.raises(UnsupportedFormatError):
