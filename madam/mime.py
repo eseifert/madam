@@ -30,8 +30,8 @@ class MimeType:
         :param subtype: Defines the subtype.
         :type subtype: str or None
         """
-        self.type = None  # type: str or None
-        self.subtype = None  # type: str or None
+        self.type = None
+        self.subtype = None
         if isinstance(mediatype, MimeType):
             if subtype is not None:
                 raise ValueError('Cannot pass MimeType object and subtype string for initialization.')
@@ -72,14 +72,14 @@ class MimeType:
     def __hash__(self) -> int:
         return hash(str(self))
 
-    def __eq__(self, other: Union[str, 'MimeType']) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, str):
             return self == MimeType(other)
         if isinstance(other, MimeType):
             return self.type == other.type and self.subtype == other.subtype
         return NotImplemented
 
-    def __lt__(self, other: Union[str, 'MimeType']) -> bool:
+    def __lt__(self, other: object) -> bool:
         if isinstance(other, str):
             return self < MimeType(other)
         if isinstance(other, MimeType):
@@ -89,9 +89,9 @@ class MimeType:
                 else:
                     if self.subtype is None:
                         return True
-                    return self.subtype < other.subtype
+                    return str(self.subtype) < str(other.subtype)
             else:
                 if self.type is None:
                     return True
-                return self.type < other.type
+                return str(self.type) < str(other.type)
         return NotImplemented

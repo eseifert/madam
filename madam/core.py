@@ -6,7 +6,7 @@ import os
 import shelve
 import shutil
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, IO, Iterable, Iterator, \
+from typing import Any, Callable, Dict, Generator, FrozenSet, Generic, IO, Iterable, Iterator, \
     Mapping, MutableMapping, MutableSequence, Optional, Set, Tuple, TypeVar, Union
 
 from frozendict import frozendict
@@ -76,10 +76,10 @@ class Asset:
             metadata['mime_type'] = None
         self.metadata = _immutable(metadata)
 
-    def __eq__(self, other: 'Asset') -> bool:
-        if isinstance(other, self.__class__):
-            return other.__dict__ == self.__dict__
-        return False
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Asset):
+            return NotImplemented
+        return other.__dict__ == self.__dict__
 
     def __getattr__(self, item: str) -> Any:
         if item in self.metadata:
@@ -137,7 +137,7 @@ class UnsupportedFormatError(Exception):
         super().__init__(*args)
 
 
-def operator(function: Callable) -> Callable:
+def operator(function: Callable[..., Asset]) -> Callable[..., Callable[..., Asset]]:
     """
     Decorator function for methods that process assets.
 
@@ -158,7 +158,7 @@ def operator(function: Callable) -> Callable:
     :return: Configurable method
     """
     @functools.wraps(function)
-    def wrapper(self, **kwargs):
+    def wrapper(self, **kwargs: Any) -> Callable[..., Asset]:
         configured_operator = functools.partial(function, self, **kwargs)
         return configured_operator
     return wrapper
@@ -228,7 +228,7 @@ class Processor(metaclass=abc.ABCMeta):
 
         :param config: Mapping with settings.
         """
-        self.config = {}
+        self.config = {}  # type: Dict[str, Any]
         if config:
             self.config.update(config)
 
@@ -271,7 +271,7 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         """
         Initializes a new `MetadataProcessor`.
         """
-        self.config = {}
+        self.config = {}  # type: Dict[str, Any]
         if config:
             self.config.update(config)
 
@@ -520,10 +520,10 @@ class Madam:
 
 
 AssetKey = TypeVar('AssetKey')
-AssetTags = Set[str]
+AssetTags = FrozenSet[str]
 
 
-class AssetStorage(MutableMapping[AssetKey, Tuple[Asset, AssetTags]]):
+class AssetStorage(MutableMapping[AssetKey, Tuple[Asset, AssetTags]], Generic[AssetKey]):
     """
     Represents an abstract base class for data stores of
     :class:`~madam.core.Asset` objects.
@@ -570,7 +570,7 @@ class AssetStorage(MutableMapping[AssetKey, Tuple[Asset, AssetTags]]):
                    if search_tags <= asset_tags)
 
 
-class InMemoryStorage(AssetStorage):
+class InMemoryStorage(AssetStorage[Any]):
     """
     Represents a non-persistent storage backend for :class:`~madam.core.Asset`
     objects.
@@ -582,7 +582,7 @@ class InMemoryStorage(AssetStorage):
         Initializes a new, empty `InMemoryStorage` object.
         """
         super().__init__()
-        self.store = {}
+        self.store = {}  # type: Dict[Any, Tuple[Asset, AssetTags]]
 
     def __setitem__(self, asset_key: AssetKey, asset_and_tags: Tuple[Asset, AssetTags]):
         """
@@ -601,7 +601,7 @@ class InMemoryStorage(AssetStorage):
         asset, tags = asset_and_tags
         if not tags:
             tags = frozenset()
-        self.store[asset_key] = (asset, frozenset(tags))
+        self.store[asset_key] = asset, frozenset(tags)
 
     def __getitem__(self, asset_key: AssetKey) -> Tuple[Asset, AssetTags]:
         """
@@ -661,7 +661,7 @@ class InMemoryStorage(AssetStorage):
         return len(self.store)
 
 
-class ShelveStorage(AssetStorage):
+class ShelveStorage(AssetStorage[str]):
     """
     Represents a persistent storage backend for :class:`~madam.core.Asset`
     objects. Asset keys must be strings.
@@ -676,7 +676,7 @@ class ShelveStorage(AssetStorage):
         :type path: pathlib.Path or str
         """
         super().__init__()
-        if os.path.exists(path) and not os.path.isfile(path):
+        if os.path.exists(str(path)) and not os.path.isfile(str(path)):
             raise ValueError('The storage path %r is not a file.' % path)
         self.path = path
 
@@ -697,8 +697,8 @@ class ShelveStorage(AssetStorage):
         asset, tags = asset_and_tags
         if not tags:
             tags = frozenset()
-        with shelve.open(self.path) as store:
-            store[asset_key] = (asset, tags)
+        with shelve.open(str(self.path)) as store:
+            store[asset_key] = asset, tags
 
     def __getitem__(self, asset_key: str) -> Tuple[Asset, AssetTags]:
         """
@@ -713,7 +713,7 @@ class ShelveStorage(AssetStorage):
         :rtype: (Asset, set)
         :raise KeyError: if the key does not exist in this storage
         """
-        with shelve.open(self.path) as store:
+        with shelve.open(str(self.path)) as store:
             if asset_key not in store:
                 raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
             return store[asset_key]
@@ -727,12 +727,12 @@ class ShelveStorage(AssetStorage):
         :type asset_key: str
         :raise KeyError: if the key does not exist in this storage
         """
-        with shelve.open(self.path) as store:
+        with shelve.open(str(self.path)) as store:
             if asset_key not in store:
                 raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
             del store[asset_key]
 
-    def __contains__(self, asset_key: str) -> bool:
+    def __contains__(self, asset_key: object) -> bool:
         """
         Returns whether an asset with the specified key is stored in this
         asset storage.
@@ -741,7 +741,9 @@ class ShelveStorage(AssetStorage):
         :return: `True` if the key exists, `False` otherwise
         :rtype: bool
         """
-        with shelve.open(self.path) as store:
+        if not isinstance(asset_key, str):
+            return NotImplemented
+        with shelve.open(str(self.path)) as store:
             return asset_key in store
 
     def __iter__(self) -> Iterator[str]:
@@ -750,7 +752,7 @@ class ShelveStorage(AssetStorage):
         in this asset storage.
         :return: Iterator object
         """
-        with shelve.open(self.path) as store:
+        with shelve.open(str(self.path)) as store:
             return iter(list(store.keys()))
 
     def __len__(self) -> int:
@@ -759,5 +761,5 @@ class ShelveStorage(AssetStorage):
         :return: Number of assets in this storage
         :rtype: int
         """
-        with shelve.open(self.path) as store:
+        with shelve.open(str(self.path)) as store:
             return len(store)

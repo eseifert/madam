@@ -309,7 +309,7 @@ class PillowProcessor(Processor):
     @operator
     def convert(self, asset: Asset, mime_type: Union[MimeType, str],
                 color_space: Optional[str] = None, depth: Optional[int] = None,
-                data_type: Optional[str] = None):
+                data_type: Optional[str] = None) -> Asset:
         """
         Creates a new asset of the specified MIME type from the essence of the
         specified asset.
@@ -379,7 +379,7 @@ class PillowProcessor(Processor):
         return cropped_asset
 
     @operator
-    def rotate(self, asset: Asset, angle: float, expand: bool = False):
+    def rotate(self, asset: Asset, angle: float, expand: bool = False) -> Asset:
         """
         Creates an asset whose essence is rotated by the specified angle in
         degrees.

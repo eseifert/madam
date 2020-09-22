@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 from collections import namedtuple
 from math import ceil, cos, pi, radians, sin
-from typing import Any, IO, Iterable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, IO, Iterable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union
 
 from bidict import bidict
 
@@ -17,7 +17,7 @@ from madam.mime import MimeType
 
 def _probe(file: IO) -> Any:
     with tempfile.NamedTemporaryFile(mode='wb') as temp_in:
-        shutil.copyfileobj(file, temp_in.file)
+        shutil.copyfileobj(file, temp_in.file)  # type: ignore
         temp_in.flush()
         file.seek(0)
 
@@ -439,7 +439,7 @@ class FFmpegProcessor(Processor):
 
         metadata = dict(
             mime_type=str(mime_type),
-        )
+        )  # type: Dict[str, Any]
 
         if 'duration' in probe_data['format']:
             metadata['duration'] = float(probe_data['format']['duration'])
@@ -615,7 +615,7 @@ class FFmpegProcessor(Processor):
                         command.extend(['-sn'])
 
             container_options = FFmpegProcessor.__container_options.get(mime_type, [])
-            container_config = self.config.get(mime_type, {})
+            container_config = self.config.get(str(mime_type), {})
             if mime_type == 'video/quicktime':
                 use_faststart = container_config.get('faststart', True)
                 if use_faststart:

@@ -3,7 +3,7 @@ import io
 import shutil
 import tempfile
 from fractions import Fraction
-from typing import Any, Callable, IO, Iterable, Mapping, Optional, Tuple
+from typing import Any, Callable, Dict, IO, Iterable, Mapping, Optional, Tuple
 
 import piexif
 from bidict import bidict
@@ -105,7 +105,7 @@ class ExifMetadataProcessor(MetadataProcessor):
         'orientation': __INT,
         'shutter_speed': __RATIONAL,
         'software': __STRING,
-    }
+    }  # type: Dict[str, Tuple[Callable, Callable]]
 
     def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """

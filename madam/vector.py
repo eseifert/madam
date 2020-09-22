@@ -2,7 +2,7 @@ import io
 from typing import Any, Callable, IO, Iterable, Mapping, Optional, Tuple
 from xml.etree import ElementTree as ET
 
-from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError, operator
+from madam.core import Asset, Dict, MetadataProcessor, Processor, UnsupportedFormatError, operator
 
 
 _INCH_TO_MM = 1 / 25.4
@@ -12,7 +12,7 @@ _FONT_SIZE_PT = 12
 _X_HEIGHT = 0.7
 
 
-def svg_length_to_px(length: str) -> float:
+def svg_length_to_px(length: Optional[str]) -> float:
     if length is None:
         raise ValueError()
 
@@ -44,6 +44,7 @@ def svg_length_to_px(length: str) -> float:
         return value * _PX_PER_INCH * _PT_PER_INCH * 12
     elif unit == '%':
         return value
+    raise ValueError()
 
 
 XML_NS = dict(
@@ -102,7 +103,7 @@ class SVGProcessor(Processor):
     def read(self, file: IO) -> Asset:
         _, root = _parse_svg(file)
 
-        metadata = dict(mime_type='image/svg+xml')
+        metadata = dict(mime_type='image/svg+xml')  # type: Dict[str, Any]
         if 'width' in root.keys():
             metadata['width'] = svg_length_to_px(root.get('width'))
         if 'height' in root.keys():
@@ -144,23 +145,31 @@ class SVGProcessor(Processor):
         SVGProcessor.__remove_xml_whitespace(root)
         # Remove empty texts
         SVGProcessor.__remove_elements(root, 'svg:text',
-                                       lambda e: e.text and
-                                                 e.text.strip() or
-                                                 list(e))
+                                       lambda e: bool(
+                                           e.text and
+                                           e.text.strip() or
+                                           list(e)
+                                      ))
         # Remove all empty circles with radius 0
         SVGProcessor.__remove_elements(root, 'svg:circle',
-                                       lambda e: list(e) or
-                                                 e.get('r') != '0')
+                                       lambda e: bool(
+                                           list(e) or
+                                           e.get('r') != '0'
+                                      ))
         # Remove all empty ellipses with x-axis or y-axis radius 0
         SVGProcessor.__remove_elements(root, 'svg:ellipse',
-                                       lambda e: list(e) or
-                                                 e.get('rx') != '0' and
-                                                 e.get('ry') != '0')
+                                       lambda e: bool(
+                                           list(e) or
+                                           e.get('rx') != '0' and
+                                           e.get('ry') != '0'
+                                      ))
         # Remove all empty rectangles with width or height 0
         SVGProcessor.__remove_elements(root, 'svg:rect',
-                                       lambda e: list(e) or
-                                                 e.get('width') != '0' and
-                                                 e.get('height') != '0')
+                                       lambda e: bool(
+                                           list(e) or
+                                           e.get('width') != '0' and
+                                           e.get('height') != '0'
+                                      ))
         # Remove all patterns with width or height 0
         SVGProcessor.__remove_elements(root, 'svg:pattern',
                                        lambda e: e.get('width') != '0' and
@@ -171,13 +180,13 @@ class SVGProcessor(Processor):
                                                  e.get('height') != '0')
         # Remove all paths without coordinates
         SVGProcessor.__remove_elements(root, 'svg:path',
-                                       lambda e: e.get('d', '').strip())
+                                       lambda e: bool(e.get('d', '').strip()))
         # Remove all polygons without points
         SVGProcessor.__remove_elements(root, 'svg:polygon',
-                                       lambda e: e.get('points', '').strip())
+                                       lambda e: bool(e.get('points', '').strip()))
         # Remove all polylines without points
         SVGProcessor.__remove_elements(root, 'svg:polyline',
-                                       lambda e: e.get('points', '').strip())
+                                       lambda e: bool(e.get('points', '').strip()))
         # Remove all invisible or hidden elements
         SVGProcessor.__remove_elements(root, '*',
                                        lambda e: e.get('display') != 'none' and
