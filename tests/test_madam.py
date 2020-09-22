@@ -70,6 +70,11 @@ class TestMadam:
 
         assert processor is None
 
+    def test_get_processor_does_not_change_file_seek_position(self, manager, asset):
+        with asset.essence as essence:
+            manager.get_processor(essence)
+            assert essence.tell() == 0
+
     def test_read_returns_jpeg_asset_with_correct_metadata(self, manager, jpeg_data_with_exif):
         jpeg_with_metadata = jpeg_data_with_exif
 
