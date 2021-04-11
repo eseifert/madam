@@ -188,7 +188,7 @@ class Pipeline:
         """
         Initializes a new pipeline without operators.
         """
-        self.operators = []  # type: MutableSequence[Callable]
+        self.operators: MutableSequence[Callable] = []
 
     def process(self, *assets: Asset) -> Generator[Asset, float, None]:
         """
@@ -228,7 +228,7 @@ class Processor(metaclass=abc.ABCMeta):
 
         :param config: Mapping with settings.
         """
-        self.config = {}  # type: Dict[str, Any]
+        self.config: Dict[str, Any] = {}
         if config:
             self.config.update(config)
 
@@ -271,7 +271,7 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
         """
         Initializes a new `MetadataProcessor`.
         """
-        self.config = {}  # type: Dict[str, Any]
+        self.config: Dict[str, Any] = {}
         if config:
             self.config.update(config)
 
@@ -343,7 +343,7 @@ class Madam:
 
         :param config: Mapping with settings.
         """
-        self.config = {}  # type: Dict[str, Any]
+        self.config: Dict[str, Any] = {}
         if config:
             self.config.update(config)
 
@@ -582,7 +582,7 @@ class InMemoryStorage(AssetStorage[Any]):
         Initializes a new, empty `InMemoryStorage` object.
         """
         super().__init__()
-        self.store = {}  # type: Dict[Any, Tuple[Asset, AssetTags]]
+        self.store: Dict[Any, Tuple[Asset, AssetTags]] = {}
 
     def __setitem__(self, asset_key: AssetKey, asset_and_tags: Tuple[Asset, AssetTags]):
         """

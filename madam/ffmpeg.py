@@ -437,9 +437,9 @@ class FFmpegProcessor(Processor):
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
-        metadata = dict(
+        metadata: Dict[str, Any] = dict(
             mime_type=str(mime_type),
-        )  # type: Dict[str, Any]
+        )
 
         if 'duration' in probe_data['format']:
             metadata['duration'] = float(probe_data['format']['duration'])

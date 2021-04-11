@@ -103,7 +103,7 @@ class SVGProcessor(Processor):
     def read(self, file: IO) -> Asset:
         _, root = _parse_svg(file)
 
-        metadata = dict(mime_type='image/svg+xml')  # type: Dict[str, Any]
+        metadata: Dict[str, Any] = dict(mime_type='image/svg+xml')
         if 'width' in root.keys():
             metadata['width'] = svg_length_to_px(root.get('width'))
         if 'height' in root.keys():

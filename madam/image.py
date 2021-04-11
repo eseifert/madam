@@ -284,8 +284,8 @@ class PillowProcessor(Processor):
         if orientation is None or orientation == 1:
             return asset
 
-        flip_horizontally = self.flip(orientation=FlipOrientation.HORIZONTAL)  # type: Callable[[Asset], Asset]
-        flip_vertically = self.flip(orientation=FlipOrientation.VERTICAL)  # type: Callable[[Asset], Asset]
+        flip_horizontally: Callable[[Asset], Asset] = self.flip(orientation=FlipOrientation.HORIZONTAL)
+        flip_vertically: Callable[[Asset], Asset] = self.flip(orientation=FlipOrientation.VERTICAL)
 
         if orientation == 2:
             oriented_asset = flip_horizontally(asset)

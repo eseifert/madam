@@ -77,7 +77,7 @@ class ExifMetadataProcessor(MetadataProcessor):
     __TIME = lambda exif_val: datetime.time(*map(lambda v: round(float(Fraction(*v))), exif_val)), \
              lambda value: ((value.hour, 1), (value.minute, 1), (value.second, 1))
 
-    converters = {
+    converters: Dict[str, Tuple[Callable, Callable]] = {
         'aperture': __RATIONAL,
         'artist': __STRING,
         'brightness': __RATIONAL,
@@ -105,7 +105,7 @@ class ExifMetadataProcessor(MetadataProcessor):
         'orientation': __INT,
         'shutter_speed': __RATIONAL,
         'software': __STRING,
-    }  # type: Dict[str, Tuple[Callable, Callable]]
+    }
 
     def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
