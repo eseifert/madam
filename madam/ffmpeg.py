@@ -499,11 +499,14 @@ class FFmpegProcessor(Processor):
                 shutil.copyfileobj(asset.essence, temp_in)
                 temp_in.flush()
 
-            command = ['ffmpeg', '-loglevel', 'error',
-                       '-f', encoder_name, '-i', ctx.input_path,
-                       '-filter:v', f'scale={width:d}:{height:d}',
-                       '-threads', str(self.__threads),
-                       '-f', encoder_name, '-y', ctx.output_path]
+            command = [
+                'ffmpeg', '-loglevel', 'error',
+                '-f', encoder_name, '-i', ctx.input_path,
+                '-filter:v', f'scale={width:d}:{height:d}',
+                '-qscale', '0',
+                '-threads', str(self.__threads),
+                '-f', encoder_name, '-y', ctx.output_path
+            ]
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
@@ -511,9 +514,11 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError(f'Could not resize asset: {error_message}')
 
-        metadata = _combine_metadata(asset,
-                                     'mime_type', 'duration', 'video', 'audio', 'subtitle',
-                                     width=width, height=height)
+        metadata = _combine_metadata(
+            asset,
+            'mime_type', 'duration', 'video', 'audio', 'subtitle',
+            width=width, height=height
+        )
 
         return Asset(essence=result, **metadata)
 
