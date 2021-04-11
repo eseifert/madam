@@ -155,11 +155,9 @@ class FFmpegProcessor(Processor):
                 'crf': 28,
             },
             'libvpx': {
-                'speed': 1,
                 'crf': 10,
             },
             'libvpx-vp9': {
-                'speed': 1,
                 'row-mt': 1,
                 'crf': 32,
             },
@@ -171,7 +169,6 @@ class FFmpegProcessor(Processor):
                 'strict': -2
             },
             'vp9': {
-                'speed': 1,
                 'tile-columns': 6,
                 'crf': 32,
             },
