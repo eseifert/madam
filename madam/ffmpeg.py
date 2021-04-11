@@ -574,18 +574,18 @@ class FFmpegProcessor(Processor):
                     if video['codec']:
                         command.extend(['-c:v', video['codec']])
                         codec_options = dict(FFmpegProcessor.__codec_options.get('video', {}).get(video['codec'], []))
-                        codec_config = self.config.get('codec/{}'.format(video['codec']), {})
+                        codec_config = self.config.get(f'codec/{video["codec"]}', {})
                         if 'crf' in codec_config:
                             codec_options['crf'] = int(codec_config['crf'])
                         command.extend(_param_map_to_seq(codec_options))
                     else:
                         command.extend(['-vn'])
                 if video.get('bitrate'):
-                    # Set minimum at 50% of bitrate and maximum at 145% of bitrate
+                    # Set maximum at 145% of bitrate
                     # (see https://developers.google.com/media/vp9/settings/vod/)
-                    command.extend(['-minrate', '%dk' % round(0.5*video['bitrate']),
-                                    '-b:v', '%dk' % video['bitrate'],
-                                    '-maxrate', '%dk' % round(1.45*video['bitrate'])])
+                    command.extend(['-b:v', f'{video["bitrate"]:d}k',
+                                    '-maxrate', f'{round(1.45 * video["bitrate"]):d}k',
+                                    '-bufsize', f'{round(2 * video["bitrate"]):d}k'])
                 if video.get('color_space') or video.get('depth') or video.get('data_type'):
                     color_mode = (
                         video.get('color_space', asset.video.get('color_space', 'YUV')),
