@@ -587,11 +587,9 @@ class FFmpegProcessor(Processor):
                     else:
                         command.extend(['-vn'])
                 if video.get('bitrate'):
-                    # Set maximum at 145% of bitrate
-                    # (see https://developers.google.com/media/vp9/settings/vod/)
-                    command.extend(['-b:v', f'{video["bitrate"]:d}k',
-                                    '-maxrate', f'{round(1.45 * video["bitrate"]):d}k',
-                                    '-bufsize', f'{round(2 * video["bitrate"]):d}k'])
+                    command.extend([
+                        '-b:v', f'{video["bitrate"]:d}k'
+                    ])
                 if video.get('color_space') or video.get('depth') or video.get('data_type'):
                     color_mode = (
                         video.get('color_space', asset.video.get('color_space', 'YUV')),
