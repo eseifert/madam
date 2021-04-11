@@ -1,14 +1,16 @@
 sudo: required
-dist: xenial
+dist: focal
 language: python
 matrix:
   include:
-  - python: 3.5
-    env: TOXENV=py35
   - python: 3.6
     env: TOXENV=py36
   - python: 3.7
     env: TOXENV=py37
+  - python: 3.8
+    env: TOXENV=py38
+  - python: 3.9
+    env: TOXENV=py39
 cache:
   directories:
   - $TRAVIS_BUILD_DIR/ffmpeg
@@ -36,7 +38,7 @@ script:
 - py.test --doctest-modules madam
 - sphinx-build -b html doc/ doc/_build/html
 after_success:
-- test $TOXENV = "py37" && coveralls
+- test $TOXENV = "py39" && coveralls
 before_deploy:
 - pip install wheel
 - python setup.py bdist_wheel
@@ -47,7 +49,7 @@ deploy:
     secure: q7r+zIDG+m7qrXFC/Cn2TaPXhSU9cnE+1m8j6smMlKfuNYcp1K56RYOzTn7TQgURLGaVhsw1ZpcB4ib1kt7uVvBMZD+gaMsZ3rSfF0wA+OjY/aUUHc3SP/n8JHexdTmrQJVVrX1yegoHRtl5JtApKbPRx6TTBdoPzJY70+R94PcIdM0Y1+MlHrAmvOsHUrBPt6uC/bfbE70/RkNStNBVFX3NpExi3+0VFqDtNpBkXBRs1Yot1l/pQCyKgHkm3mJMmBk8kv4mASOJSIOokv3IQb7vDx+G1jTyf7NCadkZLn9OJtBcd5CSL4kDBo3p61zprZptg4XW0zFbqWr2FKTEqGWEN/CSgF4GmCS25iTfkMLKjrYp4vD8hIHhW2q/GM/0fs8yuepljUeXgRiIYBI5DCx1I9TG2Yd8oENDUe3uJvSCaSsWr1QeB0NMlpZUo0fKsjhTzCFdTUnbsUhpyQVEVXa4nEz12ogXLllH5atvCV/kYoUHKGj36GCIsY98oD4DycKany3VQDGJGrv/TsfSrCMny1MVysPRvosdyOCACPUyawqTqJawKZS/DVRePfHaSnpY4X111BOf7vJkQVUOM4Xpsw0hirRTdrG7m0OGYxVzQUXl8z7FcDRVDiPpPJJKkZM/kWKeFOHG3MJGA4S8bFSMiIBRK6vGdGKq0/coiRs=
   on:
     tags: true
-    condition: $TOXENV = "py37"
+    condition: $TOXENV = "py39"
   repo: eseifert/madam
   distributions: sdist bdist_wheel
   skip_cleanup: true
