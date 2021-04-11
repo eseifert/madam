@@ -567,8 +567,17 @@ class FFmpegProcessor(Processor):
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
-            command = ['ffmpeg', '-loglevel', 'error',
-                       '-i', ctx.input_path]
+            command = [
+                'ffmpeg',
+                '-loglevel', 'error',
+                '-i', ctx.input_path
+            ]
+
+            format_config = dict(self.config.get(mime_type.type, {}))
+            if mime_type.type == 'video':
+                keyframe_interval = int(format_config.get('keyframe_interval', 100))
+                command.extend(['-g', str(keyframe_interval)])
+
             if video:
                 if 'codec' in video:
                     if video['codec']:
