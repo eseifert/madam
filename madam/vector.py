@@ -67,7 +67,7 @@ def _parse_svg(file: IO) -> Tuple[ET.ElementTree, ET.Element]:
     try:
         tree = ET.parse(file)
     except ET.ParseError as e:
-        raise UnsupportedFormatError('Error while parsing XML in line %d, column %d' % e.position)
+        raise UnsupportedFormatError(f'Error while parsing XML in line {e.position[0]:d}, column {e.position[1]:d}')
     root = tree.getroot()
     if root.tag not in ('{%s}svg' % XML_NS['svg'], 'svg'):
         raise UnsupportedFormatError('XML file is not an SVG file.')
@@ -123,9 +123,9 @@ class SVGProcessor(Processor):
 
     @staticmethod
     def __remove_elements(root: ET.Element, qname: str, keep_func: Callable[[ET.Element], bool]) -> None:
-        parents = root.findall('.//%s/..' % qname, XML_NS)
+        parents = root.findall(f'.//{qname}/..', XML_NS)
         for parent in parents:
-            for elem in parent.findall('./%s' % qname, XML_NS):
+            for elem in parent.findall(f'./{qname}', XML_NS):
                 if not keep_func(elem):
                     parent.remove(elem)
 

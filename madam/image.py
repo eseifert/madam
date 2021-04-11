@@ -302,7 +302,7 @@ class PillowProcessor(Processor):
         elif orientation == 8:
             oriented_asset = self._rotate(asset, PIL.Image.ROTATE_90)
         else:
-            raise OperatorError('Unable to correct image orientation with value %s' % orientation)
+            raise OperatorError(f'Unable to correct image orientation with value {orientation}')
 
         return oriented_asset
 
@@ -336,8 +336,7 @@ class PillowProcessor(Processor):
                     image = image.convert(pil_mode)
                 converted_asset = self._image_to_asset(image, mime_type)
         except (IOError, KeyError) as pil_error:
-            raise OperatorError('Could not convert image to %s: %s' %
-                                (mime_type, pil_error))
+            raise OperatorError(f'Could not convert image to {mime_type}: {pil_error}')
 
         return converted_asset
 
@@ -369,7 +368,7 @@ class PillowProcessor(Processor):
         min_y = max(0, min(asset.height, y))
 
         if min_x == asset.width or min_y == asset.height or max_x <= min_x or max_y <= min_y:
-            raise OperatorError('Invalid cropping area: <x=%r, y=%r, width=%r, height=%r>' % (x, y, width, height))
+            raise OperatorError(f'Invalid cropping area: <x={x!r}, y={y!r}, width={width!r}, height={height!r}>')
 
         with PIL.Image.open(asset.essence) as image:
             cropped_image = image.crop(box=(min_x, min_y, max_x, max_y))

@@ -412,8 +412,8 @@ class FFmpegProcessor(Processor):
         string_result = result.stdout.decode('utf-8')
         version_string = string_result.split()[2]
         if version_string < self._min_version:
-            raise EnvironmentError('Found ffprobe version %s. Requiring at least version %s.'
-                                   % (version_string, self._min_version))
+            raise EnvironmentError(f'Found ffprobe version {version_string}. '
+                                   f'Requiring at least version {self._min_version}.')
 
         self.__threads = multiprocessing.cpu_count()
 
@@ -487,14 +487,14 @@ class FFmpegProcessor(Processor):
         :rtype: Asset
         """
         if width < 1 or height < 1:
-            raise ValueError('Invalid dimensions: %dx%d' % (width, height))
+            raise ValueError(f'Invalid dimensions: {width:d}x{height:d}')
 
         mime_type = MimeType(asset.mime_type)
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         if not encoder_name:
-            raise UnsupportedFormatError('Unsupported asset type: %s' % mime_type)
+            raise UnsupportedFormatError(f'Unsupported asset type: {mime_type}')
         if mime_type.type not in ('image', 'video'):
-            raise OperatorError('Cannot resize asset of type %s')
+            raise OperatorError(f'Cannot resize asset of type {mime_type}')
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
@@ -504,7 +504,7 @@ class FFmpegProcessor(Processor):
 
             command = ['ffmpeg', '-loglevel', 'error',
                        '-f', encoder_name, '-i', ctx.input_path,
-                       '-filter:v', 'scale=%d:%d' % (width, height),
+                       '-filter:v', f'scale={width:d}:{height:d}',
                        '-threads', str(self.__threads),
                        '-f', encoder_name, '-y', ctx.output_path]
 
@@ -512,7 +512,7 @@ class FFmpegProcessor(Processor):
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not resize asset: %s' % error_message)
+                raise OperatorError(f'Could not resize asset: {error_message}')
 
         metadata = _combine_metadata(asset,
                                      'mime_type', 'duration', 'video', 'audio', 'subtitle',
@@ -563,7 +563,7 @@ class FFmpegProcessor(Processor):
         mime_type = MimeType(mime_type)
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         if not encoder_name:
-            raise UnsupportedFormatError('Unsupported asset type: %s' % mime_type)
+            raise UnsupportedFormatError(f'Unsupported asset type: {mime_type}')
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
@@ -604,7 +604,7 @@ class FFmpegProcessor(Processor):
                     else:
                         command.extend(['-an'])
                 if audio.get('bitrate'):
-                    command.extend(['-b:a', '%dk' % audio['bitrate']])
+                    command.extend(['-b:a', f'{audio["bitrate"]:d}k'])
             if subtitle:
                 if 'codec' in subtitle:
                     if subtitle['codec']:
@@ -629,7 +629,7 @@ class FFmpegProcessor(Processor):
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not convert asset: %s' % error_message)
+                raise OperatorError(f'Could not convert asset: {error_message}')
 
         return self.read(result)
 
@@ -651,7 +651,7 @@ class FFmpegProcessor(Processor):
         mime_type = MimeType(asset.mime_type)
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         if not encoder_name or mime_type.type not in ('audio', 'video'):
-            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
+            raise UnsupportedFormatError(f'Unsupported source asset type: {mime_type}')
 
         if to_seconds <= 0:
             to_seconds = asset.duration + to_seconds
@@ -672,7 +672,7 @@ class FFmpegProcessor(Processor):
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not trim asset: %s' % error_message)
+                raise OperatorError(f'Could not trim asset: {error_message}')
 
         metadata = _combine_metadata(asset,
                                      'mime_type', 'width', 'height', 'video', 'audio', 'subtitle',
@@ -697,13 +697,13 @@ class FFmpegProcessor(Processor):
         """
         source_mime_type = MimeType(asset.mime_type)
         if source_mime_type.type != 'video':
-            raise UnsupportedFormatError('Unsupported source asset type: %s' % source_mime_type)
+            raise UnsupportedFormatError(f'Unsupported source asset type: {source_mime_type}')
 
         mime_type = MimeType(mime_type)
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         codec_name = self.__mime_type_to_codec.get(mime_type)
         if not (encoder_name and codec_name):
-            raise UnsupportedFormatError('Unsupported target asset type: %s' % mime_type)
+            raise UnsupportedFormatError(f'Unsupported target asset type: {mime_type}')
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
@@ -717,7 +717,7 @@ class FFmpegProcessor(Processor):
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not extract frame from asset: %s' % error_message)
+                raise OperatorError(f'Could not extract frame from asset: {error_message}')
 
         metadata = _combine_metadata(asset,
                                      'width', 'height',
@@ -749,7 +749,7 @@ class FFmpegProcessor(Processor):
         mime_type = MimeType(asset.mime_type)
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         if not encoder_name or mime_type.type != 'video':
-            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
+            raise UnsupportedFormatError(f'Unsupported source asset type: {mime_type}')
 
         if x == 0 and y == 0 and width == asset.width and height == asset.height:
             return asset
@@ -760,7 +760,7 @@ class FFmpegProcessor(Processor):
         min_y = max(0, min(asset.height, y))
 
         if min_x == asset.width or min_y == asset.height or max_x <= min_x or max_y <= min_y:
-            raise OperatorError('Invalid cropping area: <x=%r, y=%r, width=%r, height=%r>' % (x, y, width, height))
+            raise OperatorError(f'Invalid cropping area: <x={x!r}, y={y!r}, width={width!r}, height={height!r}>')
 
         width = max_x - min_x
         height = max_y - min_y
@@ -769,14 +769,14 @@ class FFmpegProcessor(Processor):
         with _FFmpegContext(asset.essence, result) as ctx:
             command = ['ffmpeg', '-v', 'error',
                        '-i', ctx.input_path, '-codec', 'copy',
-                       '-f:v', 'crop=w=%d:h=%d:x=%d:y=%d' % (width, height, x, y),
+                       '-f:v', f'crop=w={width:d}:h={height:d}:x={x:d}:y={y:d}',
                        '-f', encoder_name, '-y', ctx.output_path]
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not crop asset: %s' % error_message)
+                raise OperatorError(f'Could not crop asset: {error_message}')
 
         metadata = _combine_metadata(asset,
                                      'mime_type', 'duration', 'video', 'audio', 'subtitle',
@@ -804,7 +804,7 @@ class FFmpegProcessor(Processor):
         mime_type = MimeType(asset.mime_type)
         encoder_name = self.__mime_type_to_encoder.get(mime_type)
         if not encoder_name or mime_type.type != 'video':
-            raise UnsupportedFormatError('Unsupported source asset type: %s' % mime_type)
+            raise UnsupportedFormatError(f'Unsupported source asset type: {mime_type}')
 
         if angle % 360.0 == 0.0:
             return asset
@@ -831,14 +831,14 @@ class FFmpegProcessor(Processor):
         with _FFmpegContext(asset.essence, result) as ctx:
             command = ['ffmpeg', '-v', 'error',
                        '-i', ctx.input_path, '-codec', 'copy',
-                       '-f:v', 'rotate=a=%(a)f:ow=%(w)d:oh=%(h)d)' % dict(a=angle_rad, w=width, h=height),
+                       '-f:v', f'rotate=a={angle_rad:f}:ow={width:d}:oh={height:d})',
                        '-f', encoder_name, '-y', ctx.output_path]
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not rotate asset: %s' % error_message)
+                raise OperatorError(f'Could not rotate asset: {error_message}')
 
         metadata = _combine_metadata(asset,
                                      'mime_type', 'duration', 'video', 'audio', 'subtitle',
@@ -1022,7 +1022,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not strip metadata: %s' % error_message)
+                raise OperatorError(f'Could not strip metadata: {error_message}')
 
         return result
 
@@ -1041,8 +1041,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         if not metadata_by_type:
             raise ValueError('No metadata provided')
         if 'ffmetadata' not in metadata_by_type:
-            raise UnsupportedFormatError('Invalid metadata to be combined with essence: %r' %
-                                         (metadata_by_type.keys(),))
+            raise UnsupportedFormatError(f'Invalid metadata to be combined with essence: {metadata_by_type.keys()!r}')
         if not metadata_by_type['ffmetadata']:
             raise ValueError('No metadata provided')
 
@@ -1058,9 +1057,9 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             for metadata_key, value in ffmetadata.items():
                 ffmetadata_key = metadata_keys.get(metadata_key)
                 if ffmetadata_key is None:
-                    raise ValueError('Unsupported metadata key: %r' % metadata_key)
+                    raise ValueError(f'Unsupported metadata key: {metadata_key!r}')
                 command.append('-metadata')
-                command.append('%s=%s' % (ffmetadata_key, value))
+                command.append(f'{ffmetadata_key}={value}')
 
             command.extend(['-codec', 'copy',
                             '-y', '-f', encoder_name, ctx.output_path])
@@ -1069,6 +1068,6 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
                 error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError('Could not add metadata: %s' % error_message)
+                raise OperatorError(f'Could not add metadata: {error_message}')
 
         return result

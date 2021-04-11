@@ -178,7 +178,7 @@ class ExifMetadataProcessor(MetadataProcessor):
 
             for metadata_format, metadata in metadata_by_format.items():
                 if metadata_format not in self.formats:
-                    raise UnsupportedFormatError('Metadata format %r is not supported.' % metadata_format)
+                    raise UnsupportedFormatError(f'Metadata format {metadata_format!r} is not supported.')
                 for madam_key, madam_value in metadata.items():
                     if madam_key not in ExifMetadataProcessor.metadata_to_exif:
                         continue
@@ -191,7 +191,7 @@ class ExifMetadataProcessor(MetadataProcessor):
             try:
                 piexif.insert(piexif.dump(exif_metadata), tmp.name)
             except (piexif.InvalidImageDataError, ValueError):
-                raise UnsupportedFormatError('Could not write metadata: %r' % metadata_by_format)
+                raise UnsupportedFormatError(f'Could not write metadata: {metadata_by_format!r}')
 
             tmp.seek(0)
             shutil.copyfileobj(tmp, result)

@@ -44,13 +44,12 @@ class MimeType:
                     if subtype is not None:
                         raise ValueError('Cannot pass MIME type string and subtype string for initialization.')
                     if delimiter_count > 1:
-                        raise ValueError('Too many delimiters in %r' % mediatype)
+                        raise ValueError(f'Too many delimiters in {mediatype!r}')
                     mediatype, subtype = mediatype.split('/')
                 if mediatype != '*':
                     self.type = str(mediatype).lower()
         elif mediatype is not None:
-            raise TypeError('%r type is not allowed for initialization of MIME type' %
-                            type(mediatype).__qualname__)
+            raise TypeError(f'{type(mediatype).__qualname__!r} type is not allowed for initialization of MIME type')
 
         if isinstance(subtype, str):
             if subtype and subtype != '*':
@@ -58,16 +57,13 @@ class MimeType:
                     raise ValueError('Subtype cannot contain delimiters')
                 self.subtype = str(subtype).lower()
         elif subtype is not None:
-            raise TypeError('%r type is not allowed for initialization of MIME subtype' %
-                            type(subtype).__qualname__)
+            raise TypeError(f'{type(subtype).__qualname__!r} type is not allowed for initialization of MIME subtype')
 
     def __str__(self) -> str:
         return '/'.join((self.type or '*', self.subtype or '*'))
 
     def __repr__(self) -> str:
-        return '%s(mediatype=%r, subtype=%r)' % (
-            self.__class__.__qualname__, self.type, self.subtype
-        )
+        return f'{self.__class__.__qualname__}(mediatype={self.type!r}, subtype={self.subtype!r})'
 
     def __hash__(self) -> int:
         return hash(str(self))

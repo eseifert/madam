@@ -22,7 +22,7 @@ def image_rgb(width, height, alpha=False, transpositions=None):
         True: 'RGBA',
     }.get(alpha)
     if pil_mode is None:
-        raise ValueError('Unsupported color mode: %r' % alpha)
+        raise ValueError(f'Unsupported color mode: {alpha!r}')
     image = PIL.Image.new(pil_mode, (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
     # rotations or flips as long as the image has a size of (2, 2) or greater
@@ -50,7 +50,7 @@ def image_gray(width, height, depth=8, alpha=False):
         (32, False): 'I',
     }.get((depth, alpha))
     if pil_mode is None:
-        raise ValueError('Unsupported color mode: %r' % repr((depth, alpha)))
+        raise ValueError(f'Unsupported color mode: {(depth, alpha)!r}')
     image = PIL.Image.new(pil_mode, (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
     # rotations or flips as long as the image has a size of (2, 2) or greater

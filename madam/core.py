@@ -84,7 +84,7 @@ class Asset:
     def __getattr__(self, item: str) -> Any:
         if item in self.metadata:
             return self.metadata[item]
-        raise AttributeError('%r object has no attribute %r' % (self.__class__, item))
+        raise AttributeError(f'{self.__class__!r} object has no attribute {item!r}')
 
     def __setattr__(self, key: str, value: Any):
         if 'metadata' in self.__dict__ and key in self.__dict__['metadata']:
@@ -435,7 +435,7 @@ class Madam:
         >>> asset = manager.read(file)
         """
         if not file:
-            raise TypeError('Unable to read object of type %s' % type(file))
+            raise TypeError(f'Unable to read object of type {type(file)}')
 
         processor = self.get_processor(file)
         if not processor:
@@ -616,7 +616,7 @@ class InMemoryStorage(AssetStorage[Any]):
         :raise KeyError: if the key does not exist in this storage
         """
         if asset_key not in self.store:
-            raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
+            raise KeyError(f'Asset with key {asset_key!r} cannot be found in storage')
         return self.store[asset_key]
 
     def __delitem__(self, asset_key: AssetKey) -> None:
@@ -628,7 +628,7 @@ class InMemoryStorage(AssetStorage[Any]):
         :raise KeyError: if the key does not exist in this storage
         """
         if asset_key not in self.store:
-            raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
+            raise KeyError(f'Asset with key {asset_key!r} cannot be found in storage')
         del self.store[asset_key]
 
     def __contains__(self, asset_key: AssetKey) -> bool:
@@ -677,7 +677,7 @@ class ShelveStorage(AssetStorage[str]):
         """
         super().__init__()
         if os.path.exists(str(path)) and not os.path.isfile(str(path)):
-            raise ValueError('The storage path %r is not a file.' % path)
+            raise ValueError(f'The storage path {path!r} is not a file.')
         self.path = path
 
     def __setitem__(self, asset_key: str, asset_and_tags: Tuple[Asset, AssetTags]) -> None:
@@ -715,7 +715,7 @@ class ShelveStorage(AssetStorage[str]):
         """
         with shelve.open(str(self.path)) as store:
             if asset_key not in store:
-                raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
+                raise KeyError(f'Asset with key {asset_key!r} cannot be found in storage')
             return store[asset_key]
 
     def __delitem__(self, asset_key: str) -> None:
@@ -729,7 +729,7 @@ class ShelveStorage(AssetStorage[str]):
         """
         with shelve.open(str(self.path)) as store:
             if asset_key not in store:
-                raise KeyError('Asset with key %r cannot be found in storage' % asset_key)
+                raise KeyError(f'Asset with key {asset_key!r} cannot be found in storage')
             del store[asset_key]
 
     def __contains__(self, asset_key: object) -> bool:
