@@ -60,6 +60,13 @@ class TestSVGProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.read(unknown_xml_asset.essence)
 
+    def test_read_extracts_width_and_height_metadata(self, processor):
+        with open('tests/resources/svg_with_metadata.svg', 'rb') as file:
+            svg_vector_asset = processor.read(file)
+
+        assert svg_vector_asset.width == 24
+        assert svg_vector_asset.height == 12
+
     def test_shrink_fails_with_invalid_input(self, processor, unknown_asset):
         shrink_operator = processor.shrink()
 
