@@ -26,7 +26,7 @@ def _immutable(value: Any) -> Any:
     elif isinstance(value, set):
         return frozenset({_immutable(v) for v in value})
     elif isinstance(value, list):
-        return tuple([_immutable(v) for v in value])
+        return tuple(_immutable(v) for v in value)
     else:
         return value
 
@@ -118,11 +118,11 @@ class Asset:
 
     def __repr__(self) -> str:
         metadata_str = ' '.join(
-            '{}={!r}'.format(k, v)
+            f'{k}={v!r}'
             for k, v in self.metadata.items()
             if not isinstance(v, frozendict)
         )
-        return '<{} {}>'.format(self.__class__.__qualname__, metadata_str)
+        return f'<{self.__class__.__qualname__} {metadata_str}>'
 
 
 class UnsupportedFormatError(Exception):
@@ -566,8 +566,8 @@ class AssetStorage(MutableMapping[AssetKey, Tuple[Asset, AssetTags]], Generic[As
         :rtype: Iterable
         """
         search_tags = frozenset(tags)
-        return set(asset_key for asset_key, (asset, asset_tags) in self.items()
-                   if search_tags <= asset_tags)
+        return {asset_key for asset_key, (asset, asset_tags) in self.items()
+                   if search_tags <= asset_tags}
 
 
 class InMemoryStorage(AssetStorage[Any]):

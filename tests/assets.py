@@ -559,7 +559,7 @@ def svg_vector_asset():
 @pytest.fixture(scope='session')
 def unknown_xml_asset():
     essence = io.BytesIO()
-    essence.write('<foo><bar/></foo>'.encode('utf-8'))
+    essence.write(b'<foo><bar/></foo>')
     essence.seek(0)
     return madam.core.Asset(essence, mime_type='text/xml')
 

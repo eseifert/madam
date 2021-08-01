@@ -34,7 +34,7 @@ class TestAsset:
         asset_repr = repr(asset)
 
         for key, val in asset.metadata.items():
-            assert '{}={!r}'.format(key, val) in asset_repr
+            assert f'{key}={val!r}' in asset_repr
 
     def test_asset_string_representation_does_not_contain_complex_metadata(self):
         asset = Asset(essence=io.BytesIO(), mime_type='application/x-empty', complex=dict(k1='v1', k2=42))

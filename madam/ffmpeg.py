@@ -61,7 +61,7 @@ def _get_decoder_and_stream_type(probe_data: Mapping[str, Any]) -> Tuple[str, st
 def _param_map_to_seq(param_mapping: Mapping[str, Any]) -> Sequence[str]:
     params = []
     for param, value in param_mapping.items():
-        params.append('-{}'.format(param))
+        params.append(f'-{param}')
         if value is not None:
             params.append(str(value))
     return params
