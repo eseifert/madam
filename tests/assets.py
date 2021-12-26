@@ -786,7 +786,7 @@ def nut_video_asset():
                '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
                '-c:v ffv1 -level 3 -c:a pcm_s16le -sn '
                '-f nut pipe:' % ffmpeg_params).split()
-    ffmpeg = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ffmpeg = subprocess.run(command, check=True, capture_output=True)
     return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
                             video=dict(codec='ffv1', color_space='YUV', depth=8, data_type='uint'),

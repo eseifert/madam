@@ -23,8 +23,7 @@ def _probe(file: IO) -> Any:
 
         command = 'ffprobe -loglevel error -print_format json -show_format -show_streams'.split()
         command.append(temp_in.name)
-        result = subprocess.run(command, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, check=True)
+        result = subprocess.run(command, capture_output=True, check=True)
 
     string_result = result.stdout.decode('utf-8')
     json_obj = json.loads(string_result)

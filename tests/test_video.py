@@ -28,8 +28,7 @@ class TestFFmpegProcessor:
 
     def __probe_streams_by_type(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
-        result = subprocess.run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, check=True)
+        result = subprocess.run(command, input=converted_asset.essence.read(), capture_output=True, check=True)
         ffprobe_info = json.loads(result.stdout.decode('utf-8'))
 
         streams_by_type = defaultdict(list)
@@ -64,8 +63,7 @@ class TestFFmpegProcessor:
         resized_asset = resize(mkv_video_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
-        result = subprocess.run(command, input=resized_asset.essence.read(), stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, check=True)
+        result = subprocess.run(command, input=resized_asset.essence.read(), capture_output=True, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('format', {}).get('format_name') == 'matroska,webm'
 
@@ -75,8 +73,7 @@ class TestFFmpegProcessor:
         resized_asset = resize_operator(video_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
-        result = subprocess.run(command, input=resized_asset.essence.read(), stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, check=True)
+        result = subprocess.run(command, input=resized_asset.essence.read(), capture_output=True, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         first_stream = video_info.get('streams', [{}])[0]
         assert first_stream.get('width') == 12
@@ -115,8 +112,7 @@ class TestFFmpegProcessor:
 
     def test_converted_essence_is_of_specified_type(self, converted_asset):
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
-        result = subprocess.run(command, input=converted_asset.essence.read(), stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, check=True)
+        result = subprocess.run(command, input=converted_asset.essence.read(), capture_output=True, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert video_info.get('format', {}).get('format_name') == 'matroska,webm'
 
@@ -261,8 +257,7 @@ class TestFFmpegProcessor:
         trimmed_asset = trim_operator(video_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
-        result = subprocess.run(command, input=trimmed_asset.essence.read(), stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, check=True)
+        result = subprocess.run(command, input=trimmed_asset.essence.read(), capture_output=True, check=True)
         video_info = json.loads(result.stdout.decode('utf-8'))
         assert bool(video_info.get('format'))
 
