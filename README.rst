@@ -5,8 +5,8 @@ Multimedia Advanced Digital Asset Management
 
 |travis-badge|_ |coveralls-badge|_ |pypi-badge|_ |readthedocs-badge|_
 
-.. |travis-badge| image:: https://api.travis-ci.org/eseifert/madam.svg?branch=master
-.. _travis-badge: https://travis-ci.org/eseifert/madam
+.. |travis-badge| image:: https://app.travis-ci.com/eseifert/madam.svg?branch=master
+.. _travis-badge: https://app.travis-ci.com/eseifert/madam
 .. |coveralls-badge| image:: https://coveralls.io/repos/github/eseifert/madam/badge.svg?branch=master
 .. _coveralls-badge: https://coveralls.io/github/eseifert/madam?branch=master
 .. |pypi-badge| image:: https://img.shields.io/pypi/v/madam.svg?
