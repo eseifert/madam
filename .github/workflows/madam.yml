@@ -1,12 +1,13 @@
-name: Build and test
+name: CI
 
 on:
   - push
+  - workflow_dispatch
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         include:
