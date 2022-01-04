@@ -55,14 +55,13 @@ jobs:
           tox -e ${{ matrix.TOXENV }}
           py.test --doctest-modules madam
 
+      - name: Report coverage
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
+
       - name: Build documentation
         if: matrix.python-version == '3.10'
         run: |
           pip install sphinx>=1.3 sphinx_rtd_theme
           sphinx-build -b html doc/ doc/_build/html
-
-      - name: Report coverage
-        if: matrix.python-version == '3.10'
-        uses: codecov/codecov-action@v2
-        with:
-          fail_ci_if_error: true
