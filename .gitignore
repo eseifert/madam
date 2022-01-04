@@ -1,3 +1,6 @@
+# Automatic versioning
+/madam/_version.py
+
 # coverage
 .coverage
 
