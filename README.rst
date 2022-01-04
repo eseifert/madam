@@ -3,12 +3,12 @@ MADAM
 
 Multimedia Advanced Digital Asset Management
 
-|travis-badge|_ |coveralls-badge|_ |pypi-badge|_ |readthedocs-badge|_
+|travis-badge|_ |codecov-badge|_ |pypi-badge|_ |readthedocs-badge|_
 
 .. |travis-badge| image:: https://app.travis-ci.com/eseifert/madam.svg?branch=master
 .. _travis-badge: https://app.travis-ci.com/eseifert/madam
-.. |coveralls-badge| image:: https://coveralls.io/repos/github/eseifert/madam/badge.svg?branch=master
-.. _coveralls-badge: https://coveralls.io/github/eseifert/madam?branch=master
+.. |codecov-badge| image:: https://codecov.io/gh/eseifert/madam/branch/master/graph/badge.svg?token=x0aF4xnSz5
+.. _codecov-badge: https://codecov.io/gh/eseifert/madam
 .. |pypi-badge| image:: https://img.shields.io/pypi/v/madam.svg?
 .. _pypi-badge: https://pypi.python.org/pypi/MADAM
 .. |readthedocs-badge| image:: https://readthedocs.org/projects/madam/badge/?version=latest
