@@ -11,6 +11,7 @@ with open('README.rst') as file:
 setup(
     name='MADAM',
     description='Digital asset management library',
+    long_description_content_type="text/x-rst",
     long_description=long_description,
     url='https://github.com/eseifert/madam',
     version=versioneer.get_version(),
