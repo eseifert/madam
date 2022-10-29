@@ -27,6 +27,8 @@ jobs:
             TOXENV: py39
           - python-version: '3.10'
             TOXENV: py310
+          - python-version: '3.11'
+            TOXENV: py311
 
     steps:
       - uses: actions/checkout@v2
@@ -56,13 +58,13 @@ jobs:
           py.test --doctest-modules madam
 
       - name: Report coverage
-        if: matrix.python-version == '3.10'
+        if: matrix.python-version == '3.11'
         uses: codecov/codecov-action@v2
         with:
           fail_ci_if_error: true
 
       - name: Build documentation
-        if: matrix.python-version == '3.10'
+        if: matrix.python-version == '3.11'
         run: |
           pip install importlib_metadata sphinx>=1.3 sphinx_rtd_theme
           sphinx-build -b html doc/ doc/_build/html
