@@ -1,3 +1,4 @@
+import glob
 import io
 import os
 import unittest.mock
@@ -198,7 +199,8 @@ class TestShelveStorage:
         asset_key = str(hash(asset))
         storage[asset_key] = asset, set()
 
-        assert os.path.exists(storage.path)
+        # shelve may append an extension (.db, .dir, etc.) depending on the dbm backend
+        assert glob.glob(str(storage.path) + '*')
 
     def test_contains_returns_false_for_non_string_key(self, storage):
         assert (42 in storage) is False
