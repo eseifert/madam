@@ -413,3 +413,15 @@ class TestFFmpegProcessor:
 
         assert rotated_asset.width != video_asset.width
         assert rotated_asset.height != video_asset.height
+
+    def test_rotate_90_with_expand_returns_essence_with_swapped_dimensions(self, processor, video_asset):
+        rotate_operator = processor.rotate(angle=90.0, expand=True)
+
+        rotated_asset = rotate_operator(video_asset)
+
+        command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
+        result = subprocess.run(command, input=rotated_asset.essence.read(), capture_output=True, check=True)
+        video_info = json.loads(result.stdout.decode('utf-8'))
+        first_stream = video_info.get('streams', [{}])[0]
+        assert first_stream.get('width') == video_asset.height
+        assert first_stream.get('height') == video_asset.width

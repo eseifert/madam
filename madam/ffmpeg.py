@@ -889,6 +889,9 @@ class FFmpegProcessor(Processor):
             sin_a = sin(angle_rad_)
             width = ceil(round(width_ * cos_a + height_ * sin_a, 7))
             height = ceil(round(width_ * sin_a + height_ * cos_a, 7))
+            # Most video codecs require even dimensions
+            width += width % 2
+            height += height % 2
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
@@ -898,10 +901,8 @@ class FFmpegProcessor(Processor):
                 'error',
                 '-i',
                 ctx.input_path,
-                '-codec',
-                'copy',
-                '-f:v',
-                f'rotate=a={angle_rad:f}:ow={width:d}:oh={height:d})',
+                '-filter:v',
+                f'rotate=a={angle_rad:f}:ow={width:d}:oh={height:d}',
                 '-f',
                 encoder_name,
                 '-y',
