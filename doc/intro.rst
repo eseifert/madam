@@ -39,21 +39,29 @@ and `piexif`_ (for metadata) are used to read, process, or write image files.
     the formats supported by the underlying libraries.
 
 Audio
+    -   AAC (ADTS)
+    -   FLAC
     -   MP3
-    -   OGG
+    -   OGG / Opus
     -   WAV / RIFF WAVE
+    -   WebM (audio-only)
 
 Image
-    -   PNG
-    -   JPEG / JFIF
+    -   AVIF
+    -   BMP
     -   GIF
+    -   JPEG / JFIF
+    -   PNG
+    -   TIFF
+    -   WebP
 
 Video
     -   AVI
     -   Matroska (MKV), WebM
     -   MPEG2 transport stream
+    -   MPEG4 / MP4
     -   OGG
-    -   Quicktime, MPEG4
+    -   Quicktime
 
 Vector graphics
     -   SVG

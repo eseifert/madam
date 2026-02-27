@@ -32,6 +32,22 @@ how to enable Zopfli compression for PNG images:
 
 The following list shows all available options for file formats.
 
+AVIF (image/avif)
+-----------------
+quality
+    A compression factor as an integer in the range between 0 and 100. Smaller
+    factors produce smaller files with lower quality.
+
+    Defaults to 80.
+
+speed
+    An integer in the range between 0 and 10 that controls the encode speed/
+    quality trade-off. 0 is the slowest and highest-quality setting; 10 is the
+    fastest and lowest-quality setting.
+
+    Defaults to 6.
+
+
 JPEG (image/jpeg)
 -----------------
 progressive
