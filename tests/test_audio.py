@@ -51,6 +51,82 @@ class TestFFmpegProcessor:
         assert converted_asset.duration == pytest.approx(DEFAULT_DURATION, rel=0.5)
 
 
+class TestFFmpegProcessorAAC:
+    @pytest.fixture(name='processor', scope='class')
+    def ffmpeg_processor(self):
+        return madam.audio.FFmpegProcessor()
+
+    def test_can_read_aac(self, processor, aac_audio_asset):
+        aac_audio_asset.essence.seek(0)
+        assert processor.can_read(aac_audio_asset.essence)
+
+    def test_read_aac_returns_correct_mime_type(self, processor, aac_audio_asset):
+        aac_audio_asset.essence.seek(0)
+        asset = processor.read(aac_audio_asset.essence)
+        assert asset.mime_type == 'audio/aac'
+
+    def test_read_aac_returns_correct_duration(self, processor, aac_audio_asset):
+        aac_audio_asset.essence.seek(0)
+        asset = processor.read(aac_audio_asset.essence)
+        assert asset.duration == pytest.approx(DEFAULT_DURATION, rel=0.5)
+
+    def test_convert_to_aac_produces_correct_mime_type(self, processor, opus_audio_asset):
+        opus_audio_asset.essence.seek(0)
+        conversion_operator = processor.convert(mime_type='audio/aac')
+        converted_asset = conversion_operator(opus_audio_asset)
+        assert converted_asset.mime_type == 'audio/aac'
+
+    def test_convert_to_aac_produces_readable_essence(self, processor, opus_audio_asset):
+        import json
+        import subprocess
+
+        opus_audio_asset.essence.seek(0)
+        conversion_operator = processor.convert(mime_type='audio/aac')
+        converted_asset = conversion_operator(opus_audio_asset)
+        command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
+        result = subprocess.run(command, input=converted_asset.essence.read(), capture_output=True, check=True)
+        info = json.loads(result.stdout.decode('utf-8'))
+        assert info.get('format', {}).get('format_name') == 'aac'
+
+
+class TestFFmpegProcessorFLAC:
+    @pytest.fixture(name='processor', scope='class')
+    def ffmpeg_processor(self):
+        return madam.audio.FFmpegProcessor()
+
+    def test_can_read_flac(self, processor, flac_audio_asset):
+        flac_audio_asset.essence.seek(0)
+        assert processor.can_read(flac_audio_asset.essence)
+
+    def test_read_flac_returns_correct_mime_type(self, processor, flac_audio_asset):
+        flac_audio_asset.essence.seek(0)
+        asset = processor.read(flac_audio_asset.essence)
+        assert asset.mime_type == 'audio/flac'
+
+    def test_read_flac_returns_correct_duration(self, processor, flac_audio_asset):
+        flac_audio_asset.essence.seek(0)
+        asset = processor.read(flac_audio_asset.essence)
+        assert asset.duration == pytest.approx(DEFAULT_DURATION, rel=0.5)
+
+    def test_convert_to_flac_produces_correct_mime_type(self, processor, opus_audio_asset):
+        opus_audio_asset.essence.seek(0)
+        conversion_operator = processor.convert(mime_type='audio/flac')
+        converted_asset = conversion_operator(opus_audio_asset)
+        assert converted_asset.mime_type == 'audio/flac'
+
+    def test_convert_to_flac_produces_readable_essence(self, processor, opus_audio_asset):
+        import json
+        import subprocess
+
+        opus_audio_asset.essence.seek(0)
+        conversion_operator = processor.convert(mime_type='audio/flac')
+        converted_asset = conversion_operator(opus_audio_asset)
+        command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
+        result = subprocess.run(command, input=converted_asset.essence.read(), capture_output=True, check=True)
+        info = json.loads(result.stdout.decode('utf-8'))
+        assert info.get('format', {}).get('format_name') == 'flac'
+
+
 class TestFFmpegMetadataProcessor:
     @pytest.fixture(name='processor')
     def ffmpeg_metadata_processor(self):

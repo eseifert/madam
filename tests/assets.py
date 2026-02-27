@@ -647,6 +647,38 @@ def image_asset(
 
 
 @pytest.fixture(scope='session')
+def aac_audio_asset(tmpdir_factory):
+    duration = DEFAULT_DURATION
+    command = (
+        'ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f -vn -sn -f adts' % duration
+    ).split()
+    tmpfile = tmpdir_factory.mktemp('aac_asset').join('audio.aac')
+    command.append(str(tmpfile))
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
+        essence = file.read()
+    return madam.core.Asset(
+        essence=io.BytesIO(essence), mime_type='audio/aac', duration=duration, audio=dict(codec='aac')
+    )
+
+
+@pytest.fixture(scope='session')
+def flac_audio_asset(tmpdir_factory):
+    duration = DEFAULT_DURATION
+    command = (
+        'ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f -vn -sn -f flac' % duration
+    ).split()
+    tmpfile = tmpdir_factory.mktemp('flac_asset').join('audio.flac')
+    command.append(str(tmpfile))
+    subprocess.run(command, check=True, stderr=subprocess.PIPE)
+    with tmpfile.open('rb') as file:
+        essence = file.read()
+    return madam.core.Asset(
+        essence=io.BytesIO(essence), mime_type='audio/flac', duration=duration, audio=dict(codec='flac')
+    )
+
+
+@pytest.fixture(scope='session')
 def wav_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
     command = (
