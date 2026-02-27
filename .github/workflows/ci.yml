@@ -47,9 +47,7 @@ jobs:
 
       - name: Report coverage
         if: matrix.python-version == '3.13'
-        run: |
-          uv run coverage run -m pytest
-          uv run coverage xml
+        run: uv run pytest --cov=madam --cov-report=xml
 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.13'
