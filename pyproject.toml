@@ -35,7 +35,7 @@ dependencies = [
     "bidict",
     "frozendict",
     "piexif",
-    "pillow>=8.2.0",
+    "pillow>=9.1.0",
     "zopflipy>=1.1",
 ]
 
