@@ -3,6 +3,7 @@ import functools
 import hashlib
 import importlib
 import io
+import json
 import os
 import shelve
 import shutil
@@ -857,3 +858,95 @@ class ShelveStorage(AssetStorage[str]):
         """
         with shelve.open(str(self.path)) as store:
             return len(store)
+
+class FileSystemAssetStorage(AssetStorage[str]):
+    """
+    A persistent :class:`AssetStorage` that writes each asset as two files
+    on the filesystem:
+
+    * ``<key>/essence`` — raw essence bytes
+    * ``<key>/metadata.json`` — JSON-encoded metadata and tags
+
+    The storage is designed to work on any POSIX mount point, including
+    network file systems (NFS, CIFS) and object-store-backed FUSE mounts
+    (e.g. s3fs, rclone).  Asset keys must be valid directory-name strings
+    (no path separators).
+
+    Because files are written atomically (write to a temp file then rename),
+    the storage is safe for concurrent writes from multiple Celery workers
+    on a shared file system.
+    """
+
+    def __init__(self, path: Path | str) -> None:
+        """
+        Initialises a new :class:`FileSystemAssetStorage` rooted at *path*.
+
+        The directory is created if it does not already exist.
+
+        :param path: Root directory for stored assets.
+        """
+        super().__init__()
+        self._root = Path(path)
+        self._root.mkdir(parents=True, exist_ok=True)
+
+    def _asset_dir(self, key: str) -> Path:
+        return self._root / key
+
+    def _essence_path(self, key: str) -> Path:
+        return self._asset_dir(key) / 'essence'
+
+    def _metadata_path(self, key: str) -> Path:
+        return self._asset_dir(key) / 'metadata.json'
+
+    def __setitem__(self, asset_key: str, asset_and_tags: tuple[Asset, AssetTags]) -> None:
+        asset, tags = asset_and_tags
+        if not tags:
+            tags = frozenset()
+        asset_dir = self._asset_dir(asset_key)
+        asset_dir.mkdir(parents=True, exist_ok=True)
+
+        # Write essence atomically.
+        essence_path = self._essence_path(asset_key)
+        tmp_essence = essence_path.with_suffix('.tmp')
+        with open(tmp_essence, 'wb') as fh:
+            shutil.copyfileobj(asset.essence, fh)
+        tmp_essence.replace(essence_path)
+
+        # Write metadata + tags atomically.
+        metadata_dict = _mutable(asset.metadata)
+        payload = {'metadata': metadata_dict, 'tags': list(tags)}
+        meta_path = self._metadata_path(asset_key)
+        tmp_meta = meta_path.with_suffix('.tmp')
+        with open(tmp_meta, 'w', encoding='utf-8') as fh:
+            json.dump(payload, fh)
+        tmp_meta.replace(meta_path)
+
+    def __getitem__(self, asset_key: str) -> tuple[Asset, AssetTags]:
+        meta_path = self._metadata_path(asset_key)
+        if not meta_path.exists():
+            raise KeyError(f'Asset with key {asset_key!r} not found in FileSystemAssetStorage')
+        with open(meta_path, encoding='utf-8') as fh:
+            payload = json.load(fh)
+        tags = frozenset(payload.get('tags', []))
+        metadata = payload.get('metadata', {})
+        with open(self._essence_path(asset_key), 'rb') as fh:
+            essence_bytes = fh.read()
+        asset = Asset(io.BytesIO(essence_bytes), **metadata)
+        return asset, tags
+
+    def __delitem__(self, asset_key: str) -> None:
+        asset_dir = self._asset_dir(asset_key)
+        if not asset_dir.exists():
+            raise KeyError(f'Asset with key {asset_key!r} not found in FileSystemAssetStorage')
+        shutil.rmtree(asset_dir)
+
+    def __contains__(self, asset_key: object) -> bool:
+        if not isinstance(asset_key, str):
+            return False
+        return self._essence_path(asset_key).exists()
+
+    def __iter__(self) -> Iterator[str]:
+        return (p.name for p in sorted(self._root.iterdir()) if p.is_dir())
+
+    def __len__(self) -> int:
+        return sum(1 for p in self._root.iterdir() if p.is_dir())
