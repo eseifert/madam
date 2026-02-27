@@ -1,10 +1,72 @@
 [build-system]
-requires = [
-    "setuptools>=45",
-    "setuptools_scm>=6.2",
-    "wheel"
-]
+requires = ["setuptools>=45", "setuptools_scm>=6.2"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "MADAM"
+description = "Digital asset management library"
+readme = {file = "README.rst", content-type = "text/x-rst"}
+license = {file = "LICENSE.AGPL"}
+authors = [
+    {name = "Michael Seifert", email = "mseifert@error-reports.org"},
+    {name = "Erich Seifert", email = "dev@erichseifert.de"},
+]
+urls = {Homepage = "https://github.com/eseifert/madam"}
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: POSIX",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+    "Topic :: Multimedia :: Sound/Audio :: Conversion",
+    "Topic :: Multimedia :: Video :: Conversion",
+]
+keywords = ["asset", "media", "processing"]
+dynamic = ["version"]
+dependencies = [
+    "bidict",
+    "frozendict",
+    "piexif",
+    "pillow>=8.2.0",
+    "zopflipy>=1.1",
+]
+
+[project.optional-dependencies]
+dev = ["coverage", "mutagen", "pytest", "ruff", "ty"]
+doc = ["sphinx>=1.3", "sphinx_rtd_theme"]
 
 [tool.setuptools_scm]
 write_to = "madam/_version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["madam"]
+
+[tool.coverage.report]
+omit = ["*/_version.py"]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError()",
+]
+
+[tool.ruff]
+line-length = 120
+exclude = ["madam/_version.py"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ty]
