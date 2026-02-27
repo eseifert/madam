@@ -8,7 +8,6 @@ import pytest
 
 import madam.core
 
-
 DEFAULT_WIDTH = 24
 DEFAULT_HEIGHT = 12
 DEFAULT_DURATION = 0.2
@@ -54,7 +53,7 @@ def image_gray(width, height, depth=8, alpha=False):
     image = PIL.Image.new(pil_mode, (width, height))
     # Fill the image with a shape which is (probably) not invariant towards
     # rotations or flips as long as the image has a size of (2, 2) or greater
-    max_value = 2 ** depth - 1
+    max_value = 2**depth - 1
     black = 0
     white = max_value
     for y in range(0, height):
@@ -267,10 +266,24 @@ def png_image_asset_gray_alpha(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     return madam.core.Asset(essence, **metadata)
 
 
-@pytest.fixture(scope='session', params=['png_image_asset_rgb', 'png_image_asset_rgb_alpha', 'png_image_asset_palette',
-                                         'png_image_asset_gray', 'png_image_asset_gray_alpha'])
-def png_image_asset(request, png_image_asset_rgb, png_image_asset_rgb_alpha, png_image_asset_palette,
-                    png_image_asset_gray, png_image_asset_gray_alpha):
+@pytest.fixture(
+    scope='session',
+    params=[
+        'png_image_asset_rgb',
+        'png_image_asset_rgb_alpha',
+        'png_image_asset_palette',
+        'png_image_asset_gray',
+        'png_image_asset_gray_alpha',
+    ],
+)
+def png_image_asset(
+    request,
+    png_image_asset_rgb,
+    png_image_asset_rgb_alpha,
+    png_image_asset_palette,
+    png_image_asset_gray,
+    png_image_asset_gray_alpha,
+):
     if request.param == 'png_image_asset_rgb':
         return png_image_asset_rgb
     if request.param == 'png_image_asset_rgb_alpha':
@@ -440,13 +453,28 @@ def tiff_image_asset_cmyk(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     return madam.core.Asset(essence, **metadata)
 
 
-@pytest.fixture(scope='session', params=['tiff_image_asset_rgb', 'tiff_image_asset_rgb_alpha',
-                                         'tiff_image_asset_palette', 'tiff_image_asset_gray_8bit',
-                                         'tiff_image_asset_gray_8bit_alpha', 'tiff_image_asset_gray_16bit',
-                                         'tiff_image_asset_cmyk'])
-def tiff_image_asset(request, tiff_image_asset_rgb, tiff_image_asset_rgb_alpha, tiff_image_asset_palette,
-                     tiff_image_asset_gray_8bit, tiff_image_asset_gray_8bit_alpha, tiff_image_asset_gray_16bit,
-                     tiff_image_asset_cmyk):
+@pytest.fixture(
+    scope='session',
+    params=[
+        'tiff_image_asset_rgb',
+        'tiff_image_asset_rgb_alpha',
+        'tiff_image_asset_palette',
+        'tiff_image_asset_gray_8bit',
+        'tiff_image_asset_gray_8bit_alpha',
+        'tiff_image_asset_gray_16bit',
+        'tiff_image_asset_cmyk',
+    ],
+)
+def tiff_image_asset(
+    request,
+    tiff_image_asset_rgb,
+    tiff_image_asset_rgb_alpha,
+    tiff_image_asset_palette,
+    tiff_image_asset_gray_8bit,
+    tiff_image_asset_gray_8bit_alpha,
+    tiff_image_asset_gray_16bit,
+    tiff_image_asset_cmyk,
+):
     if request.param == 'tiff_image_asset_rgb':
         return tiff_image_asset_rgb
     if request.param == 'tiff_image_asset_rgb_alpha':
@@ -509,29 +537,27 @@ def webp_image_asset(request, webp_image_asset_rgb, webp_image_asset_rgb_alpha):
 
 @pytest.fixture(scope='session')
 def svg_vector_asset():
-    metadata = dict(rdf=
-        dict(xml=
-             '<rdf:Description rdf:about="svg_with_metadata.svg">'
-             '<dc:format>image/svg+xml</dc:format>'
-             '<dc:type>Image</dc:type>'
-             '<dc:creator opf:role="aut">John Doe</dc:creator>'
-             '<dc:description>Example SVG file with metadata</dc:description>'
-             '<dc:rights>Copyright 2016 Erich Seifert</dc:rights>'
-             '<dc:date opf:event="creation">2016-11-01</dc:date>'
-             '<dc:title>SVG metadata example</dc:title>'
-             '<dc:subject>SVG, metadata, RDF, Dublin Core, example</dc:subject>'
-             '<dc:source>Various</dc:source>'
-             '<dc:date opf:event="publication">2016-11-02</dc:date>'
-             '<dc:date opf:event="expiration">2020-11-01</dc:date>'
-             '<dc:language>en</dc:language>'
-             '<dc:subject>test resources</dc:subject>'
-             '</rdf:Description>'
+    metadata = dict(
+        rdf=dict(
+            xml='<rdf:Description rdf:about="svg_with_metadata.svg">'
+            '<dc:format>image/svg+xml</dc:format>'
+            '<dc:type>Image</dc:type>'
+            '<dc:creator opf:role="aut">John Doe</dc:creator>'
+            '<dc:description>Example SVG file with metadata</dc:description>'
+            '<dc:rights>Copyright 2016 Erich Seifert</dc:rights>'
+            '<dc:date opf:event="creation">2016-11-01</dc:date>'
+            '<dc:title>SVG metadata example</dc:title>'
+            '<dc:subject>SVG, metadata, RDF, Dublin Core, example</dc:subject>'
+            '<dc:source>Various</dc:source>'
+            '<dc:date opf:event="publication">2016-11-02</dc:date>'
+            '<dc:date opf:event="expiration">2020-11-01</dc:date>'
+            '<dc:language>en</dc:language>'
+            '<dc:subject>test resources</dc:subject>'
+            '</rdf:Description>'
         )
     )
 
-    xml_ns = dict(
-        svg='http://www.w3.org/2000/svg'
-    )
+    xml_ns = dict(svg='http://www.w3.org/2000/svg')
     for ns_prefix, ns_uri in xml_ns.items():
         if ns_prefix == 'svg':
             ns_prefix = ''
@@ -551,9 +577,9 @@ def svg_vector_asset():
     tree.write(essence, xml_declaration=False, encoding='utf-8')
     essence.seek(0)
 
-    return madam.core.Asset(essence=essence, mime_type='image/svg+xml',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-                            **metadata)
+    return madam.core.Asset(
+        essence=essence, mime_type='image/svg+xml', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, **metadata
+    )
 
 
 @pytest.fixture(scope='session')
@@ -564,10 +590,20 @@ def unknown_xml_asset():
     return madam.core.Asset(essence, mime_type='text/xml')
 
 
-@pytest.fixture(scope='session', params=['jpeg_image_asset', 'png_image_asset', 'gif_image_asset',
-                                         'bmp_image_asset', 'tiff_image_asset', 'webp_image_asset'])
-def image_asset(request, jpeg_image_asset, png_image_asset, gif_image_asset,
-                bmp_image_asset, tiff_image_asset, webp_image_asset):
+@pytest.fixture(
+    scope='session',
+    params=[
+        'jpeg_image_asset',
+        'png_image_asset',
+        'gif_image_asset',
+        'bmp_image_asset',
+        'tiff_image_asset',
+        'webp_image_asset',
+    ],
+)
+def image_asset(
+    request, jpeg_image_asset, png_image_asset, gif_image_asset, bmp_image_asset, tiff_image_asset, webp_image_asset
+):
     if request.param == 'jpeg_image_asset':
         return jpeg_image_asset
     if request.param == 'png_image_asset':
@@ -586,58 +622,65 @@ def image_asset(request, jpeg_image_asset, png_image_asset, gif_image_asset,
 @pytest.fixture(scope='session')
 def wav_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
-    command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
-               '-vn -sn -c:a pcm_s16le -f wav' % duration).split()
+    command = (
+        'ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f -vn -sn -c:a pcm_s16le -f wav' % duration
+    ).split()
     tmpfile = tmpdir_factory.mktemp('wav_asset').join('without_metadata.wav')
     command.append(str(tmpfile))
     subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/wav',
-                            duration=duration, audio=dict(codec='pcm_s16le'))
+    return madam.core.Asset(
+        essence=io.BytesIO(essence), mime_type='audio/wav', duration=duration, audio=dict(codec='pcm_s16le')
+    )
 
 
 @pytest.fixture(scope='session')
 def mp3_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
-    command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
-               '-write_xing 0 -id3v2_version 0 -write_id3v1 0 '
-               '-vn -sn -f mp3' % duration).split()
+    command = (
+        'ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
+        '-write_xing 0 -id3v2_version 0 -write_id3v1 0 '
+        '-vn -sn -f mp3' % duration
+    ).split()
     tmpfile = tmpdir_factory.mktemp('mp3_asset').join('without_metadata.mp3')
     command.append(str(tmpfile))
     subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/mpeg',
-                            duration=duration, audio=dict(codec='mp3'))
+    return madam.core.Asset(
+        essence=io.BytesIO(essence), mime_type='audio/mpeg', duration=duration, audio=dict(codec='mp3')
+    )
 
 
 @pytest.fixture(scope='session')
 def opus_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
-    command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
-               '-vn -sn -f opus' % duration).split()
+    command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f -vn -sn -f opus' % duration).split()
     tmpfile = tmpdir_factory.mktemp('opus_asset').join('without_metadata.opus')
     command.append(str(tmpfile))
     subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/ogg',
-                            duration=duration, audio=dict(codec='opus'))
+    return madam.core.Asset(
+        essence=io.BytesIO(essence), mime_type='audio/ogg', duration=duration, audio=dict(codec='opus')
+    )
 
 
 @pytest.fixture(scope='session')
 def nut_audio_asset(tmpdir_factory):
     duration = DEFAULT_DURATION
-    command = ('ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f '
-               '-vn -sn -c:a pcm_s16le -f nut' % duration).split()
+    command = (
+        'ffmpeg -loglevel error -f lavfi -i sine=frequency=440:duration=%.1f -vn -sn -c:a pcm_s16le -f nut' % duration
+    ).split()
     tmpfile = tmpdir_factory.mktemp('nut_asset').join('without_metadata.nut')
     command.append(str(tmpfile))
     subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='audio/x-nut',
-                            duration=duration, audio=dict(codec='pcm_s16le'))
+    return madam.core.Asset(
+        essence=io.BytesIO(essence), mime_type='audio/x-nut', duration=duration, audio=dict(codec='pcm_s16le')
+    )
 
 
 @pytest.fixture(scope='session', params=['mp3_audio_asset', 'nut_audio_asset', 'opus_audio_asset', 'wav_audio_asset'])
@@ -661,22 +704,29 @@ def mp4_video_asset(tmpdir_factory):
         duration=DEFAULT_DURATION,
         subtitle_path='tests/resources/subtitle.vtt',
     )
-    command = ('ffmpeg -loglevel error '
-               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
-               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-f webvtt -i %(subtitle_path)s '
-               '-strict -2 -c:v h264 -preset ultrafast -qp 0 -c:a aac -c:s mov_text '
-               '-f mp4' % ffmpeg_params).split()
+    command = (
+        'ffmpeg -loglevel error '
+        '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+        '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+        '-f webvtt -i %(subtitle_path)s '
+        '-strict -2 -c:v h264 -preset ultrafast -qp 0 -c:a aac -c:s mov_text '
+        '-f mp4' % ffmpeg_params
+    ).split()
     tmpfile = tmpdir_factory.mktemp('mp4_video_asset').join('h264-aac-mov_text.mp4')
     command.append(str(tmpfile))
     subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/quicktime',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='h264', color_space='YUV', depth=8, data_type='uint'),
-                            audio=dict(codec='aac'),
-                            subtitle=dict(codec='mov_text'))
+    return madam.core.Asset(
+        essence=io.BytesIO(essence),
+        mime_type='video/quicktime',
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+        video=dict(codec='h264', color_space='YUV', depth=8, data_type='uint'),
+        audio=dict(codec='aac'),
+        subtitle=dict(codec='mov_text'),
+    )
 
 
 @pytest.fixture(scope='session')
@@ -686,20 +736,27 @@ def avi_video_asset(tmpdir_factory):
         height=DEFAULT_HEIGHT,
         duration=DEFAULT_DURATION,
     )
-    command = ('ffmpeg -loglevel error '
-               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
-               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v h264 -c:a mp3 -sn '
-               '-f avi' % ffmpeg_params).split()
+    command = (
+        'ffmpeg -loglevel error '
+        '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+        '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+        '-c:v h264 -c:a mp3 -sn '
+        '-f avi' % ffmpeg_params
+    ).split()
     tmpfile = tmpdir_factory.mktemp('avi_video_asset').join('h264-mp3.avi')
     command.append(str(tmpfile))
     subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-msvideo',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='h264', color_space='YUV', depth=8, data_type='uint'),
-                            audio=dict(codec='mp3'))
+    return madam.core.Asset(
+        essence=io.BytesIO(essence),
+        mime_type='video/x-msvideo',
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+        video=dict(codec='h264', color_space='YUV', depth=8, data_type='uint'),
+        audio=dict(codec='mp3'),
+    )
 
 
 @pytest.fixture(scope='session')
@@ -710,22 +767,29 @@ def mkv_video_asset(tmpdir_factory):
         duration=DEFAULT_DURATION,
         subtitle_path='tests/resources/subtitle.vtt',
     )
-    command = ('ffmpeg -loglevel error '
-               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
-               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-f webvtt -i %(subtitle_path)s '
-               '-c:v vp9 -c:a libopus -c:s webvtt '
-               '-f matroska' % ffmpeg_params).split()
+    command = (
+        'ffmpeg -loglevel error '
+        '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+        '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+        '-f webvtt -i %(subtitle_path)s '
+        '-c:v vp9 -c:a libopus -c:s webvtt '
+        '-f matroska' % ffmpeg_params
+    ).split()
     tmpfile = tmpdir_factory.mktemp('mkv_video_asset').join('vp9-opus-webvtt.mkv')
     command.append(str(tmpfile))
     subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/x-matroska',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='vp9', color_space='YUV', depth=8, data_type='uint'),
-                            audio=dict(codec='libopus'),
-                            subtitle=dict(codec='webvtt'))
+    return madam.core.Asset(
+        essence=io.BytesIO(essence),
+        mime_type='video/x-matroska',
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+        video=dict(codec='vp9', color_space='YUV', depth=8, data_type='uint'),
+        audio=dict(codec='libopus'),
+        subtitle=dict(codec='webvtt'),
+    )
 
 
 @pytest.fixture(scope='session')
@@ -735,20 +799,27 @@ def mp2_video_asset(tmpdir_factory):
         height=DEFAULT_HEIGHT,
         duration=DEFAULT_DURATION,
     )
-    command = ('ffmpeg -loglevel error '
-               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
-               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v mpeg2video -c:a mp2 -sn '
-               '-f mpegts' % ffmpeg_params).split()
+    command = (
+        'ffmpeg -loglevel error '
+        '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+        '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+        '-c:v mpeg2video -c:a mp2 -sn '
+        '-f mpegts' % ffmpeg_params
+    ).split()
     tmpfile = tmpdir_factory.mktemp('mp2_video_asset').join('mpeg2-mp2-dvbsub.ts')
     command.append(str(tmpfile))
     subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/mp2t',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='mpeg2video', color_space='YUV', depth=8, data_type='uint'),
-                            audio=dict(codec='mp2'))
+    return madam.core.Asset(
+        essence=io.BytesIO(essence),
+        mime_type='video/mp2t',
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+        video=dict(codec='mpeg2video', color_space='YUV', depth=8, data_type='uint'),
+        audio=dict(codec='mp2'),
+    )
 
 
 @pytest.fixture(scope='session')
@@ -758,20 +829,27 @@ def ogg_video_asset(tmpdir_factory):
         height=DEFAULT_HEIGHT,
         duration=DEFAULT_DURATION,
     )
-    command = ('ffmpeg -loglevel error '
-               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
-               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-strict -2 -c:v theora -c:a vorbis -ac 2 -sn '
-               '-f ogg' % ffmpeg_params).split()
+    command = (
+        'ffmpeg -loglevel error '
+        '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+        '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+        '-strict -2 -c:v theora -c:a vorbis -ac 2 -sn '
+        '-f ogg' % ffmpeg_params
+    ).split()
     tmpfile = tmpdir_factory.mktemp('ogg_video_asset').join('theora-vorbis.ogg')
     command.append(str(tmpfile))
     subprocess.run(command, check=True, stderr=subprocess.PIPE)
     with tmpfile.open('rb') as file:
         essence = file.read()
-    return madam.core.Asset(essence=io.BytesIO(essence), mime_type='video/ogg',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='theora', color_space='YUV', depth=8, data_type='uint'),
-                            audio=dict(codec='vorbis'))
+    return madam.core.Asset(
+        essence=io.BytesIO(essence),
+        mime_type='video/ogg',
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+        video=dict(codec='theora', color_space='YUV', depth=8, data_type='uint'),
+        audio=dict(codec='vorbis'),
+    )
 
 
 @pytest.fixture(scope='session')
@@ -781,16 +859,23 @@ def nut_video_asset():
         height=DEFAULT_HEIGHT,
         duration=DEFAULT_DURATION,
     )
-    command = ('ffmpeg -loglevel error '
-               '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
-               '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
-               '-c:v ffv1 -level 3 -c:a pcm_s16le -sn '
-               '-f nut pipe:' % ffmpeg_params).split()
+    command = (
+        'ffmpeg -loglevel error '
+        '-f lavfi -i color=color=red:size=%(width)dx%(height)d:duration=%(duration).1f:rate=15 '
+        '-f lavfi -i sine=frequency=440:duration=%(duration).1f '
+        '-c:v ffv1 -level 3 -c:a pcm_s16le -sn '
+        '-f nut pipe:' % ffmpeg_params
+    ).split()
     ffmpeg = subprocess.run(command, check=True, capture_output=True)
-    return madam.core.Asset(essence=io.BytesIO(ffmpeg.stdout), mime_type='video/x-nut',
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT, duration=DEFAULT_DURATION,
-                            video=dict(codec='ffv1', color_space='YUV', depth=8, data_type='uint'),
-                            audio=dict(codec='pcm_s16le'))
+    return madam.core.Asset(
+        essence=io.BytesIO(ffmpeg.stdout),
+        mime_type='video/x-nut',
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
+        duration=DEFAULT_DURATION,
+        video=dict(codec='ffv1', color_space='YUV', depth=8, data_type='uint'),
+        audio=dict(codec='pcm_s16le'),
+    )
 
 
 @pytest.fixture(scope='session', params=['mp2_video_asset', 'mp4_video_asset', 'mkv_video_asset', 'nut_video_asset'])
@@ -817,14 +902,38 @@ def video_asset_with_subtitle(request, mp4_video_asset, mkv_video_asset):
     raise ValueError()
 
 
-@pytest.fixture(scope='session', params=[
-    'jpeg_image_asset', 'png_image_asset', 'gif_image_asset', 'svg_vector_asset',
-    'mp3_audio_asset', 'opus_audio_asset', 'wav_audio_asset',
-    'avi_video_asset', 'mp2_video_asset', 'mp4_video_asset', 'mkv_video_asset', 'ogg_video_asset'])
-def asset(request,
-          jpeg_image_asset, png_image_asset, gif_image_asset, svg_vector_asset,
-          mp3_audio_asset, opus_audio_asset, wav_audio_asset,
-          avi_video_asset, mp2_video_asset, mp4_video_asset, mkv_video_asset, ogg_video_asset):
+@pytest.fixture(
+    scope='session',
+    params=[
+        'jpeg_image_asset',
+        'png_image_asset',
+        'gif_image_asset',
+        'svg_vector_asset',
+        'mp3_audio_asset',
+        'opus_audio_asset',
+        'wav_audio_asset',
+        'avi_video_asset',
+        'mp2_video_asset',
+        'mp4_video_asset',
+        'mkv_video_asset',
+        'ogg_video_asset',
+    ],
+)
+def asset(
+    request,
+    jpeg_image_asset,
+    png_image_asset,
+    gif_image_asset,
+    svg_vector_asset,
+    mp3_audio_asset,
+    opus_audio_asset,
+    wav_audio_asset,
+    avi_video_asset,
+    mp2_video_asset,
+    mp4_video_asset,
+    mkv_video_asset,
+    ogg_video_asset,
+):
     if request.param == 'jpeg_image_asset':
         return jpeg_image_asset
     if request.param == 'png_image_asset':
@@ -855,5 +964,4 @@ def asset(request,
 @pytest.fixture(scope='session')
 def unknown_asset():
     random_data = b'\x07]>e\x10\n+Y\x07\xd8\xf4\x90%\r\xbbK\xb8+\xf3v%\x0f\x11'
-    return madam.core.Asset(essence=io.BytesIO(random_data),
-                            mime_type='application/octet-stream')
+    return madam.core.Asset(essence=io.BytesIO(random_data), mime_type='application/octet-stream')

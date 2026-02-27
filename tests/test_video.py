@@ -4,19 +4,14 @@ from collections import defaultdict
 
 import PIL.Image
 import pytest
+from assets import (
+    DEFAULT_DURATION,
+    DEFAULT_HEIGHT,
+    DEFAULT_WIDTH,
+)
 
 import madam.video
 from madam.core import OperatorError, UnsupportedFormatError
-from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_DURATION
-from assets import image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, \
-    png_image_asset_palette, png_image_asset_gray, png_image_asset_gray_alpha, png_image_asset, gif_image_asset, \
-    bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_rgb_alpha, tiff_image_asset_palette, \
-    tiff_image_asset_gray_8bit, tiff_image_asset_gray_8bit_alpha, tiff_image_asset_gray_16bit, tiff_image_asset_cmyk, \
-    tiff_image_asset, webp_image_asset_rgb, webp_image_asset_rgb_alpha, webp_image_asset
-from assets import video_asset_with_subtitle, video_asset, avi_video_asset, mp2_video_asset, mp4_video_asset, \
-    mkv_video_asset, nut_video_asset, ogg_video_asset
-from assets import unknown_asset
-
 
 FFMPEG_PROCESSOR_IMAGE_MIME_TYPES = 'image/bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/tiff', 'image/webp'
 
@@ -87,9 +82,9 @@ class TestFFmpegProcessor:
 
     @pytest.fixture(scope='class')
     def converted_asset(self, processor, video_asset):
-        conversion_operator = processor.convert(mime_type='video/x-matroska',
-                                                video=dict(codec='vp9', bitrate=50),
-                                                audio=dict(codec='libopus', bitrate=16))
+        conversion_operator = processor.convert(
+            mime_type='video/x-matroska', video=dict(codec='vp9', bitrate=50), audio=dict(codec='libopus', bitrate=16)
+        )
         converted_asset = conversion_operator(video_asset)
         return converted_asset
 
@@ -136,8 +131,9 @@ class TestFFmpegProcessor:
         assert 'video' in converted_asset.metadata
 
     def test_convert_returns_video_asset_with_correct_color_mode(self, processor, video_asset):
-        conversion_operator = processor.convert(mime_type='video/x-nut',
-                                                video=dict(codec='ffv1', color_space='RGBX', depth=8, data_type='uint'))
+        conversion_operator = processor.convert(
+            mime_type='video/x-nut', video=dict(codec='ffv1', color_space='RGBX', depth=8, data_type='uint')
+        )
 
         converted_asset = conversion_operator(video_asset)
 
@@ -146,10 +142,12 @@ class TestFFmpegProcessor:
         assert converted_asset.video['data_type'] == 'uint'
 
     def test_convert_can_process_all_streams(self, processor, video_asset_with_subtitle):
-        conversion_operator = processor.convert(mime_type='video/quicktime',
-                                                video=dict(codec='h264', bitrate=50),
-                                                audio=dict(codec='aac', bitrate=24),
-                                                subtitle=dict(codec='mov_text'))
+        conversion_operator = processor.convert(
+            mime_type='video/quicktime',
+            video=dict(codec='h264', bitrate=50),
+            audio=dict(codec='aac', bitrate=24),
+            subtitle=dict(codec='mov_text'),
+        )
 
         converted_asset = conversion_operator(video_asset_with_subtitle)
 
@@ -165,10 +163,9 @@ class TestFFmpegProcessor:
         assert subtitle_streams[0]['codec_name'] == 'mov_text'
 
     def test_convert_can_strip_all_streams_except_subtitle(self, processor, video_asset_with_subtitle):
-        conversion_operator = processor.convert(mime_type='text/vtt',
-                                                video=dict(codec=None),
-                                                audio=dict(codec=None),
-                                                subtitle=dict(codec='webvtt'))
+        conversion_operator = processor.convert(
+            mime_type='text/vtt', video=dict(codec=None), audio=dict(codec=None), subtitle=dict(codec='webvtt')
+        )
 
         converted_asset = conversion_operator(video_asset_with_subtitle)
 
@@ -182,10 +179,12 @@ class TestFFmpegProcessor:
         assert subtitle_streams[0]['codec_name'] == 'webvtt'
 
     def test_convert_can_strip_all_streams_except_video(self, processor, video_asset):
-        conversion_operator = processor.convert(mime_type='video/x-matroska',
-                                                video=dict(codec='h264', bitrate=50),
-                                                audio=dict(codec=None),
-                                                subtitle=dict(codec=None))
+        conversion_operator = processor.convert(
+            mime_type='video/x-matroska',
+            video=dict(codec='h264', bitrate=50),
+            audio=dict(codec=None),
+            subtitle=dict(codec=None),
+        )
 
         converted_asset = conversion_operator(video_asset)
 
@@ -199,10 +198,12 @@ class TestFFmpegProcessor:
         assert len(subtitle_streams) == 0
 
     def test_convert_can_strip_all_streams_except_audio(self, processor, video_asset):
-        conversion_operator = processor.convert(mime_type='audio/mpeg',
-                                                video=dict(codec=None),
-                                                audio=dict(codec='mp3', bitrate=32),
-                                                subtitle=dict(codec=None))
+        conversion_operator = processor.convert(
+            mime_type='audio/mpeg',
+            video=dict(codec=None),
+            audio=dict(codec='mp3', bitrate=32),
+            subtitle=dict(codec=None),
+        )
 
         converted_asset = conversion_operator(video_asset)
 
@@ -320,12 +321,30 @@ class TestFFmpegProcessor:
         assert cropped_asset.width == crop_width
         assert cropped_asset.height == crop_height
 
-    @pytest.mark.parametrize('x, y, width, height, cropped_width, cropped_height', [
-        (-DEFAULT_WIDTH//2, -DEFAULT_HEIGHT//2, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2),
-        (DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2),
-    ])
-    def test_crop_fixes_partially_overlapping_cropping_area(self, processor, video_asset,
-                                                            x, y, width, height, cropped_width, cropped_height):
+    @pytest.mark.parametrize(
+        'x, y, width, height, cropped_width, cropped_height',
+        [
+            (
+                -DEFAULT_WIDTH // 2,
+                -DEFAULT_HEIGHT // 2,
+                DEFAULT_WIDTH,
+                DEFAULT_HEIGHT,
+                DEFAULT_WIDTH // 2,
+                DEFAULT_HEIGHT // 2,
+            ),
+            (
+                DEFAULT_WIDTH // 2,
+                DEFAULT_HEIGHT // 2,
+                DEFAULT_WIDTH,
+                DEFAULT_HEIGHT,
+                DEFAULT_WIDTH // 2,
+                DEFAULT_HEIGHT // 2,
+            ),
+        ],
+    )
+    def test_crop_fixes_partially_overlapping_cropping_area(
+        self, processor, video_asset, x, y, width, height, cropped_width, cropped_height
+    ):
         crop_operator = processor.crop(x=x, y=y, width=width, height=height)
 
         cropped_asset = crop_operator(video_asset)
@@ -333,11 +352,14 @@ class TestFFmpegProcessor:
         assert cropped_asset.width == cropped_width
         assert cropped_asset.height == cropped_height
 
-    @pytest.mark.parametrize('x, y, width, height', [
-        (-DEFAULT_WIDTH, -DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
-        (DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
-        (0, 0, -DEFAULT_WIDTH, -DEFAULT_HEIGHT),
-    ])
+    @pytest.mark.parametrize(
+        'x, y, width, height',
+        [
+            (-DEFAULT_WIDTH, -DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+            (DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+            (0, 0, -DEFAULT_WIDTH, -DEFAULT_HEIGHT),
+        ],
+    )
     def test_crop_fails_with_non_overlapping_cropping_area(self, processor, video_asset, x, y, width, height):
         crop_operator = processor.crop(x=x, y=y, width=width, height=height)
 

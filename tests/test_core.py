@@ -1,12 +1,10 @@
-import unittest.mock
-
 import io
 import os
+import unittest.mock
+
 import pytest
 
-from madam.core import Asset
-from madam.core import InMemoryStorage, ShelveStorage
-from madam.core import Pipeline
+from madam.core import Asset, InMemoryStorage, Pipeline, ShelveStorage
 
 
 @pytest.fixture
@@ -108,7 +106,7 @@ class TestStorages:
         unstored_asset_key = str(0)
 
         with pytest.raises(KeyError):
-            asset_and_tags = storage[unstored_asset_key]
+            storage[unstored_asset_key]
 
     def test_filter_by_tags_returns_empty_iterator_when_storage_is_empty(self, storage):
         tagged_asset_keys = storage.filter_by_tags('some tag')
@@ -136,9 +134,11 @@ class TestStorages:
 
         tagged_asset_keys = storage.filter_by_tags('bar', 'foo')
 
-        assert asset_keys[0] not in tagged_asset_keys and \
-               asset_keys[1] in tagged_asset_keys and \
-               asset_keys[2] in tagged_asset_keys
+        assert (
+            asset_keys[0] not in tagged_asset_keys
+            and asset_keys[1] in tagged_asset_keys
+            and asset_keys[2] in tagged_asset_keys
+        )
 
     @pytest.mark.parametrize('tags', [None, {'my', 'tags'}])
     def test_set_does_nothing_when_asset_is_already_in_storage(self, storage, asset, tags):

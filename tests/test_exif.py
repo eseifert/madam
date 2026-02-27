@@ -1,9 +1,8 @@
 import io
+
 import piexif
 import pytest
 
-from assets import jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, png_image_asset_palette, \
-    png_image_asset_gray, png_image_asset_gray_alpha, png_image_asset
 import madam.exif
 from madam.core import UnsupportedFormatError
 
@@ -88,7 +87,7 @@ class TestExifMetadataProcessor:
             processor.strip(junk_data)
 
     def test_combine_returns_essence_with_metadata(self, processor, jpeg_image_asset, tmpdir):
-        metadata_formats = 'exif',
+        metadata_formats = ('exif',)
         essence = jpeg_image_asset.essence
         metadata = {k: v for k, v in jpeg_image_asset.metadata.items() if k in metadata_formats}
 

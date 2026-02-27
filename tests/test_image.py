@@ -1,15 +1,14 @@
 import PIL.Image
 import PIL.ImageChops
 import pytest
+from assets import (
+    DEFAULT_HEIGHT,
+    DEFAULT_WIDTH,
+    get_jpeg_image_asset,
+)
 
 import madam.image
 from madam.core import OperatorError
-from assets import DEFAULT_WIDTH, DEFAULT_HEIGHT
-from assets import image_asset, get_jpeg_image_asset, jpeg_image_asset, png_image_asset_rgb, png_image_asset_rgb_alpha, \
-    png_image_asset_palette, png_image_asset_gray, png_image_asset_gray_alpha, png_image_asset, gif_image_asset, \
-    bmp_image_asset, tiff_image_asset_rgb, tiff_image_asset_rgb_alpha, tiff_image_asset_palette, \
-    tiff_image_asset_gray_8bit, tiff_image_asset_gray_8bit_alpha, tiff_image_asset_gray_16bit, tiff_image_asset_cmyk,\
-    tiff_image_asset, webp_image_asset_rgb, webp_image_asset_rgb_alpha, webp_image_asset, unknown_asset
 
 
 def is_equal_in_black_white_space(result_image, expected_image):
@@ -99,8 +98,7 @@ class TestPillowProcessor:
 
         transposed_asset = transpose_operator(transpose_operator(asset))
 
-        with PIL.Image.open(transposed_asset.essence) as transposed_image, \
-                PIL.Image.open(asset.essence) as image:
+        with PIL.Image.open(transposed_asset.essence) as transposed_image, PIL.Image.open(asset.essence) as image:
             assert is_equal_in_black_white_space(transposed_image, image)
 
     def test_transpose_keeps_original_mime_type(self, processor):
@@ -111,40 +109,44 @@ class TestPillowProcessor:
 
         assert transposed_asset.mime_type == asset.mime_type
 
-    @pytest.mark.parametrize('orientation', [
-        madam.image.FlipOrientation.HORIZONTAL,
-        madam.image.FlipOrientation.VERTICAL
-    ])
+    @pytest.mark.parametrize(
+        'orientation', [madam.image.FlipOrientation.HORIZONTAL, madam.image.FlipOrientation.VERTICAL]
+    )
     def test_flip_is_reversible(self, processor, orientation):
         asset = get_jpeg_image_asset()
         flip_operator = processor.flip(orientation=orientation)
 
         flipped_asset = flip_operator(flip_operator(asset))
 
-        with PIL.Image.open(flipped_asset.essence) as flipped_image, \
-                PIL.Image.open(asset.essence) as image:
+        with PIL.Image.open(flipped_asset.essence) as flipped_image, PIL.Image.open(asset.essence) as image:
             assert is_equal_in_black_white_space(flipped_image, image)
 
-    @pytest.mark.parametrize('exif_orientation, image_transpositions', [
-        (1, []),
-        (2, [PIL.Image.FLIP_LEFT_RIGHT]),
-        (3, [PIL.Image.ROTATE_180]),
-        (4, [PIL.Image.FLIP_TOP_BOTTOM]),
-        (5, [PIL.Image.ROTATE_90, PIL.Image.FLIP_TOP_BOTTOM]),
-        (6, [PIL.Image.ROTATE_90]),
-        (7, [PIL.Image.ROTATE_90, PIL.Image.FLIP_LEFT_RIGHT]),
-        (8, [PIL.Image.ROTATE_270])
-    ])
+    @pytest.mark.parametrize(
+        'exif_orientation, image_transpositions',
+        [
+            (1, []),
+            (2, [PIL.Image.FLIP_LEFT_RIGHT]),
+            (3, [PIL.Image.ROTATE_180]),
+            (4, [PIL.Image.FLIP_TOP_BOTTOM]),
+            (5, [PIL.Image.ROTATE_90, PIL.Image.FLIP_TOP_BOTTOM]),
+            (6, [PIL.Image.ROTATE_90]),
+            (7, [PIL.Image.ROTATE_90, PIL.Image.FLIP_LEFT_RIGHT]),
+            (8, [PIL.Image.ROTATE_270]),
+        ],
+    )
     def test_auto_orient_rotates_asset_correctly(self, processor, exif_orientation, image_transpositions):
         reference_asset = get_jpeg_image_asset()
-        misoriented_asset = get_jpeg_image_asset(transpositions=image_transpositions,
-                                                 exif={'orientation': exif_orientation})
+        misoriented_asset = get_jpeg_image_asset(
+            transpositions=image_transpositions, exif={'orientation': exif_orientation}
+        )
         auto_orient_operator = processor.auto_orient()
 
         oriented_asset = auto_orient_operator(misoriented_asset)
 
-        with PIL.Image.open(reference_asset.essence) as reference_image, \
-                PIL.Image.open(oriented_asset.essence) as oriented_image:
+        with (
+            PIL.Image.open(reference_asset.essence) as reference_image,
+            PIL.Image.open(oriented_asset.essence) as oriented_image,
+        ):
             assert is_equal_in_black_white_space(reference_image, oriented_image)
 
     def test_auto_orient_without_orientation_returns_identical_asset(self, processor, jpeg_image_asset):
@@ -157,8 +159,7 @@ class TestPillowProcessor:
 
     def test_convert_returns_asset_with_correct_mime_type(self, processor, image_asset):
         asset = image_asset
-        conversion_operator = processor.convert(
-            mime_type='image/png', color_space='RGB', depth=8, data_type='uint')
+        conversion_operator = processor.convert(mime_type='image/png', color_space='RGB', depth=8, data_type='uint')
 
         converted_asset = conversion_operator(asset)
 
@@ -181,8 +182,7 @@ class TestPillowProcessor:
 
     def test_convert_returns_essence_is_of_specified_type(self, processor, image_asset):
         asset = image_asset
-        conversion_operator = processor.convert(
-            mime_type='image/png', color_space='RGB', depth=8, data_type='uint')
+        conversion_operator = processor.convert(mime_type='image/png', color_space='RGB', depth=8, data_type='uint')
 
         converted_asset = conversion_operator(asset)
 
@@ -198,14 +198,14 @@ class TestPillowProcessor:
         with PIL.Image.open(converted_asset.essence) as image:
             assert image.mode == 'CMYK'
 
-    @pytest.mark.parametrize('color_space,depth,data_type', [
-        ('RGB', 8, 'uint'), ('LUMA', 8, 'uint')
-    ])
-    def test_convert_returns_asset_with_correct_color_mode_metadata(self, processor, image_asset,
-                                                                    color_space, depth, data_type):
+    @pytest.mark.parametrize('color_space,depth,data_type', [('RGB', 8, 'uint'), ('LUMA', 8, 'uint')])
+    def test_convert_returns_asset_with_correct_color_mode_metadata(
+        self, processor, image_asset, color_space, depth, data_type
+    ):
         asset = image_asset
         conversion_operator = processor.convert(
-            mime_type='image/tiff', color_space=color_space, depth=depth, data_type=data_type)
+            mime_type='image/tiff', color_space=color_space, depth=depth, data_type=data_type
+        )
 
         converted_asset = conversion_operator(asset)
 
@@ -224,8 +224,7 @@ class TestPillowProcessor:
         asset = png_image_asset_palette
         with PIL.Image.open(asset.essence) as original_image:
             original_palette = original_image.getpalette()
-        conversion_operator = processor.convert(
-            mime_type='image/png', color_space='PALETTE', depth=8, data_type='uint')
+        conversion_operator = processor.convert(mime_type='image/png', color_space='PALETTE', depth=8, data_type='uint')
         converted_asset = conversion_operator(asset)
 
         with PIL.Image.open(converted_asset.essence) as converted_image:
@@ -251,12 +250,30 @@ class TestPillowProcessor:
         assert cropped_asset.width == crop_width
         assert cropped_asset.height == crop_height
 
-    @pytest.mark.parametrize('x, y, width, height, cropped_width, cropped_height', [
-        (-DEFAULT_WIDTH//2, -DEFAULT_HEIGHT//2, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2),
-        (DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH//2, DEFAULT_HEIGHT//2),
-    ])
-    def test_crop_fixes_partially_overlapping_cropping_area(self, processor, image_asset,
-                                                            x, y, width, height, cropped_width, cropped_height):
+    @pytest.mark.parametrize(
+        'x, y, width, height, cropped_width, cropped_height',
+        [
+            (
+                -DEFAULT_WIDTH // 2,
+                -DEFAULT_HEIGHT // 2,
+                DEFAULT_WIDTH,
+                DEFAULT_HEIGHT,
+                DEFAULT_WIDTH // 2,
+                DEFAULT_HEIGHT // 2,
+            ),
+            (
+                DEFAULT_WIDTH // 2,
+                DEFAULT_HEIGHT // 2,
+                DEFAULT_WIDTH,
+                DEFAULT_HEIGHT,
+                DEFAULT_WIDTH // 2,
+                DEFAULT_HEIGHT // 2,
+            ),
+        ],
+    )
+    def test_crop_fixes_partially_overlapping_cropping_area(
+        self, processor, image_asset, x, y, width, height, cropped_width, cropped_height
+    ):
         crop_operator = processor.crop(x=x, y=y, width=width, height=height)
 
         cropped_asset = crop_operator(image_asset)
@@ -264,11 +281,14 @@ class TestPillowProcessor:
         assert cropped_asset.width == cropped_width
         assert cropped_asset.height == cropped_height
 
-    @pytest.mark.parametrize('x, y, width, height', [
-        (-DEFAULT_WIDTH, -DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
-        (DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
-        (0, 0, -DEFAULT_WIDTH, -DEFAULT_HEIGHT),
-    ])
+    @pytest.mark.parametrize(
+        'x, y, width, height',
+        [
+            (-DEFAULT_WIDTH, -DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+            (DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+            (0, 0, -DEFAULT_WIDTH, -DEFAULT_HEIGHT),
+        ],
+    )
     def test_crop_fails_with_non_overlapping_cropping_area(self, processor, image_asset, x, y, width, height):
         crop_operator = processor.crop(x=x, y=y, width=width, height=height)
 

@@ -2,14 +2,14 @@ import json
 import subprocess
 
 import pytest
+from assets import (
+    DEFAULT_DURATION,
+)
 from mutagen.mp3 import EasyMP3
 from mutagen.oggopus import OggOpus
 
 import madam.audio
 from madam.core import OperatorError, UnsupportedFormatError
-from assets import DEFAULT_DURATION
-from assets import audio_asset, mp3_audio_asset, nut_audio_asset, opus_audio_asset, wav_audio_asset
-from assets import unknown_asset
 
 
 class TestFFmpegProcessor:
@@ -164,7 +164,9 @@ class TestFFmpegMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.combine(junk_data, metadata)
 
-    def test_combine_raises_error_when_file_format_is_unsupported_by_metadata_processor(self, processor, nut_audio_asset):
+    def test_combine_raises_error_when_file_format_is_unsupported_by_metadata_processor(
+        self, processor, nut_audio_asset
+    ):
         essence = nut_audio_asset.essence
         metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))
 
