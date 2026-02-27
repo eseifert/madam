@@ -135,6 +135,75 @@ class Asset:
         return f'<{self.__class__.__qualname__} {metadata_str}>'
 
 
+class LazyAsset(Asset):
+    """
+    An :class:`Asset` that stores only a URI instead of raw bytes.
+
+    Essence bytes are fetched on demand by calling the *loader* callable.
+    Because the raw bytes are never stored in the object, ``pickle.dumps``
+    produces a payload that contains only the URI and metadata — safe to
+    send through a Celery broker even for large video files.
+
+    :param uri: Opaque string identifying the remote content (e.g. an S3 URI).
+    :param loader: Callable ``(uri: str) -> IO`` that returns a readable
+                   stream for the given URI.  May be ``None`` to create a
+                   detached asset that will raise on essence access.
+    :param \\**metadata: Metadata describing the asset.
+    """
+
+    def __init__(self, uri: str, loader: Callable[[str], IO] | None, **metadata: Any) -> None:
+        # Bypass Asset.__init__ — we do not have bytes yet.
+        if 'mime_type' not in metadata:
+            metadata['mime_type'] = None
+        object.__setattr__(self, '_uri', uri)
+        object.__setattr__(self, '_loader', loader)
+        object.__setattr__(self, 'metadata', _immutable(metadata))
+
+    @property
+    def uri(self) -> str:
+        """The URI that identifies the remote content."""
+        return object.__getattribute__(self, '_uri')
+
+    @property
+    def essence(self) -> IO:
+        """
+        Fetches and returns the asset content from the configured loader.
+
+        :raises RuntimeError: if no loader was provided at construction time.
+        """
+        loader = object.__getattribute__(self, '_loader')
+        if loader is None:
+            raise RuntimeError(
+                'LazyAsset has no loader — cannot access essence. '
+                'Attach a loader before calling essence.'
+            )
+        return loader(self.uri)
+
+    @property
+    def content_id(self) -> str:
+        return hashlib.sha256(self.essence.read()).hexdigest()
+
+    def __hash__(self) -> int:
+        return hash(self.uri) ^ hash(self.metadata)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, LazyAsset):
+            return NotImplemented
+        return self.uri == other.uri and self.metadata == other.metadata
+
+    def __getstate__(self) -> dict[str, Any]:
+        # Only persist URI and metadata — never the loader or bytes.
+        return {'_uri': self.uri, 'metadata': self.metadata}
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        object.__setattr__(self, '_uri', state['_uri'])
+        object.__setattr__(self, '_loader', None)
+        object.__setattr__(self, 'metadata', state['metadata'])
+
+    def __repr__(self) -> str:
+        return f'<LazyAsset uri={self.uri!r}>'
+
+
 class OperatorError(Exception):
     """
     Represents an error that is raised whenever an error occurs in an
