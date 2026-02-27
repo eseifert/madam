@@ -22,7 +22,7 @@ storing, organizing, and transforming asset data.
 
 Installation
 ============
-MADAM makes use of other software, which needs to be installed on your system. Make sure you have the following packages installed:
+MADAM requires Python 3.11 or later and the following system packages:
 
     - ``FFmpeg`` >=3.3 for video processing
 
