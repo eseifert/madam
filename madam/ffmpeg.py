@@ -504,10 +504,6 @@ class FFmpegProcessor(Processor):
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
-            with open(ctx.input_path, 'wb') as temp_in:
-                shutil.copyfileobj(asset.essence, temp_in)
-                temp_in.flush()
-
             command = [
                 'ffmpeg',
                 '-loglevel',
