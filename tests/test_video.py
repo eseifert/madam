@@ -271,6 +271,14 @@ class TestFFmpegProcessor:
         assert extracted_asset.mime_type == image_mime_type
 
     @pytest.mark.parametrize('image_mime_type', FFMPEG_PROCESSOR_IMAGE_MIME_TYPES)
+    def test_extract_frame_stores_mime_type_as_string(self, processor, video_asset, image_mime_type):
+        extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
+
+        extracted_asset = extract_frame_operator(video_asset)
+
+        assert isinstance(extracted_asset.mime_type, str)
+
+    @pytest.mark.parametrize('image_mime_type', FFMPEG_PROCESSOR_IMAGE_MIME_TYPES)
     def test_extract_frame_asset_is_image_with_same_size_as_source(self, processor, video_asset, image_mime_type):
         extract_frame_operator = processor.extract_frame(mime_type=image_mime_type)
 

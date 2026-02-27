@@ -775,7 +775,7 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError(f'Could not extract frame from asset: {error_message}')
 
-        metadata = _combine_metadata(asset, 'width', 'height', mime_type=mime_type)
+        metadata = _combine_metadata(asset, 'width', 'height', mime_type=str(mime_type))
         if 'video' in asset.metadata:
             metadata['depth'] = asset.metadata['video']['depth']
 
