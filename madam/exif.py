@@ -160,7 +160,6 @@ class ExifMetadataProcessor(MetadataProcessor):
             try:
                 metadata = piexif.load(tmp.name)
                 if any(metadata.values()):
-                    open(tmp.name, 'rb').read()
                     piexif.remove(tmp.name)
             except (piexif.InvalidImageDataError, ValueError, UnboundLocalError):
                 raise UnsupportedFormatError('Unsupported file format.')
