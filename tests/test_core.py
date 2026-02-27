@@ -163,6 +163,26 @@ class TestStorages:
         assert len(asset_keys_with_1s_duration) == 1
         assert list(asset_keys_with_1s_duration)[0] == asset_key
 
+    def test_filter_with_multiple_criteria_returns_each_match_only_once(self, storage):
+        asset = Asset(io.BytesIO(b'TestEssence'), duration=1, width=100)
+        asset_key = str(hash(asset))
+        storage[asset_key] = asset, set()
+
+        result = list(storage.filter(duration=1, width=100))
+
+        assert result.count(asset_key) == 1
+
+    def test_filter_excludes_assets_not_matching_all_criteria(self, storage):
+        matching = Asset(io.BytesIO(b'A'), duration=1, width=100)
+        partial = Asset(io.BytesIO(b'B'), duration=1, width=200)
+        for a in (matching, partial):
+            storage[str(hash(a))] = a, set()
+
+        result = list(storage.filter(duration=1, width=100))
+
+        assert str(hash(matching)) in result
+        assert str(hash(partial)) not in result
+
 
 @pytest.mark.usefixtures('asset', 'shelve_storage')
 class TestShelveStorage:
@@ -179,6 +199,9 @@ class TestShelveStorage:
         storage[asset_key] = asset, set()
 
         assert os.path.exists(storage.path)
+
+    def test_contains_returns_false_for_non_string_key(self, storage):
+        assert (42 in storage) is False
 
 
 @pytest.fixture

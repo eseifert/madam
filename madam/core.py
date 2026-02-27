@@ -549,9 +549,8 @@ class AssetStorage(MutableMapping[AssetKey, tuple[Asset, AssetTags]], Generic[As
         """
         matches = []
         for asset_key, (asset, tags) in self.items():
-            for key, value in kwargs.items():
-                if asset.metadata.get(key) == value:
-                    matches.append(asset_key)
+            if all(asset.metadata.get(key) == value for key, value in kwargs.items()):
+                matches.append(asset_key)
         return matches
 
     def filter_by_tags(self, *tags: str) -> Iterable[AssetKey]:
@@ -741,7 +740,7 @@ class ShelveStorage(AssetStorage[str]):
         :rtype: bool
         """
         if not isinstance(asset_key, str):
-            return NotImplemented
+            return False
         with shelve.open(str(self.path)) as store:
             return asset_key in store
 
