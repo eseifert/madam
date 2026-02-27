@@ -122,7 +122,34 @@ class Asset:
         return f'<{self.__class__.__qualname__} {metadata_str}>'
 
 
-class UnsupportedFormatError(Exception):
+class OperatorError(Exception):
+    """
+    Represents an error that is raised whenever an error occurs in an
+    :func:`~madam.core.operator`.
+    """
+
+    def __init__(self, *args):
+        """
+        Initializes a new `OperatorError`.
+        """
+        super().__init__(*args)
+
+
+class TransientOperatorError(OperatorError):
+    """
+    Raised when an operator fails due to a temporary condition (e.g. OOM,
+    disk full) that may succeed on retry.
+    """
+
+
+class PermanentOperatorError(OperatorError):
+    """
+    Raised when an operator fails due to a permanent condition (e.g. invalid
+    codec, corrupt input) that will never succeed on retry.
+    """
+
+
+class UnsupportedFormatError(PermanentOperatorError):
     """
     Represents an error that is raised whenever file content with unknown type
     is encountered.
@@ -162,19 +189,6 @@ def operator(function: Callable[..., Asset]) -> Callable[..., Callable[..., Asse
         return configured_operator
 
     return wrapper
-
-
-class OperatorError(Exception):
-    """
-    Represents an error that is raised whenever an error occurs in an
-    :func:`~madam.core.operator`.
-    """
-
-    def __init__(self, *args):
-        """
-        Initializes a new `OperatorError`.
-        """
-        super().__init__(*args)
 
 
 class Pipeline:

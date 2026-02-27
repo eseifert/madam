@@ -291,3 +291,27 @@ class TestPipeline:
         [processed_asset for processed_asset in pipeline.process(asset)]
 
         operator.assert_called_once_with(asset)
+
+
+class TestErrorHierarchy:
+    def test_transient_operator_error_is_subclass_of_operator_error(self):
+        from madam.core import OperatorError, TransientOperatorError
+        assert issubclass(TransientOperatorError, OperatorError)
+
+    def test_permanent_operator_error_is_subclass_of_operator_error(self):
+        from madam.core import OperatorError, PermanentOperatorError
+        assert issubclass(PermanentOperatorError, OperatorError)
+
+    def test_unsupported_format_error_is_subclass_of_permanent_operator_error(self):
+        from madam.core import PermanentOperatorError, UnsupportedFormatError
+        assert issubclass(UnsupportedFormatError, PermanentOperatorError)
+
+    def test_transient_operator_error_can_be_raised_and_caught_as_operator_error(self):
+        from madam.core import OperatorError, TransientOperatorError
+        with pytest.raises(OperatorError):
+            raise TransientOperatorError('disk full')
+
+    def test_permanent_operator_error_can_be_raised_and_caught_as_operator_error(self):
+        from madam.core import OperatorError, PermanentOperatorError
+        with pytest.raises(OperatorError):
+            raise PermanentOperatorError('bad codec')
