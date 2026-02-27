@@ -493,6 +493,23 @@ def tiff_image_asset(
 
 
 @pytest.fixture(scope='session')
+def avif_image_asset(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    image = image_rgb(width=width, height=height)
+    essence = io.BytesIO()
+    image.save(essence, 'AVIF')
+    essence.seek(0)
+    metadata = dict(
+        mime_type='image/avif',
+        width=image.width,
+        height=image.height,
+        color_space='RGB',
+        depth=8,
+        data_type='uint',
+    )
+    return madam.core.Asset(essence, **metadata)
+
+
+@pytest.fixture(scope='session')
 def webp_image_asset_rgb(width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     image = image_rgb(width=width, height=height)
     essence = io.BytesIO()
@@ -599,10 +616,18 @@ def unknown_xml_asset():
         'bmp_image_asset',
         'tiff_image_asset',
         'webp_image_asset',
+        'avif_image_asset',
     ],
 )
 def image_asset(
-    request, jpeg_image_asset, png_image_asset, gif_image_asset, bmp_image_asset, tiff_image_asset, webp_image_asset
+    request,
+    jpeg_image_asset,
+    png_image_asset,
+    gif_image_asset,
+    bmp_image_asset,
+    tiff_image_asset,
+    webp_image_asset,
+    avif_image_asset,
 ):
     if request.param == 'jpeg_image_asset':
         return jpeg_image_asset
@@ -616,6 +641,8 @@ def image_asset(
         return tiff_image_asset
     if request.param == 'webp_image_asset':
         return webp_image_asset
+    if request.param == 'avif_image_asset':
+        return avif_image_asset
     raise ValueError()
 
 

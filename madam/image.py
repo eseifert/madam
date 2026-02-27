@@ -42,6 +42,7 @@ class PillowProcessor(Processor):
 
     __mime_type_to_pillow_type = bidict(
         {
+            MimeType('image/avif'): 'AVIF',
             MimeType('image/bmp'): 'BMP',
             MimeType('image/gif'): 'GIF',
             MimeType('image/jpeg'): 'JPEG',
@@ -52,6 +53,10 @@ class PillowProcessor(Processor):
     )
 
     __format_defaults = {
+        MimeType('image/avif'): dict(
+            quality=80,
+            speed=6,
+        ),
         MimeType('image/gif'): dict(
             optimize=True,
         ),
@@ -214,6 +219,10 @@ class PillowProcessor(Processor):
             image.save(image_buffer, pil_format, **pil_options)
         elif mime_type == MimeType('image/tiff') and image.mode == 'P':
             pil_options.pop('compression', '')
+            image.save(image_buffer, pil_format, **pil_options)
+        elif mime_type == MimeType('image/avif'):
+            pil_options['quality'] = int(format_config.get('quality', pil_options['quality']))
+            pil_options['speed'] = int(format_config.get('speed', pil_options['speed']))
             image.save(image_buffer, pil_format, **pil_options)
         elif mime_type == MimeType('image/webp'):
             pil_options['method'] = int(format_config.get('method', pil_options['method']))

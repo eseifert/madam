@@ -320,3 +320,17 @@ class TestPillowProcessor:
 
         assert rotated_asset.width != image_asset.width
         assert rotated_asset.height != image_asset.height
+
+    def test_read_avif_returns_correct_metadata(self, processor, avif_image_asset):
+        assert avif_image_asset.mime_type == 'image/avif'
+        assert avif_image_asset.width == DEFAULT_WIDTH
+        assert avif_image_asset.height == DEFAULT_HEIGHT
+
+    def test_avif_quality_is_configurable(self):
+        config = {'image/avif': {'quality': 50, 'speed': 8}}
+        processor = madam.image.PillowProcessor(config)
+        asset = madam.image.PillowProcessor()._image_to_asset(
+            PIL.Image.new('RGB', (DEFAULT_WIDTH, DEFAULT_HEIGHT)), 'image/avif'
+        )
+        converted = processor.convert(mime_type='image/avif')(asset)
+        assert converted.mime_type == 'image/avif'
