@@ -1,13 +1,12 @@
 import io
 from enum import Enum
-from typing import Any, Callable, IO, Mapping, Optional, Union
+from typing import IO, Any, Callable, Mapping, Optional, Union
 
-from bidict import bidict
 import PIL.ExifTags
 import PIL.Image
+from bidict import bidict
 
-from madam.core import operator, OperatorError
-from madam.core import Asset, Processor
+from madam.core import Asset, OperatorError, Processor, operator
 from madam.mime import MimeType
 
 
@@ -15,6 +14,7 @@ class ResizeMode(Enum):
     """
     Represents a behavior for image resize operations.
     """
+
     #: Image exactly matches the specified dimensions
     EXACT = 0
     #: Image is resized to fit completely into the specified dimensions
@@ -27,6 +27,7 @@ class FlipOrientation(Enum):
     """
     Represents an axis for image flip operations.
     """
+
     #: Horizontal axis
     HORIZONTAL = 0
     #: Vertical axis
@@ -37,14 +38,17 @@ class PillowProcessor(Processor):
     """
     Represents a processor that uses Pillow as a backend.
     """
-    __mime_type_to_pillow_type = bidict({
-        MimeType('image/bmp'): 'BMP',
-        MimeType('image/gif'): 'GIF',
-        MimeType('image/jpeg'): 'JPEG',
-        MimeType('image/png'): 'PNG',
-        MimeType('image/tiff'): 'TIFF',
-        MimeType('image/webp'): 'WEBP',
-    })
+
+    __mime_type_to_pillow_type = bidict(
+        {
+            MimeType('image/bmp'): 'BMP',
+            MimeType('image/gif'): 'GIF',
+            MimeType('image/jpeg'): 'JPEG',
+            MimeType('image/png'): 'PNG',
+            MimeType('image/tiff'): 'TIFF',
+            MimeType('image/webp'): 'WEBP',
+        }
+    )
 
     __format_defaults = {
         MimeType('image/gif'): dict(
@@ -67,22 +71,24 @@ class PillowProcessor(Processor):
         ),
     }
 
-    __pillow_mode_to_color_mode = bidict({
-        '1': ('LUMA', 1, 'uint'),
-        'L': ('LUMA', 8, 'uint'),
-        'LA': ('LUMAA', 8, 'uint'),
-        'P': ('PALETTE', 8, 'uint'),
-        'RGB': ('RGB', 8, 'uint'),
-        'RGBA': ('RGBA', 8, 'uint'),
-        'RGBX': ('RGBX', 8, 'uint'),
-        'CMYK': ('CMYK', 8, 'uint'),
-        'YCbCr': ('YCbCr', 8, 'uint'),
-        'LAB': ('LAB', 8, 'uint'),
-        'HSV': ('HSV', 8, 'uint'),
-        'I;16': ('LUMA', 16, 'uint'),
-        'I': ('LUMA', 32, 'uint'),
-        'F': ('LUMA', 32, 'float'),
-    })
+    __pillow_mode_to_color_mode = bidict(
+        {
+            '1': ('LUMA', 1, 'uint'),
+            'L': ('LUMA', 8, 'uint'),
+            'LA': ('LUMAA', 8, 'uint'),
+            'P': ('PALETTE', 8, 'uint'),
+            'RGB': ('RGB', 8, 'uint'),
+            'RGBA': ('RGBA', 8, 'uint'),
+            'RGBX': ('RGBX', 8, 'uint'),
+            'CMYK': ('CMYK', 8, 'uint'),
+            'YCbCr': ('YCbCr', 8, 'uint'),
+            'LAB': ('LAB', 8, 'uint'),
+            'HSV': ('HSV', 8, 'uint'),
+            'I;16': ('LUMA', 16, 'uint'),
+            'I': ('LUMA', 32, 'uint'),
+            'F': ('LUMA', 32, 'float'),
+        }
+    )
 
     def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
@@ -141,17 +147,20 @@ class PillowProcessor(Processor):
             else:
                 aspect = asset.width / asset.height
                 aspect_target = width / height
-                if mode == ResizeMode.FIT and aspect >= aspect_target or \
-                   mode == ResizeMode.FILL and aspect <= aspect_target:
+                if (
+                    mode == ResizeMode.FIT
+                    and aspect >= aspect_target
+                    or mode == ResizeMode.FILL
+                    and aspect <= aspect_target
+                ):
                     resize_factor = width / image.width
                 else:
                     resize_factor = height / image.height
                 resized_width = max(1, round(resize_factor * image.width))
                 resized_height = max(1, round(resize_factor * image.height))
             # Pillow supports resampling only for 8-bit images
-            resampling_method = PIL.Image.LANCZOS if asset.depth == 8 else PIL.Image.NEAREST
-            resized_image = image.resize((resized_width, resized_height),
-                                         resample=resampling_method)
+            resampling_method = PIL.Image.Resampling.LANCZOS if asset.depth == 8 else PIL.Image.Resampling.NEAREST
+            resized_image = image.resize((resized_width, resized_height), resample=resampling_method)
         with resized_image:
             resized_asset = self._image_to_asset(resized_image, mime_type=mime_type)
         return resized_asset
@@ -172,7 +181,7 @@ class PillowProcessor(Processor):
 
         pil_format = PillowProcessor.__mime_type_to_pillow_type[mime_type]
         pil_options = dict(PillowProcessor.__format_defaults.get(mime_type, {}))
-        format_config = dict(self.config.get(mime_type.type, {}))
+        format_config = dict(self.config.get(mime_type.type or '', {}))
         format_config.update(self.config.get(str(mime_type), {}))
 
         image_buffer = io.BytesIO()
@@ -181,6 +190,7 @@ class PillowProcessor(Processor):
             use_zopfli = format_config.get('zopfli', False)
             if use_zopfli:
                 import zopfli
+
                 zopfli_png = zopfli.ZopfliPNG()
                 # Convert 16-bit per channel images to 8-bit per channel
                 zopfli_png.lossy_8bit = False
@@ -216,7 +226,7 @@ class PillowProcessor(Processor):
         asset = self.read(image_buffer)
         return asset
 
-    def _rotate(self, asset: Asset, rotation: int) -> Asset:
+    def _rotate(self, asset: Asset, rotation: PIL.Image.Transpose) -> Asset:
         """
         Creates a new image asset from specified asset whose essence is rotated
         by the specified rotation.
@@ -248,7 +258,7 @@ class PillowProcessor(Processor):
         :return: New image asset with transposed essence
         :rtype: Asset
         """
-        return self._rotate(asset, PIL.Image.TRANSPOSE)
+        return self._rotate(asset, PIL.Image.Transpose.TRANSPOSE)
 
     @operator
     def flip(self, asset: Asset, orientation: FlipOrientation) -> Asset:
@@ -263,9 +273,9 @@ class PillowProcessor(Processor):
         :rtype: Asset
         """
         if orientation == FlipOrientation.HORIZONTAL:
-            flip_orientation = PIL.Image.FLIP_LEFT_RIGHT
+            flip_orientation = PIL.Image.Transpose.FLIP_LEFT_RIGHT
         else:
-            flip_orientation = PIL.Image.FLIP_TOP_BOTTOM
+            flip_orientation = PIL.Image.Transpose.FLIP_TOP_BOTTOM
         return self._rotate(asset, flip_orientation)
 
     @operator
@@ -290,26 +300,31 @@ class PillowProcessor(Processor):
         if orientation == 2:
             oriented_asset = flip_horizontally(asset)
         elif orientation == 3:
-            oriented_asset = self._rotate(asset, PIL.Image.ROTATE_180)
+            oriented_asset = self._rotate(asset, PIL.Image.Transpose.ROTATE_180)
         elif orientation == 4:
             oriented_asset = flip_vertically(asset)
         elif orientation == 5:
-            oriented_asset = flip_vertically(self._rotate(asset, PIL.Image.ROTATE_90))
+            oriented_asset = flip_vertically(self._rotate(asset, PIL.Image.Transpose.ROTATE_90))
         elif orientation == 6:
-            oriented_asset = self._rotate(asset, PIL.Image.ROTATE_270)
+            oriented_asset = self._rotate(asset, PIL.Image.Transpose.ROTATE_270)
         elif orientation == 7:
-            oriented_asset = flip_horizontally(self._rotate(asset, PIL.Image.ROTATE_90))
+            oriented_asset = flip_horizontally(self._rotate(asset, PIL.Image.Transpose.ROTATE_90))
         elif orientation == 8:
-            oriented_asset = self._rotate(asset, PIL.Image.ROTATE_90)
+            oriented_asset = self._rotate(asset, PIL.Image.Transpose.ROTATE_90)
         else:
             raise OperatorError(f'Unable to correct image orientation with value {orientation}')
 
         return oriented_asset
 
     @operator
-    def convert(self, asset: Asset, mime_type: Union[MimeType, str],
-                color_space: Optional[str] = None, depth: Optional[int] = None,
-                data_type: Optional[str] = None) -> Asset:
+    def convert(
+        self,
+        asset: Asset,
+        mime_type: Union[MimeType, str],
+        color_space: Optional[str] = None,
+        depth: Optional[int] = None,
+        data_type: Optional[str] = None,
+    ) -> Asset:
         """
         Creates a new asset of the specified MIME type from the essence of the
         specified asset.
@@ -398,7 +413,7 @@ class PillowProcessor(Processor):
             return asset
 
         with PIL.Image.open(asset.essence) as image:
-            rotated_image = image.rotate(angle=angle, resample=PIL.Image.BICUBIC, expand=expand)
+            rotated_image = image.rotate(angle=angle, resample=PIL.Image.Resampling.BICUBIC, expand=expand)
         with rotated_image:
             rotated_asset = self._image_to_asset(rotated_image, mime_type=asset.mime_type)
 

@@ -1,13 +1,29 @@
 import abc
 import functools
-import io
 import importlib
+import io
 import os
 import shelve
 import shutil
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, FrozenSet, Generic, IO, Iterable, Iterator, \
-    Mapping, MutableMapping, MutableSequence, Optional, Set, Tuple, TypeVar, Union
+from typing import (
+    IO,
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    Generator,
+    Generic,
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from frozendict import frozendict
 
@@ -62,6 +78,7 @@ class Asset:
     :func:`~madam.core.Madam.read` to retrieve an `Asset` representing the
     content.
     """
+
     def __init__(self, essence: IO, **metadata: Any) -> None:
         """
         Initializes a new `Asset` with the specified essence and metadata.
@@ -117,11 +134,7 @@ class Asset:
         return hash(self._essence_data) ^ hash(self.metadata)
 
     def __repr__(self) -> str:
-        metadata_str = ' '.join(
-            f'{k}={v!r}'
-            for k, v in self.metadata.items()
-            if not isinstance(v, frozendict)
-        )
+        metadata_str = ' '.join(f'{k}={v!r}' for k, v in self.metadata.items() if not isinstance(v, frozendict))
         return f'<{self.__class__.__qualname__} {metadata_str}>'
 
 
@@ -130,6 +143,7 @@ class UnsupportedFormatError(Exception):
     Represents an error that is raised whenever file content with unknown type
     is encountered.
     """
+
     def __init__(self, *args) -> None:
         """
         Initializes a new `UnsupportedFormatError`.
@@ -157,10 +171,12 @@ def operator(function: Callable[..., Asset]) -> Callable[..., Callable[..., Asse
     :param function: Method to decorate
     :return: Configurable method
     """
+
     @functools.wraps(function)
     def wrapper(self, **kwargs: Any) -> Callable[..., Asset]:
         configured_operator = functools.partial(function, self, **kwargs)
         return configured_operator
+
     return wrapper
 
 
@@ -169,6 +185,7 @@ class OperatorError(Exception):
     Represents an error that is raised whenever an error occurs in an
     :func:`~madam.core.operator`.
     """
+
     def __init__(self, *args):
         """
         Initializes a new `OperatorError`.
@@ -184,6 +201,7 @@ class Pipeline:
     operators, all of which are applied to one or more assets when calling the
     :func:`~madam.core.Pipeline.process` method.
     """
+
     def __init__(self) -> None:
         """
         Initializes a new pipeline without operators.
@@ -221,6 +239,7 @@ class Processor(metaclass=abc.ABCMeta):
     Every `Processor` needs to have an `__init__` method with an optional
     `config` parameter in order to be registered correctly.
     """
+
     @abc.abstractmethod
     def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
@@ -266,6 +285,7 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     Every `MetadataProcessor` needs to have an `__init__` method with an
     optional `config` parameter in order to be registered correctly.
     """
+
     @abc.abstractmethod
     def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
@@ -334,6 +354,7 @@ class Madam:
     """
     Represents an instance of the library.
     """
+
     def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new library instance with default configuration.
@@ -410,7 +431,7 @@ class Madam:
                 return processor
         return None
 
-    def read(self, file: IO, additional_metadata: Mapping = None):
+    def read(self, file: IO, additional_metadata: Optional[Mapping] = None):
         r"""
         Reads the specified file and returns its contents as an :class:`~madam.core.Asset` object.
 
@@ -533,6 +554,7 @@ class AssetStorage(MutableMapping[AssetKey, Tuple[Asset, AssetTags]], Generic[As
     The persistence guarantees for stored data may differ based on the
     respective storage implementation.
     """
+
     @abc.abstractmethod
     def __init__(self) -> None:
         """
@@ -566,8 +588,7 @@ class AssetStorage(MutableMapping[AssetKey, Tuple[Asset, AssetTags]], Generic[As
         :rtype: Iterable
         """
         search_tags = frozenset(tags)
-        return {asset_key for asset_key, (asset, asset_tags) in self.items()
-                   if search_tags <= asset_tags}
+        return {asset_key for asset_key, (asset, asset_tags) in self.items() if search_tags <= asset_tags}
 
 
 class InMemoryStorage(AssetStorage[Any]):
@@ -577,6 +598,7 @@ class InMemoryStorage(AssetStorage[Any]):
 
     Assets are not serialized, but stored in memory.
     """
+
     def __init__(self) -> None:
         """
         Initializes a new, empty `InMemoryStorage` object.
@@ -668,6 +690,7 @@ class ShelveStorage(AssetStorage[str]):
 
     ShelveStorage uses a file on the file system to serialize Assets.
     """
+
     def __init__(self, path: Union[Path, str]):
         """
         Initializes a new `ShelveStorage` with the specified path.

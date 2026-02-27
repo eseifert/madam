@@ -7,22 +7,31 @@ import subprocess
 import tempfile
 from collections import namedtuple
 from math import ceil, cos, pi, radians, sin
-from typing import Any, Dict, IO, Iterable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union
+from types import TracebackType
+from typing import IO, Any, Dict, Iterable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union
 
 from bidict import bidict
 
-from madam.core import Asset, MetadataProcessor, Processor, operator, OperatorError, UnsupportedFormatError
+from madam.core import Asset, MetadataProcessor, OperatorError, Processor, UnsupportedFormatError, operator
 from madam.mime import MimeType
 
 
 def _probe(file: IO) -> Any:
     with tempfile.NamedTemporaryFile(mode='wb') as temp_in:
-        shutil.copyfileobj(file, temp_in.file)  # type: ignore
+        shutil.copyfileobj(file, temp_in.file)
         temp_in.flush()
         file.seek(0)
 
-        command = 'ffprobe -loglevel error -print_format json -show_format -show_streams'.split()
-        command.append(temp_in.name)
+        command: list[str] = [
+            'ffprobe',
+            '-loglevel',
+            'error',
+            '-print_format',
+            'json',
+            '-show_format',
+            '-show_streams',
+            temp_in.name,
+        ]
         result = subprocess.run(command, capture_output=True, check=True)
 
     string_result = result.stdout.decode('utf-8')
@@ -37,8 +46,9 @@ def _combine_metadata(asset, *cloned_keys: str, **additional_metadata: Any) -> M
     return metadata
 
 
-_FFmpegMode = namedtuple('_FFmpegMode', 'name, component_count, bits_per_pixel, readable, writeable, '
-                                        'hw_accelerated, paletted, bitstream')
+_FFmpegMode = namedtuple(
+    '_FFmpegMode', 'name, component_count, bits_per_pixel, readable, writeable, hw_accelerated, paletted, bitstream'
+)
 
 
 def _get_decoder_and_stream_type(probe_data: Mapping[str, Any]) -> Tuple[str, str]:
@@ -66,13 +76,13 @@ def _param_map_to_seq(param_mapping: Mapping[str, Any]) -> Sequence[str]:
     return params
 
 
-class _FFmpegContext(tempfile.TemporaryDirectory):
+class _FFmpegContext(tempfile.TemporaryDirectory[str]):
     def __init__(self, source: IO, result: IO) -> None:
         super().__init__(prefix='madam')
         self.__source = source
         self.__result = result
 
-    def __enter__(self) -> '_FFmpegContext':
+    def __enter__(self) -> '_FFmpegContext':  # type: ignore[override]
         tmpdir_path = super().__enter__()
         self.input_path = os.path.join(tmpdir_path, 'input_file')
         self.output_path = os.path.join(tmpdir_path, 'output_file')
@@ -83,7 +93,9 @@ class _FFmpegContext(tempfile.TemporaryDirectory):
 
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(  # type: ignore[override]
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None
+    ) -> None:
         if os.path.exists(self.output_path):
             with open(self.output_path, 'rb') as temp_out:
                 shutil.copyfileobj(temp_out, self.__result)
@@ -160,13 +172,8 @@ class FFmpegProcessor(Processor):
                 'row-mt': 1,
                 'crf': 32,
             },
-            'opus': {
-                'strict': -2
-            },
-            'vorbis': {
-                'ac': 2,
-                'strict': -2
-            },
+            'opus': {'strict': -2},
+            'vorbis': {'ac': 2, 'strict': -2},
             'vp9': {
                 'tile-columns': 6,
                 'crf': 32,
@@ -176,7 +183,8 @@ class FFmpegProcessor(Processor):
 
     __container_options = {
         MimeType('video/x-matroska'): [
-            '-avoid_negative_ts', 'make_zero',
+            '-avoid_negative_ts',
+            'make_zero',
         ],
     }
 
@@ -408,8 +416,9 @@ class FFmpegProcessor(Processor):
         string_result = result.stdout.decode('utf-8')
         version_string = string_result.split()[2]
         if version_string < self._min_version:
-            raise EnvironmentError(f'Found ffprobe version {version_string}. '
-                                   f'Requiring at least version {self._min_version}.')
+            raise EnvironmentError(
+                f'Found ffprobe version {version_string}. Requiring at least version {self._min_version}.'
+            )
 
         self.__threads = multiprocessing.cpu_count()
 
@@ -456,7 +465,7 @@ class FFmpegProcessor(Processor):
             if 'codec_name' in stream:
                 metadata[stream_type]['codec'] = stream['codec_name']
             if 'bit_rate' in stream:
-                metadata[stream_type]['bitrate'] = float(stream['bit_rate'])/1000.0
+                metadata[stream_type]['bitrate'] = float(stream['bit_rate']) / 1000.0
             if 'pix_fmt' in stream:
                 color_space, depth, data_type = FFmpegProcessor.__ffmpeg_pix_fmt_to_color_mode[stream['pix_fmt']]
                 metadata[stream_type]['color_space'] = color_space
@@ -499,12 +508,23 @@ class FFmpegProcessor(Processor):
                 temp_in.flush()
 
             command = [
-                'ffmpeg', '-loglevel', 'error',
-                '-f', encoder_name, '-i', ctx.input_path,
-                '-filter:v', f'scale={width:d}:{height:d}',
-                '-qscale', '0',
-                '-threads', str(self.__threads),
-                '-f', encoder_name, '-y', ctx.output_path
+                'ffmpeg',
+                '-loglevel',
+                'error',
+                '-f',
+                encoder_name,
+                '-i',
+                ctx.input_path,
+                '-filter:v',
+                f'scale={width:d}:{height:d}',
+                '-qscale',
+                '0',
+                '-threads',
+                str(self.__threads),
+                '-f',
+                encoder_name,
+                '-y',
+                ctx.output_path,
             ]
 
             try:
@@ -514,18 +534,20 @@ class FFmpegProcessor(Processor):
                 raise OperatorError(f'Could not resize asset: {error_message}')
 
         metadata = _combine_metadata(
-            asset,
-            'mime_type', 'duration', 'video', 'audio', 'subtitle',
-            width=width, height=height
+            asset, 'mime_type', 'duration', 'video', 'audio', 'subtitle', width=width, height=height
         )
 
         return Asset(essence=result, **metadata)
 
     @operator
-    def convert(self, asset: Asset, mime_type: Union[MimeType, str],
-                video: Optional[Mapping[str, Any]] = None,
-                audio: Optional[Mapping[str, Any]] = None,
-                subtitle: Optional[Mapping[str, Any]] = None) -> Asset:
+    def convert(
+        self,
+        asset: Asset,
+        mime_type: Union[MimeType, str],
+        video: Optional[Mapping[str, Any]] = None,
+        audio: Optional[Mapping[str, Any]] = None,
+        subtitle: Optional[Mapping[str, Any]] = None,
+    ) -> Asset:
         """
         Creates a new asset of the specified MIME type from the essence of the
         specified asset.
@@ -568,13 +590,9 @@ class FFmpegProcessor(Processor):
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
-            command = [
-                'ffmpeg',
-                '-loglevel', 'error',
-                '-i', ctx.input_path
-            ]
+            command = ['ffmpeg', '-loglevel', 'error', '-i', ctx.input_path]
 
-            format_config = dict(self.config.get(mime_type.type, {}))
+            format_config = dict(self.config.get(mime_type.type or '', {}))
             if mime_type.type == 'video':
                 keyframe_interval = int(format_config.get('keyframe_interval', 100))
                 command.extend(['-g', str(keyframe_interval)])
@@ -593,11 +611,16 @@ class FFmpegProcessor(Processor):
                 if video.get('bitrate'):
                     # Set minimum at 50% of bitrate and maximum at 145% of bitrate
                     # (see https://developers.google.com/media/vp9/settings/vod/)
-                    command.extend([
-                        '-minrate', f'{round(0.5 * video["bitrate"]):d}k',
-                        '-b:v', f'{video["bitrate"]:d}k',
-                        '-maxrate', f'{round(1.45 * video["bitrate"]):d}k',
-                    ])
+                    command.extend(
+                        [
+                            '-minrate',
+                            f'{round(0.5 * video["bitrate"]):d}k',
+                            '-b:v',
+                            f'{video["bitrate"]:d}k',
+                            '-maxrate',
+                            f'{round(1.45 * video["bitrate"]):d}k',
+                        ]
+                    )
                 if video.get('color_space') or video.get('depth') or video.get('data_type'):
                     color_mode = (
                         video.get('color_space', asset.video.get('color_space', 'YUV')),
@@ -634,8 +657,7 @@ class FFmpegProcessor(Processor):
                     container_options.extend(['-movflags', '+faststart'])
             command.extend(container_options)
 
-            command.extend(['-threads', str(self.__threads),
-                            '-f', encoder_name, '-y', ctx.output_path])
+            command.extend(['-threads', str(self.__threads), '-f', encoder_name, '-y', ctx.output_path])
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
@@ -675,10 +697,23 @@ class FFmpegProcessor(Processor):
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
-            command = ['ffmpeg', '-v', 'error',
-                       '-ss', str(float(from_seconds)), '-t', str(duration),
-                       '-i', ctx.input_path, '-codec', 'copy',
-                       '-f', encoder_name, '-y', ctx.output_path]
+            command = [
+                'ffmpeg',
+                '-v',
+                'error',
+                '-ss',
+                str(float(from_seconds)),
+                '-t',
+                str(duration),
+                '-i',
+                ctx.input_path,
+                '-codec',
+                'copy',
+                '-f',
+                encoder_name,
+                '-y',
+                ctx.output_path,
+            ]
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
@@ -686,9 +721,9 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError(f'Could not trim asset: {error_message}')
 
-        metadata = _combine_metadata(asset,
-                                     'mime_type', 'width', 'height', 'video', 'audio', 'subtitle',
-                                     duration=duration)
+        metadata = _combine_metadata(
+            asset, 'mime_type', 'width', 'height', 'video', 'audio', 'subtitle', duration=duration
+        )
 
         return Asset(essence=result, **metadata)
 
@@ -719,11 +754,23 @@ class FFmpegProcessor(Processor):
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
-            command = ['ffmpeg', '-v', 'error',
-                       '-i', ctx.input_path,
-                       '-ss', str(float(seconds)),
-                       '-codec:v', codec_name, '-vframes', '1',
-                       '-f', encoder_name, '-y', ctx.output_path]
+            command = [
+                'ffmpeg',
+                '-v',
+                'error',
+                '-i',
+                ctx.input_path,
+                '-ss',
+                str(float(seconds)),
+                '-codec:v',
+                codec_name,
+                '-vframes',
+                '1',
+                '-f',
+                encoder_name,
+                '-y',
+                ctx.output_path,
+            ]
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
@@ -731,9 +778,7 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError(f'Could not extract frame from asset: {error_message}')
 
-        metadata = _combine_metadata(asset,
-                                     'width', 'height',
-                                     mime_type=mime_type)
+        metadata = _combine_metadata(asset, 'width', 'height', mime_type=mime_type)
         if 'video' in asset.metadata:
             metadata['depth'] = asset.metadata['video']['depth']
 
@@ -779,10 +824,21 @@ class FFmpegProcessor(Processor):
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
-            command = ['ffmpeg', '-v', 'error',
-                       '-i', ctx.input_path, '-codec', 'copy',
-                       '-f:v', f'crop=w={width:d}:h={height:d}:x={x:d}:y={y:d}',
-                       '-f', encoder_name, '-y', ctx.output_path]
+            command = [
+                'ffmpeg',
+                '-v',
+                'error',
+                '-i',
+                ctx.input_path,
+                '-codec',
+                'copy',
+                '-f:v',
+                f'crop=w={width:d}:h={height:d}:x={x:d}:y={y:d}',
+                '-f',
+                encoder_name,
+                '-y',
+                ctx.output_path,
+            ]
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
@@ -790,9 +846,9 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError(f'Could not crop asset: {error_message}')
 
-        metadata = _combine_metadata(asset,
-                                     'mime_type', 'duration', 'video', 'audio', 'subtitle',
-                                     width=width, height=height)
+        metadata = _combine_metadata(
+            asset, 'mime_type', 'duration', 'video', 'audio', 'subtitle', width=width, height=height
+        )
 
         return Asset(essence=result, **metadata)
 
@@ -833,7 +889,7 @@ class FFmpegProcessor(Processor):
             else:
                 width_ = asset.height
                 height_ = asset.width
-                angle_rad_ = angle_rad % pi - pi/2
+                angle_rad_ = angle_rad % pi - pi / 2
             cos_a = cos(angle_rad_)
             sin_a = sin(angle_rad_)
             width = ceil(round(width_ * cos_a + height_ * sin_a, 7))
@@ -841,10 +897,21 @@ class FFmpegProcessor(Processor):
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
-            command = ['ffmpeg', '-v', 'error',
-                       '-i', ctx.input_path, '-codec', 'copy',
-                       '-f:v', f'rotate=a={angle_rad:f}:ow={width:d}:oh={height:d})',
-                       '-f', encoder_name, '-y', ctx.output_path]
+            command = [
+                'ffmpeg',
+                '-v',
+                'error',
+                '-i',
+                ctx.input_path,
+                '-codec',
+                'copy',
+                '-f:v',
+                f'rotate=a={angle_rad:f}:ow={width:d}:oh={height:d})',
+                '-f',
+                encoder_name,
+                '-y',
+                ctx.output_path,
+            ]
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
@@ -852,9 +919,9 @@ class FFmpegProcessor(Processor):
                 error_message = ffmpeg_error.stderr.decode('utf-8')
                 raise OperatorError(f'Could not rotate asset: {error_message}')
 
-        metadata = _combine_metadata(asset,
-                                     'mime_type', 'duration', 'video', 'audio', 'subtitle',
-                                     width=width, height=height)
+        metadata = _combine_metadata(
+            asset, 'mime_type', 'duration', 'video', 'audio', 'subtitle', width=width, height=height
+        )
 
         return Asset(essence=result, **metadata)
 
@@ -863,6 +930,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.
     """
+
     __decoder_and_stream_type_to_mime_type = {
         ('matroska,webm', 'video'): MimeType('video/x-matroska'),
         ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): MimeType('video/quicktime'),
@@ -892,84 +960,86 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         MimeType('video/mp2t'): bidict({}),
         MimeType('video/quicktime'): bidict({}),
         MimeType('video/ogg'): bidict({}),
-        MimeType('audio/mpeg'): bidict({
-            'album': 'album',                   # TALB Album
-            'album_artist': 'album_artist',     # TPE2 Band/orchestra/accompaniment
-            'album_sort': 'album-sort',         # TSOA Album sort order
-            'artist': 'artist',                 # TPE1 Lead performer(s)/Soloist(s)
-            'artist_sort': 'artist-sort',       # TSOP Performer sort order
-            'bpm': 'TBPM',                      # TBPM BPM (beats per minute)
-            'composer': 'composer',             # TCOM Composer
-            'performer': 'performer',           # TPE3 Conductor/performer refinement
-            'content_group': 'TIT1',            # TIT1 Content group description
-            'copyright': 'copyright',           # TCOP (Copyright message)
-            'date': 'date',                     # TDRC Recording time
-            'disc': 'disc',                     # TPOS Part of a set
-            'disc_subtitle': 'TSST',            # TSST Set subtitle
-            'encoded_by': 'encoded_by',         # TENC Encoded by
-            'encoder': 'encoder',               # TSSE Software/Hardware and settings used for encoding
-            'encoding_time': 'TDEN',            # TDEN Encoding time
-            'file_type': 'TFLT',                # TFLT File type
-            'genre': 'genre',                   # TCON (Content type)
-            'isrc': 'TSRC',                     # TSRC ISRC (international standard recording code)
-            'initial_key': 'TKEY',              # TKEY Musical key in which the sound starts
-            'involved_people': 'TIPL',          # TIPL Involved people list
-            'language': 'language',             # TLAN Language(s)
-            'length': 'TLEN',                   # TLEN Length of the audio file in milliseconds
-            'lyricist': 'TEXT',                 # TEXT Lyricist/Text writer
-            'lyrics': 'lyrics',                 # USLT Unsychronized lyric/text transcription
-            'media_type': 'TMED',               # TMED Media type
-            'mood': 'TMOO',                     # TMOO Mood
-            'original_album': 'TOAL',           # TOAL Original album/movie/show title
-            'original_artist': 'TOPE',          # TOPE Original artist(s)/performer(s)
-            'original_date': 'TDOR',            # TDOR Original release time
-            'original_filename': 'TOFN',        # TOFN Original filename
-            'original_lyricist': 'TOLY',        # TOLY Original lyricist(s)/text writer(s)
-            'owner': 'TOWN',                    # TOWN File owner/licensee
-            'credits': 'TMCL',                  # TMCL Musician credits list
-            'playlist_delay': 'TDLY',           # TDLY Playlist delay
-            'produced_by': 'TPRO',              # TPRO Produced notice
-            'publisher': 'publisher',           # TPUB Publisher
-            'radio_station_name': 'TRSN',       # TRSN Internet radio station name
-            'radio_station_owner': 'TRSO',      # TRSO Internet radio station owner
-            'remixed_by': 'TP4',                # TPE4 Interpreted, remixed, or otherwise modified by
-            'tagging_date': 'TDTG',             # TDTG Tagging time
-            'title': 'title',                   # TIT2 Title/songname/content description
-            'title_sort': 'title-sort',         # TSOT Title sort order
-            'track': 'track',                   # TRCK Track number/Position in set
-            'version': 'TIT3',                  # TIT3 Subtitle/Description refinement
-
-            # Release time (TDRL) can be written, but it collides with
-            # recording time (TDRC) when reading;
-
-            # AENC, APIC, ASPI, COMM, COMR, ENCR, EQU2, ETCO, GEOB, GRID, LINK,
-            # MCDI, MLLT, OWNE, PRIV, PCNT, POPM, POSS, RBUF, RVA2, RVRB, SEEK,
-            # SIGN, SYLT, SYTC, UFID, USER, WCOM, WCOP, WOAF, WOAR, WOAS, WORS,
-            # WPAY, WPUB, and WXXX will be written as TXXX tag
-        }),
-        MimeType('audio/ogg'): bidict({
-            'album': 'ALBUM',                   # Collection name
-            'album_artist': 'album_artist',     # Band/orchestra/accompaniment
-            'artist': 'ARTIST',                 # Band or singer, composer, author, etc.
-            'comment': 'comment',               # Short text description of the contents
-            'composer': 'COMPOSER',             # Composer
-            'contact': 'CONTACT',               # Contact information for the creators or distributors
-            'copyright': 'COPYRIGHT',           # Copyright attribution
-            'date': 'DATE',                     # Date the track was recorded
-            'disc': 'disc',                     # Collection number
-            'encoded_by': 'ENCODED-BY',         # Encoded by
-            'encoder': 'ENCODER',               # Software/Hardware and settings used for encoding
-            'genre': 'GENRE',                   # Short text indication of music genre
-            'isrc': 'ISRC',                     # ISRC number
-            'license': 'LICENSE',               # License information
-            'location': 'LOCATION',             # Location where track was recorded
-            'performer': 'PERFORMER',           # Artist(s) who performed the work (conductor, orchestra, etc.)
-            'produced_by': 'ORGANIZATION',      # Organization producing the track (i.e. the 'record label')
-            'title': 'TITLE',                   # Track/Work name
-            'track': 'track',                   # Track number if part of a collection or album
-            'tracks': 'TRACKTOTAL',             # Total number of track number in a collection or album
-            'version': 'VERSION',               # Version of the track (e.g. remix info)
-        }),
+        MimeType('audio/mpeg'): bidict(
+            {
+                'album': 'album',  # TALB Album
+                'album_artist': 'album_artist',  # TPE2 Band/orchestra/accompaniment
+                'album_sort': 'album-sort',  # TSOA Album sort order
+                'artist': 'artist',  # TPE1 Lead performer(s)/Soloist(s)
+                'artist_sort': 'artist-sort',  # TSOP Performer sort order
+                'bpm': 'TBPM',  # TBPM BPM (beats per minute)
+                'composer': 'composer',  # TCOM Composer
+                'performer': 'performer',  # TPE3 Conductor/performer refinement
+                'content_group': 'TIT1',  # TIT1 Content group description
+                'copyright': 'copyright',  # TCOP (Copyright message)
+                'date': 'date',  # TDRC Recording time
+                'disc': 'disc',  # TPOS Part of a set
+                'disc_subtitle': 'TSST',  # TSST Set subtitle
+                'encoded_by': 'encoded_by',  # TENC Encoded by
+                'encoder': 'encoder',  # TSSE Software/Hardware and settings used for encoding
+                'encoding_time': 'TDEN',  # TDEN Encoding time
+                'file_type': 'TFLT',  # TFLT File type
+                'genre': 'genre',  # TCON (Content type)
+                'isrc': 'TSRC',  # TSRC ISRC (international standard recording code)
+                'initial_key': 'TKEY',  # TKEY Musical key in which the sound starts
+                'involved_people': 'TIPL',  # TIPL Involved people list
+                'language': 'language',  # TLAN Language(s)
+                'length': 'TLEN',  # TLEN Length of the audio file in milliseconds
+                'lyricist': 'TEXT',  # TEXT Lyricist/Text writer
+                'lyrics': 'lyrics',  # USLT Unsychronized lyric/text transcription
+                'media_type': 'TMED',  # TMED Media type
+                'mood': 'TMOO',  # TMOO Mood
+                'original_album': 'TOAL',  # TOAL Original album/movie/show title
+                'original_artist': 'TOPE',  # TOPE Original artist(s)/performer(s)
+                'original_date': 'TDOR',  # TDOR Original release time
+                'original_filename': 'TOFN',  # TOFN Original filename
+                'original_lyricist': 'TOLY',  # TOLY Original lyricist(s)/text writer(s)
+                'owner': 'TOWN',  # TOWN File owner/licensee
+                'credits': 'TMCL',  # TMCL Musician credits list
+                'playlist_delay': 'TDLY',  # TDLY Playlist delay
+                'produced_by': 'TPRO',  # TPRO Produced notice
+                'publisher': 'publisher',  # TPUB Publisher
+                'radio_station_name': 'TRSN',  # TRSN Internet radio station name
+                'radio_station_owner': 'TRSO',  # TRSO Internet radio station owner
+                'remixed_by': 'TP4',  # TPE4 Interpreted, remixed, or otherwise modified by
+                'tagging_date': 'TDTG',  # TDTG Tagging time
+                'title': 'title',  # TIT2 Title/songname/content description
+                'title_sort': 'title-sort',  # TSOT Title sort order
+                'track': 'track',  # TRCK Track number/Position in set
+                'version': 'TIT3',  # TIT3 Subtitle/Description refinement
+                # Release time (TDRL) can be written, but it collides with
+                # recording time (TDRC) when reading;
+                # AENC, APIC, ASPI, COMM, COMR, ENCR, EQU2, ETCO, GEOB, GRID, LINK,
+                # MCDI, MLLT, OWNE, PRIV, PCNT, POPM, POSS, RBUF, RVA2, RVRB, SEEK,
+                # SIGN, SYLT, SYTC, UFID, USER, WCOM, WCOP, WOAF, WOAR, WOAS, WORS,
+                # WPAY, WPUB, and WXXX will be written as TXXX tag
+            }
+        ),
+        MimeType('audio/ogg'): bidict(
+            {
+                'album': 'ALBUM',  # Collection name
+                'album_artist': 'album_artist',  # Band/orchestra/accompaniment
+                'artist': 'ARTIST',  # Band or singer, composer, author, etc.
+                'comment': 'comment',  # Short text description of the contents
+                'composer': 'COMPOSER',  # Composer
+                'contact': 'CONTACT',  # Contact information for the creators or distributors
+                'copyright': 'COPYRIGHT',  # Copyright attribution
+                'date': 'DATE',  # Date the track was recorded
+                'disc': 'disc',  # Collection number
+                'encoded_by': 'ENCODED-BY',  # Encoded by
+                'encoder': 'ENCODER',  # Software/Hardware and settings used for encoding
+                'genre': 'GENRE',  # Short text indication of music genre
+                'isrc': 'ISRC',  # ISRC number
+                'license': 'LICENSE',  # License information
+                'location': 'LOCATION',  # Location where track was recorded
+                'performer': 'PERFORMER',  # Artist(s) who performed the work (conductor, orchestra, etc.)
+                'produced_by': 'ORGANIZATION',  # Organization producing the track (i.e. the 'record label')
+                'title': 'TITLE',  # Track/Work name
+                'track': 'track',  # Track number if part of a collection or album
+                'tracks': 'TRACKTOTAL',  # Total number of track number in a collection or album
+                'version': 'VERSION',  # Version of the track (e.g. remix info)
+            }
+        ),
         MimeType('audio/wav'): bidict({}),
     }
 
@@ -1026,10 +1096,21 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         result = io.BytesIO()
         with _FFmpegContext(file, result) as ctx:
             encoder_name = self.__mime_type_to_encoder[mime_type]
-            command = ['ffmpeg', '-loglevel', 'error',
-                       '-i', ctx.input_path,
-                       '-map_metadata', '-1', '-codec', 'copy',
-                       '-y', '-f', encoder_name, ctx.output_path]
+            command = [
+                'ffmpeg',
+                '-loglevel',
+                'error',
+                '-i',
+                ctx.input_path,
+                '-map_metadata',
+                '-1',
+                '-codec',
+                'copy',
+                '-y',
+                '-f',
+                encoder_name,
+                ctx.output_path,
+            ]
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
@@ -1038,7 +1119,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
         return result
 
-    def combine(self, file: IO, metadata_by_type: Mapping[str, Mapping]) -> IO:
+    def combine(self, file: IO, metadata: Mapping[str, Mapping]) -> IO:
         try:
             probe_data = _probe(file)
         except subprocess.CalledProcessError:
@@ -1050,21 +1131,20 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             raise UnsupportedFormatError('Unsupported metadata source.')
 
         # Validate provided metadata
-        if not metadata_by_type:
+        if not metadata:
             raise ValueError('No metadata provided')
-        if 'ffmetadata' not in metadata_by_type:
-            raise UnsupportedFormatError(f'Invalid metadata to be combined with essence: {metadata_by_type.keys()!r}')
-        if not metadata_by_type['ffmetadata']:
+        if 'ffmetadata' not in metadata:
+            raise UnsupportedFormatError(f'Invalid metadata to be combined with essence: {metadata.keys()!r}')
+        if not metadata['ffmetadata']:
             raise ValueError('No metadata provided')
 
         # Add metadata to file
         result = io.BytesIO()
         with _FFmpegContext(file, result) as ctx:
             encoder_name = self.__mime_type_to_encoder[mime_type]
-            command = ['ffmpeg', '-loglevel', 'error',
-                       '-f', encoder_name, '-i', ctx.input_path]
+            command = ['ffmpeg', '-loglevel', 'error', '-f', encoder_name, '-i', ctx.input_path]
 
-            ffmetadata = metadata_by_type['ffmetadata']
+            ffmetadata = metadata['ffmetadata']
             metadata_keys = self.metadata_keys_by_mime_type[mime_type]
             for metadata_key, value in ffmetadata.items():
                 ffmetadata_key = metadata_keys.get(metadata_key)
@@ -1073,8 +1153,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
                 command.append('-metadata')
                 command.append(f'{ffmetadata_key}={value}')
 
-            command.extend(['-codec', 'copy',
-                            '-y', '-f', encoder_name, ctx.output_path])
+            command.extend(['-codec', 'copy', '-y', '-f', encoder_name, ctx.output_path])
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)

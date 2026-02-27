@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import io
-from typing import Any, Callable, IO, Iterable, Mapping, Optional, Tuple
+from typing import IO, Any, Callable, Iterable, Mapping, Optional, Tuple
 from xml.etree import ElementTree as ET
 
 from madam.core import Asset, Dict, MetadataProcessor, Processor, UnsupportedFormatError, operator
-
 
 _INCH_TO_MM = 1 / 25.4
 _PX_PER_INCH = 90
@@ -62,7 +63,7 @@ def _register_xml_namespaces() -> None:
         ET.register_namespace(prefix, uri)
 
 
-def _parse_svg(file: IO) -> Tuple[ET.ElementTree, ET.Element]:
+def _parse_svg(file: IO) -> Tuple[ET.ElementTree[ET.Element], ET.Element]:
     _register_xml_namespaces()
     try:
         tree = ET.parse(file)
@@ -74,7 +75,7 @@ def _parse_svg(file: IO) -> Tuple[ET.ElementTree, ET.Element]:
     return tree, root
 
 
-def _write_svg(tree: ET.ElementTree) -> IO:
+def _write_svg(tree: ET.ElementTree[ET.Element]) -> IO:
     file = io.BytesIO()
     tree.write(file, xml_declaration=False, encoding='utf-8')
     file.seek(0)
@@ -85,6 +86,7 @@ class SVGProcessor(Processor):
     """
     Represents a processor that handles *Scalable Vector Graphics* (SVG) data.
     """
+
     def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new `SVGProcessor`.
@@ -144,60 +146,37 @@ class SVGProcessor(Processor):
         # Minify XML
         SVGProcessor.__remove_xml_whitespace(root)
         # Remove empty texts
-        SVGProcessor.__remove_elements(root, 'svg:text',
-                                       lambda e: bool(
-                                           e.text and
-                                           e.text.strip() or
-                                           list(e)
-                                      ))
+        SVGProcessor.__remove_elements(root, 'svg:text', lambda e: bool(e.text and e.text.strip() or list(e)))
         # Remove all empty circles with radius 0
-        SVGProcessor.__remove_elements(root, 'svg:circle',
-                                       lambda e: bool(
-                                           list(e) or
-                                           e.get('r') != '0'
-                                      ))
+        SVGProcessor.__remove_elements(root, 'svg:circle', lambda e: bool(list(e) or e.get('r') != '0'))
         # Remove all empty ellipses with x-axis or y-axis radius 0
-        SVGProcessor.__remove_elements(root, 'svg:ellipse',
-                                       lambda e: bool(
-                                           list(e) or
-                                           e.get('rx') != '0' and
-                                           e.get('ry') != '0'
-                                      ))
+        SVGProcessor.__remove_elements(
+            root, 'svg:ellipse', lambda e: bool(list(e) or e.get('rx') != '0' and e.get('ry') != '0')
+        )
         # Remove all empty rectangles with width or height 0
-        SVGProcessor.__remove_elements(root, 'svg:rect',
-                                       lambda e: bool(
-                                           list(e) or
-                                           e.get('width') != '0' and
-                                           e.get('height') != '0'
-                                      ))
+        SVGProcessor.__remove_elements(
+            root, 'svg:rect', lambda e: bool(list(e) or e.get('width') != '0' and e.get('height') != '0')
+        )
         # Remove all patterns with width or height 0
-        SVGProcessor.__remove_elements(root, 'svg:pattern',
-                                       lambda e: e.get('width') != '0' and
-                                                 e.get('height') != '0')
+        SVGProcessor.__remove_elements(root, 'svg:pattern', lambda e: e.get('width') != '0' and e.get('height') != '0')
         # Remove all images with width or height 0
-        SVGProcessor.__remove_elements(root, 'svg:image',
-                                       lambda e: e.get('width') != '0' and
-                                                 e.get('height') != '0')
+        SVGProcessor.__remove_elements(root, 'svg:image', lambda e: e.get('width') != '0' and e.get('height') != '0')
         # Remove all paths without coordinates
-        SVGProcessor.__remove_elements(root, 'svg:path',
-                                       lambda e: bool(e.get('d', '').strip()))
+        SVGProcessor.__remove_elements(root, 'svg:path', lambda e: bool(e.get('d', '').strip()))
         # Remove all polygons without points
-        SVGProcessor.__remove_elements(root, 'svg:polygon',
-                                       lambda e: bool(e.get('points', '').strip()))
+        SVGProcessor.__remove_elements(root, 'svg:polygon', lambda e: bool(e.get('points', '').strip()))
         # Remove all polylines without points
-        SVGProcessor.__remove_elements(root, 'svg:polyline',
-                                       lambda e: bool(e.get('points', '').strip()))
+        SVGProcessor.__remove_elements(root, 'svg:polyline', lambda e: bool(e.get('points', '').strip()))
         # Remove all invisible or hidden elements
-        SVGProcessor.__remove_elements(root, '*',
-                                       lambda e: e.get('display') != 'none' and
-                                                 e.get('visibility') != 'hidden' and
-                                                 e.get('opacity') != '0')
+        SVGProcessor.__remove_elements(
+            root,
+            '*',
+            lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and e.get('opacity') != '0',
+        )
         # Remove empty groups
-        SVGProcessor.__remove_elements(root, 'svg:g',
-                                       lambda e: bool(list(e)))
+        SVGProcessor.__remove_elements(root, 'svg:g', lambda e: bool(list(e)))
         # Remove all invisible or hidden elements
-        SVGProcessor.__remove_elements(root, 'svg:defs',
-                                       lambda e: bool(list(e)))
+        SVGProcessor.__remove_elements(root, 'svg:defs', lambda e: bool(list(e)))
 
         essence = _write_svg(tree)
 
@@ -216,6 +195,7 @@ class SVGMetadataProcessor(MetadataProcessor):
 
     It is assumed that the SVG XML uses UTF-8 encoding.
     """
+
     def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
         """
         Initializes a new `SVGMetadataProcessor`.

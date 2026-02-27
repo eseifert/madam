@@ -1,1 +1,1 @@
-from madam.core import Madam
+from madam.core import Madam as Madam

@@ -14,6 +14,7 @@ class MimeType:
     - Parameters like ``charset`` are not supported and will be treated as part
       of the subtype
     """
+
     __slots__ = 'type', 'subtype'
 
     def __init__(self, mediatype: Optional[Union[str, 'MimeType']], subtype: Optional[str] = None):

@@ -1,1 +1,1 @@
-from madam.ffmpeg import FFmpegProcessor
+from madam.ffmpeg import FFmpegProcessor as FFmpegProcessor
