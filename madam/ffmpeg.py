@@ -6,9 +6,10 @@ import shutil
 import subprocess
 import tempfile
 from collections import namedtuple
+from collections.abc import Iterable, Mapping
 from math import ceil, cos, pi, radians, sin
 from types import TracebackType
-from typing import IO, Any, Dict, Iterable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union
+from typing import IO, Any, Self
 
 from bidict import bidict
 
@@ -40,7 +41,7 @@ def _probe(file: IO) -> Any:
     return json_obj
 
 
-def _combine_metadata(asset, *cloned_keys: str, **additional_metadata: Any) -> MutableMapping[str, Any]:
+def _combine_metadata(asset, *cloned_keys: str, **additional_metadata: Any) -> dict[str, Any]:
     metadata = {key: asset.metadata[key] for key in cloned_keys if key in asset.metadata}
     metadata.update(additional_metadata)
     return metadata
@@ -51,7 +52,7 @@ _FFmpegMode = namedtuple(
 )
 
 
-def _get_decoder_and_stream_type(probe_data: Mapping[str, Any]) -> Tuple[str, str]:
+def _get_decoder_and_stream_type(probe_data: Mapping[str, Any]) -> tuple[str, str]:
     decoder_name = probe_data['format']['format_name']
 
     stream_types = {stream['codec_type'] for stream in probe_data['streams']}
@@ -67,7 +68,7 @@ def _get_decoder_and_stream_type(probe_data: Mapping[str, Any]) -> Tuple[str, st
     return decoder_name, stream_type
 
 
-def _param_map_to_seq(param_mapping: Mapping[str, Any]) -> Sequence[str]:
+def _param_map_to_seq(param_mapping: Mapping[str, Any]) -> list[str]:
     params = []
     for param, value in param_mapping.items():
         params.append(f'-{param}')
@@ -82,7 +83,7 @@ class _FFmpegContext(tempfile.TemporaryDirectory[str]):
         self.__source = source
         self.__result = result
 
-    def __enter__(self) -> '_FFmpegContext':  # type: ignore[override]
+    def __enter__(self) -> Self:  # type: ignore[override]
         tmpdir_path = super().__enter__()
         self.input_path = os.path.join(tmpdir_path, 'input_file')
         self.output_path = os.path.join(tmpdir_path, 'output_file')
@@ -401,7 +402,7 @@ class FFmpegProcessor(Processor):
         ('YUVA', 16, 'uint'): 'yuva420p16le',
     }
 
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `FFmpegProcessor`.
 
@@ -442,7 +443,7 @@ class FFmpegProcessor(Processor):
         if not mime_type:
             raise UnsupportedFormatError('Unsupported metadata source.')
 
-        metadata: Dict[str, Any] = dict(
+        metadata: dict[str, Any] = dict(
             mime_type=str(mime_type),
         )
 
@@ -543,10 +544,10 @@ class FFmpegProcessor(Processor):
     def convert(
         self,
         asset: Asset,
-        mime_type: Union[MimeType, str],
-        video: Optional[Mapping[str, Any]] = None,
-        audio: Optional[Mapping[str, Any]] = None,
-        subtitle: Optional[Mapping[str, Any]] = None,
+        mime_type: MimeType | str,
+        video: Mapping[str, Any] | None = None,
+        audio: Mapping[str, Any] | None = None,
+        subtitle: Mapping[str, Any] | None = None,
     ) -> Asset:
         """
         Creates a new asset of the specified MIME type from the essence of the
@@ -728,7 +729,7 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
     @operator
-    def extract_frame(self, asset: Asset, mime_type: Union[MimeType, str], seconds: float = 0) -> Asset:
+    def extract_frame(self, asset: Asset, mime_type: MimeType | str, seconds: float = 0) -> Asset:
         """
         Creates a new image asset of the specified MIME type from the essence
         of the specified video asset.
@@ -1043,7 +1044,7 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         MimeType('audio/wav'): bidict({}),
     }
 
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `FFmpegMetadataProcessor`.
 

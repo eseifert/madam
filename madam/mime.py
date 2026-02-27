@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from functools import total_ordering
-from typing import Optional, Union
 
 
 @total_ordering
@@ -17,7 +18,7 @@ class MimeType:
 
     __slots__ = 'type', 'subtype'
 
-    def __init__(self, mediatype: Optional[Union[str, 'MimeType']], subtype: Optional[str] = None):
+    def __init__(self, mediatype: str | 'MimeType' | None, subtype: str | None = None):
         """
         Initializes a new MIME type with either
 

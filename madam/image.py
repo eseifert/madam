@@ -1,6 +1,7 @@
 import io
+from collections.abc import Callable, Mapping
 from enum import Enum
-from typing import IO, Any, Callable, Mapping, Optional, Union
+from typing import IO, Any
 
 import PIL.ExifTags
 import PIL.Image
@@ -90,7 +91,7 @@ class PillowProcessor(Processor):
         }
     )
 
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `PillowProcessor`.
 
@@ -165,7 +166,7 @@ class PillowProcessor(Processor):
             resized_asset = self._image_to_asset(resized_image, mime_type=mime_type)
         return resized_asset
 
-    def _image_to_asset(self, image: PIL.Image.Image, mime_type: Union[MimeType, str]) -> Asset:
+    def _image_to_asset(self, image: PIL.Image.Image, mime_type: MimeType | str) -> Asset:
         """
         Converts an PIL image to a MADAM asset. The conversion can also include
         a change in file type.
@@ -320,10 +321,10 @@ class PillowProcessor(Processor):
     def convert(
         self,
         asset: Asset,
-        mime_type: Union[MimeType, str],
-        color_space: Optional[str] = None,
-        depth: Optional[int] = None,
-        data_type: Optional[str] = None,
+        mime_type: MimeType | str,
+        color_space: str | None = None,
+        depth: int | None = None,
+        data_type: str | None = None,
     ) -> Asset:
         """
         Creates a new asset of the specified MIME type from the essence of the

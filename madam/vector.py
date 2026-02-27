@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import io
-from typing import IO, Any, Callable, Iterable, Mapping, Optional, Tuple
+from collections.abc import Callable, Iterable, Mapping
+from typing import IO, Any
 from xml.etree import ElementTree as ET
 
-from madam.core import Asset, Dict, MetadataProcessor, Processor, UnsupportedFormatError, operator
+from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError, operator
 
 _INCH_TO_MM = 1 / 25.4
 _PX_PER_INCH = 90
@@ -13,7 +14,7 @@ _FONT_SIZE_PT = 12
 _X_HEIGHT = 0.7
 
 
-def svg_length_to_px(length: Optional[str]) -> float:
+def svg_length_to_px(length: str | None) -> float:
     if length is None:
         raise ValueError()
 
@@ -63,7 +64,7 @@ def _register_xml_namespaces() -> None:
         ET.register_namespace(prefix, uri)
 
 
-def _parse_svg(file: IO) -> Tuple[ET.ElementTree[ET.Element], ET.Element]:
+def _parse_svg(file: IO) -> tuple[ET.ElementTree[ET.Element], ET.Element]:
     _register_xml_namespaces()
     try:
         tree = ET.parse(file)
@@ -87,7 +88,7 @@ class SVGProcessor(Processor):
     Represents a processor that handles *Scalable Vector Graphics* (SVG) data.
     """
 
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `SVGProcessor`.
 
@@ -105,7 +106,7 @@ class SVGProcessor(Processor):
     def read(self, file: IO) -> Asset:
         _, root = _parse_svg(file)
 
-        metadata: Dict[str, Any] = dict(mime_type='image/svg+xml')
+        metadata: dict[str, Any] = dict(mime_type='image/svg+xml')
         if 'width' in root.keys():
             metadata['width'] = svg_length_to_px(root.get('width'))
         if 'height' in root.keys():
@@ -196,7 +197,7 @@ class SVGMetadataProcessor(MetadataProcessor):
     It is assumed that the SVG XML uses UTF-8 encoding.
     """
 
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `SVGMetadataProcessor`.
 

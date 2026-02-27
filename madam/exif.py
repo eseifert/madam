@@ -2,8 +2,9 @@ import datetime
 import io
 import shutil
 import tempfile
+from collections.abc import Callable, Iterable, Mapping
 from fractions import Fraction
-from typing import IO, Any, Callable, Dict, Iterable, Mapping, Optional, Tuple
+from typing import IO, Any
 
 import piexif
 from bidict import bidict
@@ -12,15 +13,15 @@ from madam.core import MetadataProcessor, UnsupportedFormatError
 from madam.mime import MimeType
 
 
-def _convert_sequence(dec_enc: Tuple[Callable, Callable]) -> Tuple[Callable, Callable]:
+def _convert_sequence(dec_enc: tuple[Callable, Callable]) -> tuple[Callable, Callable]:
     return lambda exif_values: tuple(map(dec_enc[0], exif_values)), lambda values: list(map(dec_enc[1], values))
 
 
-def _convert_first(dec_enc: Tuple[Callable, Callable]) -> Tuple[Callable, Callable]:
+def _convert_first(dec_enc: tuple[Callable, Callable]) -> tuple[Callable, Callable]:
     return lambda exif_values: dec_enc[0](exif_values[0]), lambda value: [dec_enc[1](value)]
 
 
-def _convert_mapping(mapping: Mapping) -> Tuple[Callable, Callable]:
+def _convert_mapping(mapping: Mapping) -> tuple[Callable, Callable]:
     bidi = bidict(mapping)
     return lambda exif_value: bidi[exif_value], lambda value: bidi.inv[value]
 
@@ -82,7 +83,7 @@ class ExifMetadataProcessor(MetadataProcessor):
         lambda value: ((value.hour, 1), (value.minute, 1), (value.second, 1)),
     )
 
-    converters: Dict[str, Tuple[Callable, Callable]] = {
+    converters: dict[str, tuple[Callable, Callable]] = {
         'aperture': __RATIONAL,
         'artist': __STRING,
         'brightness': __RATIONAL,
@@ -112,7 +113,7 @@ class ExifMetadataProcessor(MetadataProcessor):
         'software': __STRING,
     }
 
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `ExifMetadataProcessor`.
 

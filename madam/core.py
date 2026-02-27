@@ -5,25 +5,9 @@ import io
 import os
 import shelve
 import shutil
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, MutableMapping, MutableSequence
 from pathlib import Path
-from typing import (
-    IO,
-    Any,
-    Callable,
-    Dict,
-    FrozenSet,
-    Generator,
-    Generic,
-    Iterable,
-    Iterator,
-    Mapping,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import IO, Any, Generic, TypeVar
 
 from frozendict import frozendict
 
@@ -108,7 +92,7 @@ class Asset:
             raise NotImplementedError('Unable to overwrite metadata attribute.')
         super().__setattr__(key, value)
 
-    def __setstate__(self, state: Dict[str, Any]):
+    def __setstate__(self, state: dict[str, Any]):
         """
         Sets this objects __dict__ to the specified state.
 
@@ -241,15 +225,13 @@ class Processor(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `Processor`.
 
         :param config: Mapping with settings.
         """
-        self.config: Dict[str, Any] = {}
-        if config:
-            self.config.update(config)
+        self.config: dict[str, Any] = dict(config) if config else {}
 
     @abc.abstractmethod
     def can_read(self, file: IO) -> bool:
@@ -287,13 +269,11 @@ class MetadataProcessor(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `MetadataProcessor`.
         """
-        self.config: Dict[str, Any] = {}
-        if config:
-            self.config.update(config)
+        self.config: dict[str, Any] = dict(config) if config else {}
 
     @property
     @abc.abstractmethod
@@ -355,7 +335,7 @@ class Madam:
     Represents an instance of the library.
     """
 
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new library instance with default configuration.
 
@@ -364,9 +344,7 @@ class Madam:
 
         :param config: Mapping with settings.
         """
-        self.config: Dict[str, Any] = {}
-        if config:
-            self.config.update(config)
+        self.config: dict[str, Any] = dict(config) if config else {}
 
         # Initialize processors
         self.processors = {
@@ -413,7 +391,7 @@ class Madam:
         member_class = getattr(module, member_name)
         return member_class
 
-    def get_processor(self, file: IO) -> Optional[Processor]:
+    def get_processor(self, file: IO) -> 'Processor | None':
         """
         Returns a processor that can read the data in the specified file.
         If no suitable processor can be found None will be returned.
@@ -431,7 +409,7 @@ class Madam:
                 return processor
         return None
 
-    def read(self, file: IO, additional_metadata: Optional[Mapping] = None):
+    def read(self, file: IO, additional_metadata: Mapping | None = None):
         r"""
         Reads the specified file and returns its contents as an :class:`~madam.core.Asset` object.
 
@@ -482,9 +460,7 @@ class Madam:
                 pass
 
         if additional_metadata:
-            asset_metadata = dict(asset.metadata)
-            asset_metadata.update(dict(additional_metadata))
-            asset = Asset(asset.essence, **asset_metadata)
+            asset = Asset(asset.essence, **dict(asset.metadata) | dict(additional_metadata))
 
         return asset
 
@@ -541,10 +517,10 @@ class Madam:
 
 
 AssetKey = TypeVar('AssetKey')
-AssetTags = FrozenSet[str]
+AssetTags = frozenset[str]
 
 
-class AssetStorage(MutableMapping[AssetKey, Tuple[Asset, AssetTags]], Generic[AssetKey]):
+class AssetStorage(MutableMapping[AssetKey, tuple[Asset, AssetTags]], Generic[AssetKey]):
     """
     Represents an abstract base class for data stores of
     :class:`~madam.core.Asset` objects.
@@ -604,9 +580,9 @@ class InMemoryStorage(AssetStorage[Any]):
         Initializes a new, empty `InMemoryStorage` object.
         """
         super().__init__()
-        self.store: Dict[Any, Tuple[Asset, AssetTags]] = {}
+        self.store: dict[Any, tuple[Asset, AssetTags]] = {}
 
-    def __setitem__(self, asset_key: AssetKey, asset_and_tags: Tuple[Asset, AssetTags]):
+    def __setitem__(self, asset_key: AssetKey, asset_and_tags: tuple[Asset, AssetTags]):
         """
         Stores an :class:`~madam.core.Asset` in this asset storage using the
         specified key.
@@ -625,7 +601,7 @@ class InMemoryStorage(AssetStorage[Any]):
             tags = frozenset()
         self.store[asset_key] = asset, frozenset(tags)
 
-    def __getitem__(self, asset_key: AssetKey) -> Tuple[Asset, AssetTags]:
+    def __getitem__(self, asset_key: AssetKey) -> tuple[Asset, AssetTags]:
         """
         Returns a tuple of the :class:`~madam.core.Asset` with the specified
         key and the tags associated with the asset.
@@ -691,7 +667,7 @@ class ShelveStorage(AssetStorage[str]):
     ShelveStorage uses a file on the file system to serialize Assets.
     """
 
-    def __init__(self, path: Union[Path, str]):
+    def __init__(self, path: Path | str):
         """
         Initializes a new `ShelveStorage` with the specified path.
 
@@ -703,7 +679,7 @@ class ShelveStorage(AssetStorage[str]):
             raise ValueError(f'The storage path {path!r} is not a file.')
         self.path = path
 
-    def __setitem__(self, asset_key: str, asset_and_tags: Tuple[Asset, AssetTags]) -> None:
+    def __setitem__(self, asset_key: str, asset_and_tags: tuple[Asset, AssetTags]) -> None:
         """
         Stores an :class:`~madam.core.Asset` in this asset storage using the
         specified key.
@@ -723,7 +699,7 @@ class ShelveStorage(AssetStorage[str]):
         with shelve.open(str(self.path)) as store:
             store[asset_key] = asset, tags
 
-    def __getitem__(self, asset_key: str) -> Tuple[Asset, AssetTags]:
+    def __getitem__(self, asset_key: str) -> tuple[Asset, AssetTags]:
         """
         Returns a tuple of the :class:`~madam.core.Asset` with the specified
         key and the tags associated with the asset.
