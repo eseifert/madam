@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import tempfile
 from collections import namedtuple
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from math import ceil, cos, pi, radians, sin
 from types import TracebackType
 from typing import IO, Any, Self
@@ -75,6 +75,50 @@ def _param_map_to_seq(param_mapping: Mapping[str, Any]) -> list[str]:
         if value is not None:
             params.append(str(value))
     return params
+
+
+def _run_ffmpeg_with_progress(command: list[str], progress_callback: Callable[[dict[str, str]], None]) -> None:
+    """
+    Run an FFmpeg *command* and call *progress_callback* with a parsed
+    progress dict after each FFmpeg progress block.
+
+    FFmpeg is invoked with ``-progress pipe:1`` so structured key=value
+    progress lines are written to stdout.  Each completed block (terminated
+    by a ``progress=continue`` or ``progress=end`` line) is delivered to the
+    callback as a ``dict[str, str]``.
+
+    :param command: FFmpeg command list (must not already contain -progress).
+    :param progress_callback: Callable invoked with each progress snapshot.
+    :raises OperatorError: on non-zero FFmpeg exit.
+    """
+    progress_command = list(command)
+    # Insert -progress pipe:1 right after 'ffmpeg' and before output flags.
+    # We write progress to stdout; stderr carries error messages.
+    try:
+        out_flag_idx = progress_command.index('-y')
+    except ValueError:
+        out_flag_idx = len(progress_command) - 1
+    progress_command[out_flag_idx:out_flag_idx] = ['-progress', 'pipe:1']
+
+    with subprocess.Popen(
+        progress_command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    ) as proc:
+        current_block: dict[str, str] = {}
+        for raw_line in proc.stdout:
+            line = raw_line.decode('utf-8', errors='replace').strip()
+            if '=' in line:
+                key, _, value = line.partition('=')
+                current_block[key.strip()] = value.strip()
+            if line.startswith('progress='):
+                if current_block:
+                    progress_callback(dict(current_block))
+                current_block = {}
+        proc.wait()
+        if proc.returncode != 0:
+            stderr_text = proc.stderr.read().decode('utf-8', errors='replace')
+            raise OperatorError(f'FFmpeg exited with code {proc.returncode}: {stderr_text}')
 
 
 class _FFmpegContext(tempfile.TemporaryDirectory[str]):
@@ -545,6 +589,7 @@ class FFmpegProcessor(Processor):
         video: Mapping[str, Any] | None = None,
         audio: Mapping[str, Any] | None = None,
         subtitle: Mapping[str, Any] | None = None,
+        progress_callback: Callable[[dict[str, str]], None] | None = None,
     ) -> Asset:
         """
         Creates a new asset of the specified MIME type from the essence of the
@@ -657,11 +702,14 @@ class FFmpegProcessor(Processor):
 
             command.extend(['-threads', str(self.__threads), '-f', encoder_name, '-y', ctx.output_path])
 
-            try:
-                subprocess.run(command, stderr=subprocess.PIPE, check=True)
-            except subprocess.CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError(f'Could not convert asset: {error_message}')
+            if progress_callback is not None:
+                _run_ffmpeg_with_progress(command, progress_callback)
+            else:
+                try:
+                    subprocess.run(command, stderr=subprocess.PIPE, check=True)
+                except subprocess.CalledProcessError as ffmpeg_error:
+                    error_message = ffmpeg_error.stderr.decode('utf-8')
+                    raise OperatorError(f'Could not convert asset: {error_message}')
 
         return self.read(result)
 
