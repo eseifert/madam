@@ -433,3 +433,99 @@ class TestFFmpegProcessor:
         first_stream = video_info.get('streams', [{}])[0]
         assert first_stream.get('width') == video_asset.height
         assert first_stream.get('height') == video_asset.width
+
+    def test_convert_to_mp4_produces_mp4_essence(self, processor, nut_video_asset):
+        conversion_operator = processor.convert(
+            mime_type='video/mp4',
+            video=dict(codec='h264', bitrate=50),
+            audio=dict(codec='aac', bitrate=16),
+        )
+
+        converted_asset = conversion_operator(nut_video_asset)
+
+        command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
+        result = subprocess.run(command, input=converted_asset.essence.read(), capture_output=True, check=True)
+        video_info = json.loads(result.stdout.decode('utf-8'))
+        assert 'mp4' in video_info.get('format', {}).get('format_name', '')
+
+    def test_convert_to_mp4_returns_asset_with_video(self, processor, nut_video_asset):
+        # MP4 muxer is detected by ffprobe as mov/quicktime family
+        conversion_operator = processor.convert(mime_type='video/mp4')
+
+        converted_asset = conversion_operator(nut_video_asset)
+
+        assert converted_asset.mime_type == 'video/quicktime'
+
+    def test_convert_to_webm_produces_webm_essence(self, processor, nut_video_asset):
+        conversion_operator = processor.convert(
+            mime_type='video/webm',
+            video=dict(codec='vp9', bitrate=50),
+            audio=dict(codec='libopus', bitrate=16),
+        )
+
+        converted_asset = conversion_operator(nut_video_asset)
+
+        command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
+        result = subprocess.run(command, input=converted_asset.essence.read(), capture_output=True, check=True)
+        video_info = json.loads(result.stdout.decode('utf-8'))
+        assert 'webm' in video_info.get('format', {}).get('format_name', '')
+
+    def test_convert_to_webm_returns_asset_with_video(self, processor, nut_video_asset):
+        # WebM muxer with video stream is detected by ffprobe as matroska
+        conversion_operator = processor.convert(mime_type='video/webm')
+
+        converted_asset = conversion_operator(nut_video_asset)
+
+        assert converted_asset.mime_type == 'video/x-matroska'
+
+    def test_convert_to_audio_webm_produces_webm_audio(self, processor, nut_video_asset):
+        conversion_operator = processor.convert(
+            mime_type='audio/webm',
+            video=dict(codec=None),
+            audio=dict(codec='libopus', bitrate=16),
+        )
+
+        converted_asset = conversion_operator(nut_video_asset)
+
+        command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
+        result = subprocess.run(command, input=converted_asset.essence.read(), capture_output=True, check=True)
+        video_info = json.loads(result.stdout.decode('utf-8'))
+        assert 'webm' in video_info.get('format', {}).get('format_name', '')
+
+    def test_convert_to_audio_webm_sets_correct_mime_type(self, processor, nut_video_asset):
+        conversion_operator = processor.convert(
+            mime_type='audio/webm',
+            video=dict(codec=None),
+            audio=dict(codec='libopus', bitrate=16),
+        )
+
+        converted_asset = conversion_operator(nut_video_asset)
+
+        assert converted_asset.mime_type == 'audio/webm'
+
+    def test_convert_to_audio_opus_produces_ogg_opus_essence(self, processor, nut_video_asset):
+        # FFmpeg 'opus' format wraps Opus in an Ogg container
+        conversion_operator = processor.convert(
+            mime_type='audio/opus',
+            video=dict(codec=None),
+            audio=dict(codec='libopus', bitrate=16),
+        )
+
+        converted_asset = conversion_operator(nut_video_asset)
+
+        command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
+        result = subprocess.run(command, input=converted_asset.essence.read(), capture_output=True, check=True)
+        video_info = json.loads(result.stdout.decode('utf-8'))
+        assert video_info.get('format', {}).get('format_name') == 'ogg'
+
+    def test_convert_to_audio_opus_returns_ogg_asset(self, processor, nut_video_asset):
+        # FFmpeg 'opus' muxer produces an Ogg container, decoded as audio/ogg
+        conversion_operator = processor.convert(
+            mime_type='audio/opus',
+            video=dict(codec=None),
+            audio=dict(codec='libopus', bitrate=16),
+        )
+
+        converted_asset = conversion_operator(nut_video_asset)
+
+        assert converted_asset.mime_type == 'audio/ogg'

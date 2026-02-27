@@ -158,6 +158,7 @@ class FFmpegProcessor(Processor):
 
     __decoder_and_stream_type_to_mime_type = {
         ('matroska,webm', 'video'): MimeType('video/x-matroska'),
+        ('matroska,webm', 'audio'): MimeType('audio/webm'),
         ('mov,mp4,m4a,3gp,3g2,mj2', 'video'): MimeType('video/quicktime'),
         ('avi', 'video'): MimeType('video/x-msvideo'),
         ('mpegts', 'video'): MimeType('video/mp2t'),
@@ -173,6 +174,8 @@ class FFmpegProcessor(Processor):
     }
 
     __mime_type_to_encoder = {
+        MimeType('video/mp4'): 'mp4',
+        MimeType('video/webm'): 'webm',
         MimeType('video/x-matroska'): 'matroska',
         MimeType('video/quicktime'): 'mov',
         MimeType('video/x-msvideo'): 'avi',
@@ -182,6 +185,8 @@ class FFmpegProcessor(Processor):
         MimeType('audio/aac'): 'adts',
         MimeType('audio/flac'): 'flac',
         MimeType('audio/mpeg'): 'mp3',
+        MimeType('audio/opus'): 'opus',
+        MimeType('audio/webm'): 'webm',
         MimeType('audio/x-nut'): 'nut',
         MimeType('audio/ogg'): 'ogg',
         MimeType('audio/wav'): 'wav',
@@ -986,8 +991,6 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         ('avi', 'video'): MimeType('video/x-msvideo'),
         ('mpegts', 'video'): MimeType('video/mp2t'),
         ('ogg', 'video'): MimeType('video/ogg'),
-        ('aac', 'audio'): MimeType('audio/aac'),
-        ('flac', 'audio'): MimeType('audio/flac'),
         ('mp3', 'audio'): MimeType('audio/mpeg'),
         ('ogg', 'audio'): MimeType('audio/ogg'),
         ('wav', 'audio'): MimeType('audio/wav'),
@@ -999,8 +1002,6 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         MimeType('video/x-msvideo'): 'avi',
         MimeType('video/mp2t'): 'mpegts',
         MimeType('video/ogg'): 'ogg',
-        MimeType('audio/aac'): 'adts',
-        MimeType('audio/flac'): 'flac',
         MimeType('audio/mpeg'): 'mp3',
         MimeType('audio/ogg'): 'ogg',
         MimeType('audio/wav'): 'wav',
