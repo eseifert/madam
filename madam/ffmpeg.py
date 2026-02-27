@@ -421,7 +421,8 @@ class FFmpegProcessor(Processor):
                 f'Found ffprobe version {version_string}. Requiring at least version {self._min_version}.'
             )
 
-        self.__threads = multiprocessing.cpu_count()
+        configured_threads = self.config.get('ffmpeg', {}).get('threads', 0)
+        self.__threads = configured_threads if configured_threads > 0 else multiprocessing.cpu_count()
 
     def can_read(self, file: IO) -> bool:
         try:
