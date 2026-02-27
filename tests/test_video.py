@@ -321,6 +321,22 @@ class TestFFmpegProcessor:
         assert cropped_asset.width == crop_width
         assert cropped_asset.height == crop_height
 
+    def test_crop_returns_essence_with_correct_dimensions(self, processor, video_asset):
+        crop_width = video_asset.width // 2
+        crop_height = video_asset.height // 2
+        crop_x = (video_asset.width - crop_width) // 2
+        crop_y = (video_asset.height - crop_height) // 2
+        crop_operator = processor.crop(x=crop_x, y=crop_y, width=crop_width, height=crop_height)
+
+        cropped_asset = crop_operator(video_asset)
+
+        command = 'ffprobe -print_format json -loglevel error -show_streams -i pipe:'.split()
+        result = subprocess.run(command, input=cropped_asset.essence.read(), capture_output=True, check=True)
+        video_info = json.loads(result.stdout.decode('utf-8'))
+        first_stream = video_info.get('streams', [{}])[0]
+        assert first_stream.get('width') == crop_width
+        assert first_stream.get('height') == crop_height
+
     @pytest.mark.parametrize(
         'x, y, width, height, cropped_width, cropped_height',
         [
