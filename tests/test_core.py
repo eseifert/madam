@@ -315,3 +315,37 @@ class TestErrorHierarchy:
         from madam.core import OperatorError, PermanentOperatorError
         with pytest.raises(OperatorError):
             raise PermanentOperatorError('bad codec')
+
+
+class TestAssetContentId:
+    def test_content_id_is_a_string(self):
+        asset = Asset(io.BytesIO(b'hello'))
+        assert isinstance(asset.content_id, str)
+
+    def test_content_id_is_64_hex_chars(self):
+        asset = Asset(io.BytesIO(b'hello'))
+        assert len(asset.content_id) == 64
+        assert all(c in '0123456789abcdef' for c in asset.content_id)
+
+    def test_content_id_is_stable_across_instances_with_same_bytes(self):
+        asset_a = Asset(io.BytesIO(b'same bytes'))
+        asset_b = Asset(io.BytesIO(b'same bytes'))
+        assert asset_a.content_id == asset_b.content_id
+
+    def test_content_id_differs_for_different_bytes(self):
+        asset_a = Asset(io.BytesIO(b'hello'))
+        asset_b = Asset(io.BytesIO(b'world'))
+        assert asset_a.content_id != asset_b.content_id
+
+    def test_content_id_is_sha256_of_essence(self):
+        import hashlib
+        data = b'check me'
+        asset = Asset(io.BytesIO(data))
+        expected = hashlib.sha256(data).hexdigest()
+        assert asset.content_id == expected
+
+    def test_content_id_is_unaffected_by_metadata(self):
+        data = b'same bytes'
+        asset_a = Asset(io.BytesIO(data), width=100)
+        asset_b = Asset(io.BytesIO(data), width=200)
+        assert asset_a.content_id == asset_b.content_id

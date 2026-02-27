@@ -1,5 +1,6 @@
 import abc
 import functools
+import hashlib
 import importlib
 import io
 import os
@@ -116,6 +117,18 @@ class Asset:
 
     def __hash__(self) -> int:
         return hash(self._essence_data) ^ hash(self.metadata)
+
+    @property
+    def content_id(self) -> str:
+        """
+        Returns a stable, content-addressed identifier for this asset's essence.
+
+        The identifier is the SHA-256 hex digest of the raw essence bytes and is
+        independent of metadata.  Two assets with identical bytes always have the
+        same ``content_id``, making it suitable as an object-store key or
+        deduplication handle.
+        """
+        return hashlib.sha256(self._essence_data).hexdigest()
 
     def __repr__(self) -> str:
         metadata_str = ' '.join(f'{k}={v!r}' for k, v in self.metadata.items() if not isinstance(v, frozendict))
