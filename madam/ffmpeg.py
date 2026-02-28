@@ -18,27 +18,38 @@ from madam.mime import MimeType
 
 
 def _probe(file: IO) -> Any:
-    with tempfile.NamedTemporaryFile(mode='wb') as temp_in:
-        shutil.copyfileobj(file, temp_in.file)
-        temp_in.flush()
-        file.seek(0)
+    """Run ffprobe on *file* and return the parsed JSON.
 
-        command: list[str] = [
-            'ffprobe',
-            '-loglevel',
-            'error',
-            '-print_format',
-            'json',
-            '-show_format',
-            '-show_streams',
-            temp_in.name,
-        ]
-        result = subprocess.run(command, capture_output=True, check=True)
+    Data is sent via stdin (``pipe:0``) to avoid a temp-file copy.  A small
+    number of container formats require a seekable input to report duration;
+    for those, a NamedTemporaryFile fallback is used automatically when the
+    stdin probe omits ``format.duration``.
+    """
+    data = file.read()
+    file.seek(0)
+    base_command: list[str] = [
+        'ffprobe',
+        '-loglevel',
+        'error',
+        '-print_format',
+        'json',
+        '-show_format',
+        '-show_streams',
+    ]
+    # Fast path: pipe data via stdin.
+    result = subprocess.run(base_command + ['pipe:0'], input=data, capture_output=True, check=True)
+    probe_data = json.loads(result.stdout.decode('utf-8'))
 
-    string_result = result.stdout.decode('utf-8')
-    json_obj = json.loads(string_result)
+    # Fallback: some raw/headerless formats (AAC ADTS, raw MP2, NUT …) need a
+    # seekable source to report duration.  Re-probe via a named temp file.
+    if 'duration' not in probe_data.get('format', {}):
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='_probe') as tmp:
+            tmp.write(data)
+            tmp.flush()
+            result = subprocess.run(base_command + [tmp.name], capture_output=True, check=True)
+        probe_data = json.loads(result.stdout.decode('utf-8'))
 
-    return json_obj
+    return probe_data
 
 
 def _combine_metadata(asset, *cloned_keys: str, **additional_metadata: Any) -> dict[str, Any]:
