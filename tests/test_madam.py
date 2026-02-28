@@ -237,6 +237,30 @@ class TestMadam:
             'madam.ffmpeg.FFmpegMetadataProcessor',
         }
 
+    def test_read_calls_strip_exactly_once_per_metadata_processor(self, manager, jpeg_image_asset):
+        """Madam.read() must not amplify I/O: strip() called exactly N times for N processors."""
+        strip_call_count = []
+        original_strip_methods = {}
+        for mp in manager._metadata_processors:
+            original = mp.strip
+            original_strip_methods[mp] = original
+            def counting_strip(file, _mp=mp, _orig=original):
+                strip_call_count.append(type(_mp).__name__)
+                return _orig(file)
+            mp.strip = counting_strip
+
+        try:
+            manager.read(jpeg_image_asset.essence)
+        finally:
+            for mp, orig in original_strip_methods.items():
+                mp.strip = orig
+
+        n_processors = len(manager._metadata_processors)
+        assert len(strip_call_count) == n_processors, (
+            f'Expected strip() called {n_processors} times (once per metadata processor), '
+            f'got {len(strip_call_count)}: {strip_call_count}'
+        )
+
     def test_does_not_contain_metadata_processor_when_it_is_not_installed(self):
         with patch.dict(sys.modules, {'madam.exif': None}):
             manager = Madam()

@@ -188,6 +188,11 @@ class TestFFmpegMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.strip(essence)
 
+    def test_strip_raises_unsupported_format_error_when_ffmpeg_cannot_process_format(self, processor, avif_image_asset):
+        """strip() must raise UnsupportedFormatError (not OperatorError) when FFmpeg rejects the container."""
+        with pytest.raises(UnsupportedFormatError):
+            processor.strip(avif_image_asset.essence)
+
     def test_combine_returns_mp3_with_metadata(self, processor, mp3_audio_asset, tmpdir):
         essence = mp3_audio_asset.essence
         metadata = dict(ffmetadata=dict(artist='Frédéric Chopin'))

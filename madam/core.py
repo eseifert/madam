@@ -554,28 +554,35 @@ class Madam:
             raise UnsupportedFormatError()
 
         asset = processor.read(file)
+        asset_metadata: dict[str, Any] = dict(asset.metadata)
 
-        handled_formats = set()
+        # Pass 1: collect metadata from all processors using the original file.
+        # Essence is not copied or stripped here.
+        handled_formats: set[str] = set()
         for metadata_processor in self._metadata_processors:
-            asset_metadata = dict(asset.metadata)
             file.seek(0)
             try:
                 metadata_by_format = metadata_processor.read(file)
-                for metadata_format, metadata_values in metadata_by_format.items():
-                    if metadata_format in handled_formats:
-                        continue
-                    asset_metadata[metadata_format] = metadata_values
-                stripped_essence = metadata_processor.strip(asset.essence)
-                clean_asset = Asset(stripped_essence, **asset_metadata)
-                asset = clean_asset
+                for fmt, values in metadata_by_format.items():
+                    if fmt not in handled_formats:
+                        asset_metadata[fmt] = values
                 handled_formats.update(metadata_processor.formats)
             except UnsupportedFormatError:
                 pass
 
-        if additional_metadata:
-            asset = Asset(asset.essence, **dict(asset.metadata) | dict(additional_metadata))
+        # Pass 2: strip metadata from essence, chaining each processor's output
+        # into the next.  Only one IO object is live per iteration.
+        stripped: IO = asset.essence
+        for metadata_processor in self._metadata_processors:
+            try:
+                stripped = metadata_processor.strip(stripped)
+            except UnsupportedFormatError:
+                stripped.seek(0)
 
-        return asset
+        # Pass 3: construct exactly one clean Asset using the fast-path constructor.
+        if additional_metadata:
+            asset_metadata.update(additional_metadata)
+        return Asset._from_bytes(stripped.read(), **asset_metadata)
 
     def write(self, asset: Asset, file: IO) -> None:
         r"""

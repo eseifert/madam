@@ -1168,8 +1168,9 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError(f'Could not strip metadata: {error_message}')
+                raise UnsupportedFormatError(
+                    f'Could not strip metadata: format {mime_type} is not supported for metadata stripping.'
+                ) from ffmpeg_error
 
         return result
 
