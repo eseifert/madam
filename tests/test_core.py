@@ -317,6 +317,45 @@ class TestErrorHierarchy:
             raise PermanentOperatorError('bad codec')
 
 
+class TestAssetFromBytes:
+    def test_from_bytes_produces_asset_equal_to_normal_constructor(self):
+        data = b'hello refactor'
+        normal = Asset(io.BytesIO(data), width=42, mime_type='image/png')
+        fast = Asset._from_bytes(data, width=42, mime_type='image/png')
+        assert normal == fast
+
+    def test_from_bytes_essence_matches(self):
+        data = b'essence data'
+        asset = Asset._from_bytes(data, mime_type='image/jpeg')
+        assert asset.essence.read() == data
+
+    def test_from_bytes_metadata_is_accessible(self):
+        asset = Asset._from_bytes(b'x', width=100, height=200, mime_type='image/png')
+        assert asset.width == 100
+        assert asset.height == 200
+
+    def test_from_bytes_content_id_matches(self):
+        import hashlib
+        data = b'check bytes'
+        asset = Asset._from_bytes(data)
+        assert asset.content_id == hashlib.sha256(data).hexdigest()
+
+    def test_from_bytes_adds_none_mime_type_when_absent(self):
+        asset = Asset._from_bytes(b'x')
+        assert asset.mime_type is None
+
+    def test_from_bytes_does_not_read_stream(self):
+        calls = []
+        class CountingBytesIO(io.BytesIO):
+            def read(self, *args, **kwargs):
+                calls.append(1)
+                return super().read(*args, **kwargs)
+        # _from_bytes should bypass stream reads entirely
+        data = b'skip read'
+        Asset._from_bytes(data)
+        assert calls == [], 'Asset._from_bytes must not call read() on any stream'
+
+
 class TestAssetContentId:
     def test_content_id_is_a_string(self):
         asset = Asset(io.BytesIO(b'hello'))

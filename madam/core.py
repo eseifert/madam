@@ -131,6 +131,22 @@ class Asset:
         """
         return hashlib.sha256(self._essence_data).hexdigest()
 
+    @classmethod
+    def _from_bytes(cls, essence_bytes: bytes, **metadata: Any) -> 'Asset':
+        """
+        Internal fast-path constructor for callers that already hold the raw bytes.
+
+        Unlike :meth:`__init__`, no I/O is performed — ``essence_bytes`` is stored
+        directly without calling ``read()``.  This is an internal API; external code
+        should use :meth:`__init__` with a file-like object.
+        """
+        obj = cls.__new__(cls)
+        obj._essence_data = essence_bytes
+        if 'mime_type' not in metadata:
+            metadata['mime_type'] = None
+        obj.metadata = _immutable(metadata)
+        return obj
+
     def __repr__(self) -> str:
         metadata_str = ' '.join(f'{k}={v!r}' for k, v in self.metadata.items() if not isinstance(v, frozendict))
         return f'<{self.__class__.__qualname__} {metadata_str}>'
