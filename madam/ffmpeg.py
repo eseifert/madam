@@ -26,6 +26,20 @@ def _parse_version(version_str: str) -> tuple[int, ...]:
     return tuple(int(g) for g in match.groups() if g is not None)
 
 
+def _ffmpeg_error_message(error: subprocess.CalledProcessError, operation: str) -> str:
+    """Return a concise, backend-agnostic error message from a failed FFmpeg call.
+
+    Extracts only the last non-empty line from FFmpeg stderr so that internal
+    codec names, filter-graph syntax, and file paths are not exposed verbatim.
+    """
+    stderr = error.stderr.decode('utf-8', errors='replace') if error.stderr else ''
+    last_line = next(
+        (line.strip() for line in reversed(stderr.splitlines()) if line.strip()),
+        'unknown error',
+    )
+    return f'Could not {operation}: {last_line}'
+
+
 def _probe(file: IO) -> Any:
     """Run ffprobe on *file* and return the parsed JSON.
 
@@ -137,8 +151,13 @@ def _run_ffmpeg_with_progress(command: list[str], progress_callback: Callable[[d
                 current_block = {}
         proc.wait()
         if proc.returncode != 0:
-            stderr_text = proc.stderr.read().decode('utf-8', errors='replace')
-            raise OperatorError(f'FFmpeg exited with code {proc.returncode}: {stderr_text}')
+            stderr_bytes = proc.stderr.read()
+            stderr_text = stderr_bytes.decode('utf-8', errors='replace') if stderr_bytes else ''
+            last_line = next(
+                (line.strip() for line in reversed(stderr_text.splitlines()) if line.strip()),
+                'unknown error',
+            )
+            raise OperatorError(f'Could not run FFmpeg: {last_line}')
 
 
 class _FFmpegContext(tempfile.TemporaryDirectory[str]):
@@ -626,8 +645,7 @@ class FFmpegProcessor(Processor):
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError(f'Could not resize asset: {error_message}')
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'resize asset'))
 
         metadata = _combine_metadata(
             asset, 'mime_type', 'duration', 'video', 'audio', 'subtitle', width=width, height=height
@@ -762,8 +780,7 @@ class FFmpegProcessor(Processor):
                 try:
                     subprocess.run(command, stderr=subprocess.PIPE, check=True)
                 except subprocess.CalledProcessError as ffmpeg_error:
-                    error_message = ffmpeg_error.stderr.decode('utf-8')
-                    raise OperatorError(f'Could not convert asset: {error_message}')
+                    raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'convert asset'))
 
         return self.read(result)
 
@@ -818,8 +835,7 @@ class FFmpegProcessor(Processor):
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError(f'Could not trim asset: {error_message}')
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'trim asset'))
 
         metadata = _combine_metadata(
             asset, 'mime_type', 'width', 'height', 'video', 'audio', 'subtitle', duration=duration
@@ -875,8 +891,7 @@ class FFmpegProcessor(Processor):
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError(f'Could not extract frame from asset: {error_message}')
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'extract frame from asset'))
 
         metadata = _combine_metadata(asset, 'width', 'height', mime_type=str(mime_type))
         if 'video' in asset.metadata:
@@ -941,8 +956,7 @@ class FFmpegProcessor(Processor):
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError(f'Could not crop asset: {error_message}')
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'crop asset'))
 
         metadata = _combine_metadata(
             asset, 'mime_type', 'duration', 'video', 'audio', 'subtitle', width=width, height=height
@@ -1015,8 +1029,7 @@ class FFmpegProcessor(Processor):
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError(f'Could not rotate asset: {error_message}')
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'rotate asset'))
 
         metadata = _combine_metadata(
             asset, 'mime_type', 'duration', 'video', 'audio', 'subtitle', width=width, height=height
@@ -1258,7 +1271,6 @@ class FFmpegMetadataProcessor(MetadataProcessor):
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
-                error_message = ffmpeg_error.stderr.decode('utf-8')
-                raise OperatorError(f'Could not add metadata: {error_message}')
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'add metadata'))
 
         return result
