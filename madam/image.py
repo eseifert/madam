@@ -1,4 +1,5 @@
 import io
+import warnings
 from collections.abc import Callable, Mapping
 from enum import Enum
 from typing import IO, Any
@@ -9,6 +10,16 @@ from bidict import bidict
 
 from madam.core import Asset, OperatorError, Processor, operator
 from madam.mime import MimeType
+
+
+_VALID_FORMAT_CONFIG_KEYS: dict[MimeType, frozenset[str]] = {
+    MimeType('image/avif'): frozenset({'quality', 'speed'}),
+    MimeType('image/jpeg'): frozenset({'quality', 'progressive'}),
+    MimeType('image/png'): frozenset({'optimize', 'zopfli', 'zopfli_strategies'}),
+    MimeType('image/tiff'): frozenset({'compression'}),
+    MimeType('image/webp'): frozenset({'quality', 'method'}),
+    MimeType('image/gif'): frozenset({'optimize'}),
+}
 
 
 class ResizeMode(Enum):
@@ -189,6 +200,16 @@ class PillowProcessor(Processor):
         pil_options = dict(PillowProcessor.__format_defaults.get(mime_type, {}))
         format_config = dict(self.config.get(mime_type.type or '', {}))
         format_config.update(self.config.get(str(mime_type), {}))
+
+        valid_keys = _VALID_FORMAT_CONFIG_KEYS.get(mime_type, frozenset())
+        for key in format_config:
+            if key not in valid_keys:
+                warnings.warn(
+                    f'Unknown config key {key!r} for format {mime_type}. '
+                    f'Valid keys: {sorted(valid_keys)}',
+                    UserWarning,
+                    stacklevel=4,
+                )
 
         image_buffer = io.BytesIO()
 

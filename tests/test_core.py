@@ -5,7 +5,7 @@ import unittest.mock
 
 import pytest
 
-from madam.core import Asset, InMemoryStorage, LazyAsset, Pipeline, ShelveStorage
+from madam.core import Asset, IndexedAssetStorage, InMemoryStorage, LazyAsset, Pipeline, ShelveStorage
 
 
 @pytest.fixture
@@ -317,6 +317,30 @@ class TestErrorHierarchy:
             raise PermanentOperatorError('bad codec')
 
 
+class TestAssetGetattr:
+    """R11: Asset.__getattr__ must not forward dunder names into metadata."""
+
+    def test_dunder_key_in_metadata_raises_attribute_error(self):
+        """Even if metadata contains a dunder key, accessing it raises AttributeError."""
+        # Construct the metadata dict manually to bypass normal guards.
+        from frozendict import frozendict
+        asset = Asset.__new__(Asset)
+        object.__setattr__(asset, '_essence_data', b'')
+        object.__setattr__(asset, 'metadata', frozendict({'__len__': lambda: 42}))
+
+        with pytest.raises(AttributeError):
+            _ = asset.__len__
+
+    def test_regular_metadata_key_still_accessible(self):
+        asset = Asset(io.BytesIO(b'data'), width=100)
+        assert asset.width == 100
+
+    def test_missing_non_dunder_attribute_raises_attribute_error(self):
+        asset = Asset(io.BytesIO(b'data'))
+        with pytest.raises(AttributeError):
+            _ = asset.nonexistent_key
+
+
 class TestAssetFromBytes:
     def test_from_bytes_produces_asset_equal_to_normal_constructor(self):
         data = b'hello refactor'
@@ -431,3 +455,51 @@ class TestLazyAssetContentId:
         first = asset.content_id
         second = asset.content_id
         assert first == second
+
+
+class TestIndexedAssetStorage:
+    """R12: IndexedAssetStorage mixin; InMemoryStorage uses it."""
+
+    def test_indexed_asset_storage_is_importable(self):
+        assert IndexedAssetStorage is not None
+
+    def test_in_memory_storage_is_indexed(self):
+        assert issubclass(InMemoryStorage, IndexedAssetStorage)
+
+    def test_filter_returns_correct_results_with_many_assets(self):
+        storage = InMemoryStorage()
+        target_key = 'target'
+        storage[target_key] = Asset(io.BytesIO(b'target'), color_space='rgb', width=42), frozenset()
+        for i in range(999):
+            storage[str(i)] = Asset(io.BytesIO(f'asset_{i}'.encode()), color_space='gray', width=i), frozenset()
+
+        result = list(storage.filter(color_space='rgb', width=42))
+
+        assert result == [target_key]
+
+    def test_filter_result_excludes_non_matching_assets(self):
+        storage = InMemoryStorage()
+        storage['a'] = Asset(io.BytesIO(b'a'), x=1, y=2), frozenset()
+        storage['b'] = Asset(io.BytesIO(b'b'), x=1, y=99), frozenset()
+        storage['c'] = Asset(io.BytesIO(b'c'), x=99, y=2), frozenset()
+
+        result = list(storage.filter(x=1, y=2))
+
+        assert result == ['a']
+
+    def test_filter_returns_empty_when_no_match(self):
+        storage = InMemoryStorage()
+        storage['k'] = Asset(io.BytesIO(b'v'), width=10), frozenset()
+
+        result = list(storage.filter(width=999))
+
+        assert result == []
+
+    def test_delitem_removes_from_index(self):
+        storage = InMemoryStorage()
+        storage['k'] = Asset(io.BytesIO(b'v'), width=10), frozenset()
+        del storage['k']
+
+        result = list(storage.filter(width=10))
+
+        assert result == []

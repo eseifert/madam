@@ -85,6 +85,10 @@ class Asset:
         return other.__dict__ == self.__dict__
 
     def __getattr__(self, item: str) -> Any:
+        # Never forward Python protocol names into metadata — dunders must
+        # follow normal attribute resolution only.
+        if item.startswith('__') and item.endswith('__'):
+            raise AttributeError(f'{self.__class__!r} object has no attribute {item!r}')
         if item in self.metadata:
             return self.metadata[item]
         raise AttributeError(f'{self.__class__!r} object has no attribute {item!r}')
@@ -691,7 +695,42 @@ class AssetStorage(MutableMapping[AssetKey, tuple[Asset, AssetTags]], Generic[As
         return {asset_key for asset_key, (asset, asset_tags) in self.items() if search_tags <= asset_tags}
 
 
-class InMemoryStorage(AssetStorage[Any]):
+class IndexedAssetStorage(AssetStorage[AssetKey]):
+    """Mixin that maintains an in-memory inverted index over scalar metadata values.
+
+    Makes :meth:`filter` O(k) where k is the number of matching assets instead of
+    O(n·c) for n stored assets and c filter criteria.
+
+    Subclasses must call :meth:`_index_asset` in ``__setitem__`` and
+    :meth:`_deindex_asset` in ``__delitem__``.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        # Maps (metadata_key, value) -> set of asset keys
+        self._index: dict[tuple[str, Any], set[AssetKey]] = {}
+
+    def _index_asset(self, key: AssetKey, asset: Asset) -> None:
+        for meta_key, meta_value in asset.metadata.items():
+            if isinstance(meta_value, (str, int, float, bool, type(None))):
+                self._index.setdefault((meta_key, meta_value), set()).add(key)
+
+    def _deindex_asset(self, key: AssetKey, asset: Asset) -> None:
+        for meta_key, meta_value in asset.metadata.items():
+            if isinstance(meta_value, (str, int, float, bool, type(None))):
+                bucket = self._index.get((meta_key, meta_value))
+                if bucket:
+                    bucket.discard(key)
+
+    def filter(self, **kwargs: Any) -> Iterable[AssetKey]:
+        if not kwargs:
+            return list(self.keys())
+        sets = [self._index.get((k, v), set()) for k, v in kwargs.items()]
+        result = sets[0].intersection(*sets[1:])
+        return list(result)
+
+
+class InMemoryStorage(IndexedAssetStorage[Any]):
     """
     Represents a non-persistent storage backend for :class:`~madam.core.Asset`
     objects.
@@ -723,7 +762,11 @@ class InMemoryStorage(AssetStorage[Any]):
         asset, tags = asset_and_tags
         if not tags:
             tags = frozenset()
+        # Deindex old asset if replacing an existing key.
+        if asset_key in self.store:
+            self._deindex_asset(asset_key, self.store[asset_key][0])
         self.store[asset_key] = asset, frozenset(tags)
+        self._index_asset(asset_key, asset)
 
     def __getitem__(self, asset_key: AssetKey) -> tuple[Asset, AssetTags]:
         """
@@ -751,6 +794,7 @@ class InMemoryStorage(AssetStorage[Any]):
         """
         if asset_key not in self.store:
             raise KeyError(f'Asset with key {asset_key!r} cannot be found in storage')
+        self._deindex_asset(asset_key, self.store[asset_key][0])
         del self.store[asset_key]
 
     def __contains__(self, asset_key: AssetKey) -> bool:
