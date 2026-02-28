@@ -8,5 +8,6 @@ Table of contents
     overview
     quickstart
     configuration
+    upgrade
     madam
     genindex
