@@ -5,10 +5,7 @@ import subprocess
 import tempfile
 import unittest.mock
 
-import pytest
-
 from madam.ffmpeg import _probe
-
 
 STDIN_PROBE_RESULT_WITH_DURATION = json.dumps({
     'format': {'format_name': 'ogg', 'duration': '0.2'},

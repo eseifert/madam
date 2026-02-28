@@ -1,7 +1,5 @@
 """Tests for FileSystemAssetStorage."""
 import io
-import json
-import pathlib
 
 import pytest
 

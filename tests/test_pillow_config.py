@@ -3,7 +3,6 @@ import io
 import warnings
 
 import PIL.Image
-import pytest
 
 import madam.image
 

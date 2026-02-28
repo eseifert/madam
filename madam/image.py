@@ -11,7 +11,6 @@ from bidict import bidict
 from madam.core import Asset, OperatorError, Processor, operator
 from madam.mime import MimeType
 
-
 _VALID_FORMAT_CONFIG_KEYS: dict[MimeType, frozenset[str]] = {
     MimeType('image/avif'): frozenset({'quality', 'speed'}),
     MimeType('image/jpeg'): frozenset({'quality', 'progressive'}),

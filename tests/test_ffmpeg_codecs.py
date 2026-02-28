@@ -1,5 +1,4 @@
 """Tests for R05: VideoCodec and AudioCodec named constant classes."""
-import pytest
 
 
 class TestVideoCodec:
@@ -83,6 +82,6 @@ class TestVideoAndAudioCodecSameObject:
         assert FfmpegVC is VideoVC
 
     def test_audio_codec_is_same_class_as_ffmpeg_audio_codec(self):
-        from madam.ffmpeg import AudioCodec as FfmpegAC
         from madam.audio import AudioCodec as AudioAC
+        from madam.ffmpeg import AudioCodec as FfmpegAC
         assert FfmpegAC is AudioAC

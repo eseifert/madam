@@ -1,7 +1,6 @@
 """Tests for FFmpeg progress callback support."""
 import io
 import subprocess
-import threading
 import unittest.mock
 
 import pytest

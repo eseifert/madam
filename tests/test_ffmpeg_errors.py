@@ -51,8 +51,9 @@ class TestOperatorErrorDoesNotLeakFullStderr:
     def test_operator_error_message_starts_with_could_not(self, mock_ffprobe_ok):
         """OperatorError from a failing FFmpeg call starts with 'Could not ...'."""
         import io
+
+        from madam.core import Asset, OperatorError
         from madam.ffmpeg import FFmpegProcessor
-        from madam.core import OperatorError, Asset
 
         proc = FFmpegProcessor()
 
