@@ -2,6 +2,7 @@ import io
 import json
 import multiprocessing
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -15,6 +16,14 @@ from bidict import bidict
 
 from madam.core import Asset, MetadataProcessor, OperatorError, Processor, UnsupportedFormatError, operator
 from madam.mime import MimeType
+
+
+def _parse_version(version_str: str) -> tuple[int, ...]:
+    """Parse a ``'N.N.N'`` version string into a comparable tuple of ints."""
+    match = re.match(r'^(\d+)(?:\.(\d+))?(?:\.(\d+))?', version_str)
+    if not match:
+        raise ValueError(f'Cannot parse version string: {version_str!r}')
+    return tuple(int(g) for g in match.groups() if g is not None)
 
 
 def _probe(file: IO) -> Any:
@@ -466,27 +475,52 @@ class FFmpegProcessor(Processor):
         ('YUVA', 16, 'uint'): 'yuva420p16le',
     }
 
+    _MIN_VERSION: tuple[int, ...] = (3, 3)
+
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `FFmpegProcessor`.
 
         :param config: Mapping with settings.
-        :raises EnvironmentError: if the installed version of ffprobe does not match the minimum version requirement
+        :raises EnvironmentError: if ffprobe is not found, times out, or its
+            version is below the minimum requirement (3.3).
         """
         super().__init__(config)
 
-        self._min_version = '3.3'
-        command = 'ffprobe -version'.split()
-        result = subprocess.run(command, stdout=subprocess.PIPE)
-        string_result = result.stdout.decode('utf-8')
-        version_string = string_result.split()[2]
-        if version_string < self._min_version:
+        try:
+            result = subprocess.run(
+                ['ffprobe', '-version'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+            )
+        except FileNotFoundError:
             raise EnvironmentError(
-                f'Found ffprobe version {version_string}. Requiring at least version {self._min_version}.'
+                'ffprobe not found. Install FFmpeg >= 3.3 and ensure it is on PATH.'
+            )
+        except subprocess.TimeoutExpired:
+            raise EnvironmentError('ffprobe version check timed out.')
+
+        parts = result.stdout.decode('utf-8').split()
+        try:
+            version_idx = parts.index('version') + 1
+            version_string = parts[version_idx]
+        except (ValueError, IndexError):
+            raise EnvironmentError('Cannot determine ffprobe version from output.')
+
+        detected = _parse_version(version_string)
+        if detected < self._MIN_VERSION:
+            min_str = '.'.join(str(v) for v in self._MIN_VERSION)
+            raise EnvironmentError(
+                f'Found ffprobe version {version_string}. Requiring at least version {min_str}.'
             )
 
-        configured_threads = self.config.get('ffmpeg', {}).get('threads', 0)
-        self.__threads = configured_threads if configured_threads > 0 else multiprocessing.cpu_count()
+        self._configured_threads: int = self.config.get('ffmpeg', {}).get('threads', 0)
+
+    @property
+    def _threads(self) -> int:
+        """Resolved thread count, evaluated fresh each call to respect container CPU limits."""
+        return self._configured_threads if self._configured_threads > 0 else multiprocessing.cpu_count()
 
     def can_read(self, file: IO) -> bool:
         try:
@@ -582,7 +616,7 @@ class FFmpegProcessor(Processor):
                 '-qscale',
                 '0',
                 '-threads',
-                str(self.__threads),
+                str(self._threads),
                 '-f',
                 encoder_name,
                 '-y',
@@ -720,7 +754,7 @@ class FFmpegProcessor(Processor):
                     container_options.extend(['-movflags', '+faststart'])
             command.extend(container_options)
 
-            command.extend(['-threads', str(self.__threads), '-f', encoder_name, '-y', ctx.output_path])
+            command.extend(['-threads', str(self._threads), '-f', encoder_name, '-y', ctx.output_path])
 
             if progress_callback is not None:
                 _run_ffmpeg_with_progress(command, progress_callback)
