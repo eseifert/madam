@@ -5,7 +5,7 @@ import unittest.mock
 
 import pytest
 
-from madam.core import Asset, InMemoryStorage, Pipeline, ShelveStorage
+from madam.core import Asset, InMemoryStorage, LazyAsset, Pipeline, ShelveStorage
 
 
 @pytest.fixture
@@ -388,3 +388,46 @@ class TestAssetContentId:
         asset_a = Asset(io.BytesIO(data), width=100)
         asset_b = Asset(io.BytesIO(data), width=200)
         assert asset_a.content_id == asset_b.content_id
+
+
+class TestLazyAssetContentId:
+    """R09: LazyAsset.content_id must be computed only once and cached."""
+
+    def _make_lazy_asset(self, data: bytes) -> LazyAsset:
+        calls = []
+
+        def loader(uri):
+            calls.append(uri)
+            return io.BytesIO(data)
+
+        asset = LazyAsset.__new__(LazyAsset)
+        object.__setattr__(asset, '_uri', 'test://uri')
+        object.__setattr__(asset, '_loader', loader)
+        object.__setattr__(asset, 'metadata', {})
+        asset._loader_calls = calls
+        return asset
+
+    def test_content_id_is_correct_hash(self):
+        import hashlib
+        data = b'lazy bytes'
+        asset = self._make_lazy_asset(data)
+        expected = hashlib.sha256(data).hexdigest()
+        assert asset.content_id == expected
+
+    def test_content_id_does_not_call_loader_twice(self):
+        data = b'cached bytes'
+        asset = self._make_lazy_asset(data)
+
+        _ = asset.content_id
+        _ = asset.content_id  # second access — must NOT trigger another loader call
+
+        assert len(asset._loader_calls) == 1, (
+            f'Expected loader called once, got {len(asset._loader_calls)} calls'
+        )
+
+    def test_content_id_is_stable_across_accesses(self):
+        data = b'stable'
+        asset = self._make_lazy_asset(data)
+        first = asset.content_id
+        second = asset.content_id
+        assert first == second

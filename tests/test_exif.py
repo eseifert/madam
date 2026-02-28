@@ -39,19 +39,40 @@ class TestExifMetadataProcessor:
         with pytest.raises(UnsupportedFormatError):
             processor.read(non_jpeg_essence)
 
-    def test_read_ignores_unmapped_metadata(self, processor, jpeg_image_asset, tmpdir):
+    def test_read_preserves_unmapped_metadata_under_raw(self, processor, jpeg_image_asset, tmpdir):
+        """Unmapped EXIF fields must be stored in exif['_raw'], not silently dropped."""
         file = tmpdir.join('asset_with_metadata.jpg')
         file.write(jpeg_image_asset.essence.read(), 'wb')
         metadata = piexif.load(str(file))
-        metadata['0th'][piexif.ImageIFD.Artist] = 'Test artist'
-        metadata['0th'][piexif.ImageIFD.TargetPrinter] = 'Printer'
+        metadata['0th'][piexif.ImageIFD.Artist] = b'Test artist'
+        metadata['0th'][piexif.ImageIFD.TargetPrinter] = b'Printer'
         piexif.insert(piexif.dump(metadata), str(file))
 
-        metadata = processor.read(io.BytesIO(file.read('rb')))
+        result = processor.read(io.BytesIO(file.read('rb')))
 
-        assert set(metadata.keys()) == {'exif'}
-        assert len(metadata['exif']) == 1
-        assert metadata['exif']['artist'] == 'Test artist'
+        assert set(result.keys()) == {'exif'}
+        assert result['exif']['artist'] == 'Test artist'
+        # Unmapped TargetPrinter must appear under _raw, not be dropped.
+        assert '_raw' in result['exif']
+        raw_key = f'0th.{piexif.ImageIFD.TargetPrinter}'
+        assert raw_key in result['exif']['_raw']
+
+    def test_combine_round_trips_raw_exif_fields(self, processor, jpeg_image_asset, tmpdir):
+        """Raw EXIF fields preserved on read must survive a combine() round-trip."""
+        src_file = tmpdir.join('src.jpg')
+        src_file.write(jpeg_image_asset.essence.read(), 'wb')
+        src_meta = piexif.load(str(src_file))
+        src_meta['0th'][piexif.ImageIFD.TargetPrinter] = b'Printer'
+        piexif.insert(piexif.dump(src_meta), str(src_file))
+
+        # Read → combine → read back
+        read_result = processor.read(io.BytesIO(src_file.read('rb')))
+        combined = processor.combine(io.BytesIO(src_file.read('rb')), read_result)
+
+        out_file = tmpdir.join('out.jpg')
+        out_file.write(combined.read(), 'wb')
+        out_meta = piexif.load(str(out_file))
+        assert out_meta['0th'].get(piexif.ImageIFD.TargetPrinter) == b'Printer'
 
     def test_read_raises_error_when_file_format_is_invalid(self, processor):
         junk_data = io.BytesIO(b'abc123')

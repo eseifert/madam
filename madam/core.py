@@ -198,7 +198,12 @@ class LazyAsset(Asset):
 
     @property
     def content_id(self) -> str:
-        return hashlib.sha256(self.essence.read()).hexdigest()
+        try:
+            return object.__getattribute__(self, '_content_id_cache')
+        except AttributeError:
+            digest = hashlib.sha256(self.essence.read()).hexdigest()
+            object.__setattr__(self, '_content_id_cache', digest)
+            return digest
 
     def __hash__(self) -> int:
         return hash(self.uri) ^ hash(self.metadata)

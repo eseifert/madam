@@ -137,16 +137,21 @@ class ExifMetadataProcessor(MetadataProcessor):
 
         metadata_by_format = {}
         for metadata_format in self.formats:
-            format_metadata = {}
+            format_metadata: dict[str, Any] = {}
+            raw_fields: dict[str, Any] = {}
             for ifd_key, ifd_values in metadata.items():
                 if not isinstance(ifd_values, dict):
                     continue
                 for exif_key, exif_value in ifd_values.items():
                     madam_key = ExifMetadataProcessor.metadata_to_exif.inv.get((ifd_key, exif_key))
                     if madam_key is None:
-                        continue
-                    convert_to_madam, _ = ExifMetadataProcessor.converters[madam_key]
-                    format_metadata[madam_key] = convert_to_madam(exif_value)
+                        # Preserve unmapped fields for round-trip fidelity.
+                        raw_fields[f'{ifd_key}.{exif_key}'] = exif_value
+                    else:
+                        convert_to_madam, _ = ExifMetadataProcessor.converters[madam_key]
+                        format_metadata[madam_key] = convert_to_madam(exif_value)
+            if raw_fields:
+                format_metadata['_raw'] = raw_fields
             if format_metadata:
                 metadata_by_format[metadata_format] = format_metadata
         return metadata_by_format
@@ -185,6 +190,15 @@ class ExifMetadataProcessor(MetadataProcessor):
                 if metadata_format not in self.formats:
                     raise UnsupportedFormatError(f'Metadata format {metadata_format!r} is not supported.')
                 for madam_key, madam_value in metadata_values.items():
+                    if madam_key == '_raw':
+                        # Write opaque raw fields back verbatim.
+                        for raw_key, raw_value in madam_value.items():
+                            ifd_key, exif_key_str = raw_key.split('.', 1)
+                            exif_key_int = int(exif_key_str)
+                            if ifd_key not in exif_metadata:
+                                exif_metadata[ifd_key] = {}
+                            exif_metadata[ifd_key][exif_key_int] = raw_value
+                        continue
                     if madam_key not in ExifMetadataProcessor.metadata_to_exif:
                         continue
                     ifd_key, exif_key = ExifMetadataProcessor.metadata_to_exif[madam_key]
