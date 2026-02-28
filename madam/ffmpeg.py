@@ -188,6 +188,40 @@ class _FFmpegContext(tempfile.TemporaryDirectory[str]):
         super().__exit__(exc_type, exc_val, exc_tb)
 
 
+class VideoCodec:
+    """Named constants for video codec strings accepted by :meth:`FFmpegProcessor.convert`.
+
+    Use these instead of raw FFmpeg codec names to avoid depending on FFmpeg internals::
+
+        processor.convert(mime_type='video/mp4', video={'codec': VideoCodec.H264})
+    """
+
+    H264 = 'libx264'
+    H265 = 'libx265'
+    VP8 = 'libvpx'
+    VP9 = 'libvpx-vp9'
+    AV1 = 'libaom-av1'
+    COPY = 'copy'
+    NONE = None  # discard video stream (-vn)
+
+
+class AudioCodec:
+    """Named constants for audio codec strings accepted by :meth:`FFmpegProcessor.convert`.
+
+    Use these instead of raw FFmpeg codec names to avoid depending on FFmpeg internals::
+
+        processor.convert(mime_type='audio/mpeg', audio={'codec': AudioCodec.MP3})
+    """
+
+    AAC = 'aac'
+    OPUS = 'libopus'
+    VORBIS = 'libvorbis'
+    MP3 = 'libmp3lame'
+    FLAC = 'flac'
+    COPY = 'copy'
+    NONE = None  # discard audio stream (-an)
+
+
 class FFmpegProcessor(Processor):
     """
     Represents a processor that uses FFmpeg to read audio and video data.
