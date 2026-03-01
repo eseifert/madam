@@ -424,6 +424,28 @@ class PillowProcessor(Processor):
         return cropped_asset
 
     @operator
+    def adjust_sharpness(self, asset: Asset, factor: float) -> Asset:
+        """
+        Creates a new asset whose essence has adjusted sharpness.
+
+        A factor of ``0.0`` produces a blurred (smoothed) image. A factor of
+        ``1.0`` returns an image identical to the input. Values above ``1.0``
+        sharpen the image; values between ``0.0`` and ``1.0`` blur it.
+
+        :param asset: Asset whose sharpness will be adjusted
+        :type asset: Asset
+        :param factor: Sharpness enhancement factor; ``1.0`` means no change
+        :type factor: float
+        :return: Asset with adjusted sharpness
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            enhanced = PIL.ImageEnhance.Sharpness(image).enhance(factor)
+        with enhanced:
+            return self._image_to_asset(enhanced, mime_type=mime_type)
+
+    @operator
     def adjust_saturation(self, asset: Asset, factor: float) -> Asset:
         """
         Creates a new asset whose essence has adjusted color saturation.

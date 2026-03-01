@@ -356,6 +356,29 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowAdjustSharpness:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_adjust_sharpness_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((128, 64, 32))
+        result = processor.adjust_sharpness(factor=2.0)(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_adjust_sharpness_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((128, 64, 32))
+        result = processor.adjust_sharpness(factor=2.0)(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_adjust_sharpness_factor_one_preserves_pixels(self, processor):
+        asset = _solid_png_asset((80, 120, 200))
+        result = processor.adjust_sharpness(factor=1.0)(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) == list(s.get_flattened_data())
+
+
 class TestPillowAdjustSaturation:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
