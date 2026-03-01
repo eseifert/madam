@@ -356,6 +356,37 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowAdjustContrast:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_adjust_contrast_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((128, 128, 128))
+        result = processor.adjust_contrast(factor=0.5)(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_adjust_contrast_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((128, 128, 128))
+        result = processor.adjust_contrast(factor=0.5)(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_adjust_contrast_factor_one_preserves_pixels(self, processor):
+        asset = _solid_png_asset((80, 120, 200))
+        result = processor.adjust_contrast(factor=1.0)(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) == list(s.get_flattened_data())
+
+    def test_adjust_contrast_factor_zero_produces_solid_grey(self, processor):
+        # factor=0 collapses all pixels to the image mean — a solid grey
+        asset = _solid_png_asset((0, 0, 0), width=4, height=4)
+        result = processor.adjust_contrast(factor=0.0)(asset)
+        with PIL.Image.open(result.essence) as image:
+            pixels = list(image.get_flattened_data())
+            assert len(set(pixels)) == 1  # all pixels identical
+
+
 class TestPillowAdjustBrightness:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):

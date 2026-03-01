@@ -424,6 +424,29 @@ class PillowProcessor(Processor):
         return cropped_asset
 
     @operator
+    def adjust_contrast(self, asset: Asset, factor: float) -> Asset:
+        """
+        Creates a new asset whose essence has adjusted contrast.
+
+        A factor of ``0.0`` produces a solid grey image (the mean colour of
+        the original). A factor of ``1.0`` returns an image identical to the
+        input. Values above ``1.0`` increase contrast; values between ``0.0``
+        and ``1.0`` decrease it.
+
+        :param asset: Asset whose contrast will be adjusted
+        :type asset: Asset
+        :param factor: Contrast enhancement factor; ``1.0`` means no change
+        :type factor: float
+        :return: Asset with adjusted contrast
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            enhanced = PIL.ImageEnhance.Contrast(image).enhance(factor)
+        with enhanced:
+            return self._image_to_asset(enhanced, mime_type=mime_type)
+
+    @operator
     def adjust_brightness(self, asset: Asset, factor: float) -> Asset:
         """
         Creates a new asset whose essence has adjusted brightness.
