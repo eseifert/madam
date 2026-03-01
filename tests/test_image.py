@@ -69,24 +69,62 @@ class TestPillowProcessor:
         assert resized_asset.height == 10
 
     @pytest.mark.parametrize('width, height', [(4, 3), (40, 30)])
-    def test_resize_in_fill_mode_preserves_aspect_ratio_for_landscape_image(self, processor, width, height):
+    def test_resize_in_fill_mode_crops_landscape_image_to_target(self, processor, width, height):
         jpeg_image_asset_landscape = get_jpeg_image_asset(width=width, height=height)
         resize_operator = processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FILL)
 
         resized_asset = resize_operator(jpeg_image_asset_landscape)
 
-        assert resized_asset.width == 13
+        assert resized_asset.width == 9
         assert resized_asset.height == 10
 
     @pytest.mark.parametrize('width, height', [(3, 5), (30, 50)])
-    def test_resize_in_fill_mode_preserves_aspect_ratio_for_portrait_image(self, processor, width, height):
+    def test_resize_in_fill_mode_crops_portrait_image_to_target(self, processor, width, height):
         jpeg_image_asset_portrait = get_jpeg_image_asset(width=width, height=height)
         resize_operator = processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FILL)
 
         resized_asset = resize_operator(jpeg_image_asset_portrait)
 
         assert resized_asset.width == 9
-        assert resized_asset.height == 15
+        assert resized_asset.height == 10
+
+    def test_resize_in_fill_mode_produces_exact_target_dimensions(self, processor):
+        asset = get_jpeg_image_asset(width=4, height=3)
+        result = processor.resize(width=9, height=10, mode=madam.image.ResizeMode.FILL)(asset)
+        assert result.width == 9
+        assert result.height == 10
+
+    @pytest.mark.parametrize('gravity,x_sample,expected_pixel_column', [
+        # Source: 20x10 image, left half white, right half black.
+        # Scaled to fill 10x10 doubles width → 20x10 (height already fits).
+        # west gravity crops from left  → white column at x=0
+        # east gravity crops from right → black column at x=0 of the crop
+        ('west', 0, (255, 255, 255)),
+        ('east', 0, (0, 0, 0)),
+    ])
+    def test_resize_in_fill_mode_gravity_selects_crop_region(
+        self, processor, gravity, x_sample, expected_pixel_column
+    ):
+        # Build a 20x10 PNG: left half white, right half black
+        image = PIL.Image.new('RGB', (20, 10), (0, 0, 0))
+        for y in range(10):
+            for x in range(10):
+                image.putpixel((x, y), (255, 255, 255))
+        essence = io.BytesIO()
+        image.save(essence, 'PNG')
+        essence.seek(0)
+        asset = madam.core.Asset(
+            essence, mime_type='image/png', width=20, height=10,
+            color_space='RGB', depth=8, data_type='uint',
+        )
+        # Resize to 10x10 fill — the image already fills height; width is
+        # cropped. west keeps left (white), east keeps right (black).
+        result = processor.resize(width=10, height=10, mode=madam.image.ResizeMode.FILL,
+                                  gravity=gravity)(asset)
+        assert result.width == 10
+        assert result.height == 10
+        with PIL.Image.open(result.essence) as img:
+            assert img.getpixel((x_sample, 5)) == expected_pixel_column
 
     def test_resize_scales_image_to_exact_dimensions_by_default(self, processor, jpeg_image_asset):
         asset = jpeg_image_asset

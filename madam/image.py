@@ -188,18 +188,37 @@ class PillowProcessor(Processor):
             file.seek(0)
 
     @operator
-    def resize(self, asset: Asset, width: int, height: int, mode: ResizeMode = ResizeMode.EXACT) -> Asset:
+    def resize(
+        self,
+        asset: Asset,
+        width: int,
+        height: int,
+        mode: ResizeMode = ResizeMode.EXACT,
+        gravity: str = 'center',
+    ) -> Asset:
         """
-        Creates a new Asset whose essence is resized according to the specified parameters.
+        Creates a new Asset whose essence is resized according to the specified
+        parameters.
+
+        In ``FILL`` mode the image is scaled up until it covers the target
+        dimensions, then cropped to the exact target size.  The ``gravity``
+        parameter controls which part of the scaled image is kept; it has no
+        effect in ``EXACT`` or ``FIT`` mode.
+
+        Valid gravity values: ``'north_west'``, ``'north'``, ``'north_east'``,
+        ``'west'``, ``'center'``, ``'east'``, ``'south_west'``, ``'south'``,
+        ``'south_east'``.
 
         :param asset: Asset to be resized
         :type asset: Asset
-        :param width: target width
+        :param width: Target width in pixels
         :type width: int
-        :param height: target height
+        :param height: Target height in pixels
         :type height: int
-        :param mode: resize behavior
+        :param mode: Resize behavior
         :type mode: ResizeMode
+        :param gravity: Crop anchor used in ``FILL`` mode
+        :type gravity: str
         :return: Asset with resized essence
         :rtype: Asset
         """
@@ -225,6 +244,12 @@ class PillowProcessor(Processor):
             # Pillow supports resampling only for 8-bit images
             resampling_method = PIL.Image.Resampling.LANCZOS if asset.depth == 8 else PIL.Image.Resampling.NEAREST
             resized_image = image.resize((resized_width, resized_height), resample=resampling_method)
+
+        if mode == ResizeMode.FILL and (resized_width != width or resized_height != height):
+            crop_x, crop_y = _resolve_gravity(resized_width, resized_height, width, height, gravity)
+            with resized_image:
+                resized_image = resized_image.crop((crop_x, crop_y, crop_x + width, crop_y + height))
+
         with resized_image:
             resized_asset = self._image_to_asset(resized_image, mime_type=mime_type)
         return resized_asset
