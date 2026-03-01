@@ -8,6 +8,7 @@ import PIL.ExifTags
 import PIL.Image
 import PIL.ImageEnhance
 import PIL.ImageFilter
+import PIL.ImageOps
 from bidict import bidict
 
 from madam.core import Asset, OperatorError, Processor, operator
@@ -423,6 +424,27 @@ class PillowProcessor(Processor):
             cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)
 
         return cropped_asset
+
+    @operator
+    def sepia(self, asset: Asset) -> Asset:
+        """
+        Creates a new asset whose essence has a sepia tone applied.
+
+        The image is first converted to greyscale, then colourised with warm
+        brown tones characteristic of historical photographs. The output is
+        always an RGB image in the same format as the input.
+
+        :param asset: Asset whose essence will be toned
+        :type asset: Asset
+        :return: Asset with sepia-toned essence
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            grey = image.convert('L')
+            sepia_image = PIL.ImageOps.colorize(grey, black=(112, 66, 20), white=(255, 245, 210))
+        with sepia_image:
+            return self._image_to_asset(sepia_image, mime_type=mime_type)
 
     @operator
     def sharpen(self, asset: Asset, radius: float = 2, percent: int = 150, threshold: int = 3) -> Asset:

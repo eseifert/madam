@@ -356,6 +356,37 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowSepia:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_sepia_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((200, 100, 50))
+        result = processor.sepia()(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_sepia_output_is_png(self, processor):
+        asset = _solid_png_asset((200, 100, 50))
+        result = processor.sepia()(asset)
+        assert result.mime_type == 'image/png'
+
+    def test_sepia_produces_rgb_output(self, processor):
+        asset = _solid_png_asset((200, 100, 50))
+        result = processor.sepia()(asset)
+        with PIL.Image.open(result.essence) as image:
+            assert image.mode == 'RGB'
+
+    def test_sepia_warm_tones(self, processor):
+        # Sepia of a mid-grey pixel should have R > B (warm brownish tone)
+        asset = _solid_png_asset((128, 128, 128))
+        result = processor.sepia()(asset)
+        with PIL.Image.open(result.essence) as image:
+            r, g, b = image.getpixel((0, 0))
+            assert r > b
+
+
 class TestPillowSharpen:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
