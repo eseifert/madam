@@ -356,6 +356,37 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowAdjustSaturation:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_adjust_saturation_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((200, 100, 50))
+        result = processor.adjust_saturation(factor=0.5)(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_adjust_saturation_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((200, 100, 50))
+        result = processor.adjust_saturation(factor=0.5)(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_adjust_saturation_factor_one_preserves_pixels(self, processor):
+        asset = _solid_png_asset((200, 100, 50))
+        result = processor.adjust_saturation(factor=1.0)(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) == list(s.get_flattened_data())
+
+    def test_adjust_saturation_factor_zero_produces_greyscale(self, processor):
+        # factor=0 strips all colour — R, G, B channels become equal
+        asset = _solid_png_asset((200, 100, 50))
+        result = processor.adjust_saturation(factor=0.0)(asset)
+        with PIL.Image.open(result.essence) as image:
+            pixels = list(image.get_flattened_data())
+            assert all(p[0] == p[1] == p[2] for p in pixels)
+
+
 class TestPillowAdjustContrast:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
