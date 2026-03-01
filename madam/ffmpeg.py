@@ -999,6 +999,80 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
     @operator
+    def set_speed(self, asset: Asset, factor: float) -> Asset:
+        """
+        Creates a new audio or video asset whose playback speed is scaled by
+        *factor* relative to the source.
+
+        A *factor* greater than ``1.0`` speeds up playback (timelapse); a
+        factor less than ``1.0`` slows it down (slow motion).  The output
+        duration equals ``source_duration / factor``.
+
+        For video streams the ``setpts`` filter is used.  For audio streams
+        the ``atempo`` filter is used; because ``atempo`` accepts values only
+        in ``[0.5, 2.0]``, the filter is chained automatically for extreme
+        factors.
+
+        :param asset: Audio or video asset to retime
+        :type asset: Asset
+        :param factor: Speed multiplier; must be positive and non-zero
+        :type factor: float
+        :return: New asset with adjusted playback speed
+        :rtype: Asset
+        :raises ValueError: If *factor* is not positive
+        :raises UnsupportedFormatError: If the asset type is not supported
+        """
+        if factor <= 0:
+            raise ValueError(f'Speed factor must be positive, got {factor!r}')
+
+        mime_type = MimeType(asset.mime_type)
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
+        if not encoder_name or mime_type.type not in ('audio', 'video'):
+            raise UnsupportedFormatError(f'Unsupported source asset type: {mime_type}')
+
+        has_video = 'video' in asset.metadata
+        has_audio = 'audio' in asset.metadata
+
+        # Build the atempo filter chain for the audio stream.
+        # The atempo filter accepts values only in [0.5, 2.0], so break the
+        # factor into a chain of steps that each stay within that range.
+        def _atempo_chain(f: float) -> str:
+            steps: list[str] = []
+            while f < 0.5:
+                steps.append('atempo=0.5')
+                f /= 0.5
+            while f > 2.0:
+                steps.append('atempo=2.0')
+                f /= 2.0
+            steps.append(f'atempo={f}')
+            return ','.join(steps)
+
+        result = io.BytesIO()
+        with _FFmpegContext(asset.essence, result) as ctx:
+            command = ['ffmpeg', '-loglevel', 'error', '-i', ctx.input_path]
+
+            if has_video:
+                # setpts: scale presentation timestamps so duration changes
+                command.extend(['-filter:v', f'setpts={1.0 / factor}*PTS'])
+            if has_audio:
+                command.extend(['-filter:a', _atempo_chain(factor)])
+
+            command.extend(['-threads', str(self._threads), '-f', encoder_name, '-y', ctx.output_path])
+
+            try:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'set speed of asset'))
+
+        duration = asset.duration / factor if hasattr(asset, 'duration') and asset.duration else None
+        metadata = _combine_metadata(
+            asset, 'mime_type', 'width', 'height', 'video', 'audio', 'subtitle',
+            **({'duration': duration} if duration is not None else {}),
+        )
+
+        return Asset(essence=result, **metadata)
+
+    @operator
     def rotate(self, asset: Asset, angle: float, expand: bool = False) -> Asset:
         """
         Creates an asset whose essence is rotated by the specified angle in

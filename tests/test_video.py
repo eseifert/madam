@@ -529,3 +529,40 @@ class TestFFmpegProcessor:
         converted_asset = conversion_operator(nut_video_asset)
 
         assert converted_asset.mime_type == 'audio/ogg'
+
+
+class TestFFmpegSetSpeed:
+    @pytest.fixture(name='processor', scope='class')
+    def ffmpeg_processor(self):
+        return madam.video.FFmpegProcessor()
+
+    def test_set_speed_speeds_up_asset(self, processor, video_asset):
+        set_speed = processor.set_speed(factor=2.0)
+
+        sped_up_asset = set_speed(video_asset)
+
+        assert sped_up_asset.duration == pytest.approx(video_asset.duration / 2.0, rel=0.15)
+
+    def test_set_speed_slows_down_asset(self, processor, video_asset):
+        set_speed = processor.set_speed(factor=0.5)
+
+        slowed_asset = set_speed(video_asset)
+
+        assert slowed_asset.duration == pytest.approx(video_asset.duration / 0.5, rel=0.15)
+
+    def test_set_speed_preserves_mime_type(self, processor, video_asset):
+        set_speed = processor.set_speed(factor=2.0)
+
+        sped_up_asset = set_speed(video_asset)
+
+        assert sped_up_asset.mime_type == video_asset.mime_type
+
+    def test_set_speed_raises_for_non_positive_factor(self, processor, video_asset):
+        with pytest.raises(ValueError):
+            processor.set_speed(factor=0.0)(video_asset)
+
+    def test_set_speed_raises_for_unsupported_format(self, processor, unknown_asset):
+        set_speed = processor.set_speed(factor=2.0)
+
+        with pytest.raises(UnsupportedFormatError):
+            set_speed(unknown_asset)
