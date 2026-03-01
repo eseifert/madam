@@ -1246,6 +1246,112 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
 
+    @operator
+    def overlay(
+        self,
+        asset: Asset,
+        overlay_asset: Asset,
+        x: int = 0,
+        y: int = 0,
+        gravity: str = 'north_west',
+        from_seconds: float | None = None,
+        to_seconds: float | None = None,
+    ) -> Asset:
+        """
+        Composites *overlay_asset* on top of *asset* at the specified position.
+
+        Position can be set explicitly with *x* and *y* pixel offsets from the
+        top-left corner, or implicitly via *gravity* (same nine-point vocabulary
+        as :meth:`~madam.image.PillowProcessor.pad`).  When both *x*/*y* and
+        *gravity* are meaningful, *x* and *y* act as additional offsets relative
+        to the gravity anchor.
+
+        The overlay can be restricted to a time window with *from_seconds* and
+        *to_seconds*.  Outside the window the base video is shown unmodified.
+
+        :param asset: Base video asset
+        :type asset: Asset
+        :param overlay_asset: Image or video asset to composite on top
+        :type overlay_asset: Asset
+        :param x: Horizontal pixel offset from the left edge (or gravity anchor)
+        :type x: int
+        :param y: Vertical pixel offset from the top edge (or gravity anchor)
+        :type y: int
+        :param gravity: One of ``north_west``, ``north``, ``north_east``,
+            ``west``, ``center``, ``east``, ``south_west``, ``south``,
+            ``south_east``
+        :type gravity: str
+        :param from_seconds: Start time of the overlay window in seconds;
+            ``None`` means the overlay is visible from the beginning
+        :type from_seconds: float or None
+        :param to_seconds: End time of the overlay window in seconds;
+            ``None`` means the overlay is visible until the end
+        :type to_seconds: float or None
+        :return: New video asset with overlay composited
+        :rtype: Asset
+        :raises UnsupportedFormatError: If the base asset type is not supported
+        """
+        mime_type = MimeType(asset.mime_type)
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
+        if not encoder_name or mime_type.type != 'video':
+            raise UnsupportedFormatError(f'Unsupported source asset type: {mime_type}')
+
+        # Resolve gravity to pixel offsets for the overlay origin.
+        overlay_w = overlay_asset.width if hasattr(overlay_asset, 'width') else 0
+        overlay_h = overlay_asset.height if hasattr(overlay_asset, 'height') else 0
+        gravity_offsets = {
+            'north_west': (0, 0),
+            'north': (asset.width // 2 - overlay_w // 2, 0),
+            'north_east': (asset.width - overlay_w, 0),
+            'west': (0, asset.height // 2 - overlay_h // 2),
+            'center': (asset.width // 2 - overlay_w // 2, asset.height // 2 - overlay_h // 2),
+            'east': (asset.width - overlay_w, asset.height // 2 - overlay_h // 2),
+            'south_west': (0, asset.height - overlay_h),
+            'south': (asset.width // 2 - overlay_w // 2, asset.height - overlay_h),
+            'south_east': (asset.width - overlay_w, asset.height - overlay_h),
+        }
+        gx, gy = gravity_offsets.get(gravity, (0, 0))
+        px, py = gx + x, gy + y
+
+        # Build the enable expression for time-windowed overlay.
+        enable_parts: list[str] = []
+        if from_seconds is not None:
+            enable_parts.append(f'gte(t,{from_seconds})')
+        if to_seconds is not None:
+            enable_parts.append(f'lte(t,{to_seconds})')
+        enable_expr = ':'.join(enable_parts) if enable_parts else '1'
+
+        overlay_filter = f'overlay={px}:{py}:enable=\'{enable_expr}\''
+
+        result = io.BytesIO()
+        with _FFmpegContext(asset.essence, result) as ctx:
+            # Write the overlay asset to a second temp file in the same tmpdir.
+            overlay_path = ctx.input_path + '_overlay'
+            with open(overlay_path, 'wb') as fh:
+                shutil.copyfileobj(overlay_asset.essence, fh)
+                overlay_asset.essence.seek(0)
+
+            command = [
+                'ffmpeg', '-loglevel', 'error',
+                '-i', ctx.input_path,
+                '-i', overlay_path,
+                '-filter_complex', f'[0:v][1:v]{overlay_filter}[v]',
+                '-map', '[v]',
+                '-map', '0:a?',
+                '-codec:a', 'copy',
+                '-threads', str(self._threads),
+                '-f', encoder_name, '-y', ctx.output_path,
+            ]
+
+            try:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'overlay asset'))
+
+        metadata = _combine_metadata(asset, 'mime_type', 'width', 'height', 'duration', 'video', 'audio', 'subtitle')
+        return Asset(essence=result, **metadata)
+
+
 def concatenate(
     assets: Iterable[Asset],
     mime_type: MimeType | str,

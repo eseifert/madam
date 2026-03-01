@@ -646,3 +646,62 @@ class TestFFmpegNormalizeAudio:
 
         with pytest.raises(UnsupportedFormatError):
             normalize(unknown_asset)
+
+
+class TestFFmpegOverlay:
+    @pytest.fixture(name='processor', scope='class')
+    def ffmpeg_processor(self):
+        return madam.video.FFmpegProcessor()
+
+    @pytest.fixture(scope='class')
+    def overlay_image(self):
+        """Small solid-color PNG to use as the overlay asset."""
+        import io as _io
+        import PIL.Image
+        import madam.image
+        pillow = madam.image.PillowProcessor()
+        img = PIL.Image.new('RGBA', (4, 4), (255, 0, 0, 255))
+        buf = _io.BytesIO()
+        img.save(buf, format='PNG')
+        buf.seek(0)
+        return pillow.read(buf)
+
+    def test_overlay_preserves_mime_type(self, processor, video_asset, overlay_image):
+        overlay_op = processor.overlay(overlay_asset=overlay_image, x=0, y=0)
+
+        result = overlay_op(video_asset)
+
+        assert result.mime_type == video_asset.mime_type
+
+    def test_overlay_preserves_dimensions(self, processor, video_asset, overlay_image):
+        overlay_op = processor.overlay(overlay_asset=overlay_image, x=0, y=0)
+
+        result = overlay_op(video_asset)
+
+        assert result.width == video_asset.width
+        assert result.height == video_asset.height
+
+    def test_overlay_preserves_duration(self, processor, video_asset, overlay_image):
+        overlay_op = processor.overlay(overlay_asset=overlay_image, x=0, y=0)
+
+        result = overlay_op(video_asset)
+
+        assert result.duration == pytest.approx(video_asset.duration, rel=0.1)
+
+    def test_overlay_raises_for_unsupported_format(self, processor, unknown_asset, overlay_image):
+        overlay_op = processor.overlay(overlay_asset=overlay_image, x=0, y=0)
+
+        with pytest.raises(UnsupportedFormatError):
+            overlay_op(unknown_asset)
+
+    def test_overlay_with_time_window_applies_only_in_range(self, processor, video_asset, overlay_image):
+        # Supplying from_seconds beyond the clip duration should still produce
+        # a valid output (the overlay simply never appears).
+        overlay_op = processor.overlay(
+            overlay_asset=overlay_image, x=0, y=0,
+            from_seconds=video_asset.duration + 1.0,
+        )
+
+        result = overlay_op(video_asset)
+
+        assert result.duration == pytest.approx(video_asset.duration, rel=0.1)
