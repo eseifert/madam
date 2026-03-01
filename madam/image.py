@@ -1,4 +1,5 @@
 import io
+import math
 import warnings
 from collections.abc import Callable, Mapping
 from enum import Enum
@@ -424,6 +425,42 @@ class PillowProcessor(Processor):
             cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)
 
         return cropped_asset
+
+    @operator
+    def vignette(self, asset: Asset, strength: float = 0.5) -> Asset:
+        """
+        Creates a new asset whose essence has a radial vignette applied.
+
+        The vignette darkens the edges of the image while leaving the centre
+        unaffected. ``strength`` controls how much darkening is applied at the
+        corners: ``0.0`` leaves the image unchanged; ``1.0`` makes the corners
+        completely black.
+
+        :param asset: Asset whose essence will receive the vignette
+        :type asset: Asset
+        :param strength: Vignette intensity in the range ``[0.0, 1.0]``
+        :type strength: float
+        :return: Asset with vignette applied
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            rgb = image.convert('RGB')
+            w, h = rgb.size
+            cx, cy = w / 2.0, h / 2.0
+            max_dist = math.sqrt(cx * cx + cy * cy)
+            mask_pixels = []
+            for y in range(h):
+                for x in range(w):
+                    dist = math.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+                    brightness = max(0.0, 1.0 - strength * dist / max_dist) if max_dist > 0 else 1.0
+                    mask_pixels.append(round(brightness * 255))
+            mask = PIL.Image.new('L', (w, h))
+            mask.putdata(mask_pixels)
+            black = PIL.Image.new('RGB', (w, h), (0, 0, 0))
+            vignetted = PIL.Image.composite(rgb, black, mask)
+        with vignetted:
+            return self._image_to_asset(vignetted, mime_type=mime_type)
 
     @operator
     def tint(self, asset: Asset, color: tuple[int, int, int], opacity: float = 0.5) -> Asset:

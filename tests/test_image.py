@@ -356,6 +356,39 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowVignette:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_vignette_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((200, 200, 200))
+        result = processor.vignette()(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_vignette_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((200, 200, 200))
+        result = processor.vignette()(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_vignette_darkens_corners_relative_to_center(self, processor):
+        # On a uniform image, center pixel should be brighter than corner pixel
+        asset = _solid_png_asset((200, 200, 200), width=32, height=32)
+        result = processor.vignette(strength=0.8)(asset)
+        with PIL.Image.open(result.essence) as image:
+            center = image.getpixel((16, 16))
+            corner = image.getpixel((0, 0))
+            # Sum of RGB channels: center must be brighter than corner
+            assert sum(center) > sum(corner)
+
+    def test_vignette_strength_zero_leaves_image_unchanged(self, processor):
+        asset = _solid_png_asset((128, 64, 32))
+        result = processor.vignette(strength=0.0)(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) == list(s.get_flattened_data())
+
+
 class TestPillowTint:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
