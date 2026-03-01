@@ -356,6 +356,37 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowTint:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_tint_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((200, 200, 200))
+        result = processor.tint(color=(255, 0, 0))(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_tint_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((200, 200, 200))
+        result = processor.tint(color=(255, 0, 0))(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_tint_shifts_pixel_colour_toward_tint(self, processor):
+        # A white image tinted red: result must have more red than blue
+        asset = _solid_png_asset((255, 255, 255))
+        result = processor.tint(color=(255, 0, 0))(asset)
+        with PIL.Image.open(result.essence) as image:
+            r, g, b = image.getpixel((0, 0))
+            assert r > b
+
+    def test_tint_opacity_zero_leaves_image_unchanged(self, processor):
+        asset = _solid_png_asset((80, 120, 200))
+        result = processor.tint(color=(255, 0, 0), opacity=0.0)(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) == list(s.get_flattened_data())
+
+
 class TestPillowSepia:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):

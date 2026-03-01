@@ -426,11 +426,40 @@ class PillowProcessor(Processor):
         return cropped_asset
 
     @operator
+    def tint(self, asset: Asset, color: tuple[int, int, int], opacity: float = 0.5) -> Asset:
+        """
+        Creates a new asset whose essence is tinted with the specified color.
+
+        The tint is blended over the image at the given opacity. An ``opacity``
+        of ``0.0`` leaves the image unchanged; ``1.0`` fills it entirely with
+        ``color``. The output is always an RGB image in the same format as the
+        input.
+
+        :param asset: Asset whose essence will be tinted
+        :type asset: Asset
+        :param color: RGB tint color as a ``(red, green, blue)`` tuple with
+            values in the range ``[0, 255]``
+        :type color: tuple[int, int, int]
+        :param opacity: Tint opacity in the range ``[0.0, 1.0]``
+        :type opacity: float
+        :return: Asset with tinted essence
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            base = image.convert('RGB')
+            tint_layer = PIL.Image.new('RGB', base.size, color)
+            alpha = round(opacity * 255)
+            tinted = PIL.Image.blend(base, tint_layer, alpha / 255)
+        with tinted:
+            return self._image_to_asset(tinted, mime_type=mime_type)
+
+    @operator
     def sepia(self, asset: Asset) -> Asset:
         """
         Creates a new asset whose essence has a sepia tone applied.
 
-        The image is first converted to greyscale, then colourised with warm
+        The image is first converted to greyscale, then colorised with warm
         brown tones characteristic of historical photographs. The output is
         always an RGB image in the same format as the input.
 
