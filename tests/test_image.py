@@ -356,6 +356,52 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowComposite:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_composite_preserves_base_dimensions(self, processor):
+        base = _solid_png_asset((100, 100, 100), width=20, height=20)
+        overlay = _solid_png_asset((255, 0, 0), width=5, height=5)
+        result = processor.composite(overlay_asset=overlay)(base)
+        assert result.width == base.width
+        assert result.height == base.height
+
+    def test_composite_preserves_mime_type(self, processor):
+        base = _solid_png_asset((100, 100, 100), width=20, height=20)
+        overlay = _solid_png_asset((255, 0, 0), width=5, height=5)
+        result = processor.composite(overlay_asset=overlay)(base)
+        assert result.mime_type == base.mime_type
+
+    def test_composite_opacity_zero_leaves_base_unchanged(self, processor):
+        base = _solid_png_asset((100, 100, 100), width=20, height=20)
+        overlay = _solid_png_asset((255, 0, 0), width=20, height=20)
+        result = processor.composite(overlay_asset=overlay, opacity=0.0)(base)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(base.essence) as s:
+            assert list(r.get_flattened_data()) == list(s.get_flattened_data())
+
+    def test_composite_opacity_one_fills_overlay_region_with_overlay_color(self, processor):
+        base = _solid_png_asset((0, 0, 0), width=20, height=20)
+        overlay = _solid_png_asset((255, 0, 0), width=10, height=10)
+        result = processor.composite(overlay_asset=overlay, x=0, y=0, opacity=1.0)(base)
+        with PIL.Image.open(result.essence) as image:
+            # Top-left corner should now be fully red
+            assert image.getpixel((0, 0)) == (255, 0, 0)
+            # Bottom-right corner (outside overlay) should still be black
+            assert image.getpixel((19, 19)) == (0, 0, 0)
+
+    def test_composite_gravity_positions_overlay(self, processor):
+        base = _solid_png_asset((0, 0, 0), width=20, height=20)
+        overlay = _solid_png_asset((255, 255, 255), width=4, height=4)
+        result = processor.composite(overlay_asset=overlay, gravity='south_east', opacity=1.0)(base)
+        with PIL.Image.open(result.essence) as image:
+            # Bottom-right corner should be white (overlay placed there)
+            assert image.getpixel((19, 19)) == (255, 255, 255)
+            # Top-left should still be black
+            assert image.getpixel((0, 0)) == (0, 0, 0)
+
+
 class TestPillowFillBackground:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):

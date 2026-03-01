@@ -469,6 +469,65 @@ class PillowProcessor(Processor):
         return cropped_asset
 
     @operator
+    def composite(
+        self,
+        asset: Asset,
+        overlay_asset: Asset,
+        x: int = 0,
+        y: int = 0,
+        gravity: str = 'north_west',
+        opacity: float = 1.0,
+    ) -> Asset:
+        """
+        Creates a new asset whose essence has another image composited on top.
+
+        The ``overlay_asset`` is placed over the base image at the position
+        determined by ``(x, y)`` or ``gravity``. When both ``x``/``y`` and
+        ``gravity`` are specified, ``gravity`` is ignored and ``(x, y)`` is
+        used directly. ``opacity`` scales the overlay's alpha channel.
+
+        :param asset: Base image asset
+        :type asset: Asset
+        :param overlay_asset: Asset to composite over the base
+        :type overlay_asset: Asset
+        :param x: Horizontal offset of the overlay from the left edge
+        :type x: int
+        :param y: Vertical offset of the overlay from the top edge
+        :type y: int
+        :param gravity: Anchor position when ``x`` and ``y`` are both ``0``;
+            valid values are ``'north_west'``, ``'north'``, ``'north_east'``,
+            ``'west'``, ``'center'``, ``'east'``, ``'south_west'``,
+            ``'south'``, ``'south_east'``
+        :type gravity: str
+        :param opacity: Overlay opacity in the range ``[0.0, 1.0]``
+        :type opacity: float
+        :return: Asset with overlay composited onto the base
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as base_image, PIL.Image.open(overlay_asset.essence) as overlay_image:
+            base_rgba = base_image.convert('RGBA')
+            overlay_rgba = overlay_image.convert('RGBA')
+
+            if opacity < 1.0:
+                r, g, b, a = overlay_rgba.split()
+                a = a.point(lambda v: round(v * opacity))
+                overlay_rgba = PIL.Image.merge('RGBA', (r, g, b, a))
+
+            if x == 0 and y == 0:
+                x, y = _resolve_gravity(
+                    base_rgba.width, base_rgba.height,
+                    overlay_rgba.width, overlay_rgba.height,
+                    gravity,
+                )
+
+            result = base_rgba.copy()
+            result.paste(overlay_rgba, (x, y), mask=overlay_rgba)
+            final = result.convert(base_image.mode)
+        with final:
+            return self._image_to_asset(final, mime_type=mime_type)
+
+    @operator
     def fill_background(self, asset: Asset, color: tuple[int, int, int]) -> Asset:
         """
         Creates a new asset whose alpha channel is merged into a solid colour
