@@ -1,3 +1,5 @@
+import io
+
 import PIL.Image
 import PIL.ImageChops
 import pytest
@@ -7,8 +9,26 @@ from assets import (
     get_jpeg_image_asset,
 )
 
+import madam.core
 import madam.image
 from madam.core import OperatorError
+
+
+def _solid_png_asset(color, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    """Return a lossless PNG Asset filled with a uniform color."""
+    image = PIL.Image.new('RGB', (width, height), color)
+    essence = io.BytesIO()
+    image.save(essence, 'PNG')
+    essence.seek(0)
+    return madam.core.Asset(
+        essence,
+        mime_type='image/png',
+        width=width,
+        height=height,
+        color_space='RGB',
+        depth=8,
+        data_type='uint',
+    )
 
 
 def is_equal_in_black_white_space(result_image, expected_image):
@@ -334,3 +354,32 @@ class TestPillowProcessor:
         )
         converted = processor.convert(mime_type='image/avif')(asset)
         assert converted.mime_type == 'image/avif'
+
+
+class TestPillowAdjustBrightness:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_adjust_brightness_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((128, 128, 128))
+        result = processor.adjust_brightness(factor=0.5)(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_adjust_brightness_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((128, 128, 128))
+        result = processor.adjust_brightness(factor=0.5)(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_adjust_brightness_factor_one_preserves_pixels(self, processor):
+        asset = _solid_png_asset((128, 64, 32))
+        result = processor.adjust_brightness(factor=1.0)(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) == list(s.get_flattened_data())
+
+    def test_adjust_brightness_factor_zero_produces_black_image(self, processor):
+        asset = _solid_png_asset((128, 128, 128))
+        result = processor.adjust_brightness(factor=0.0)(asset)
+        with PIL.Image.open(result.essence) as image:
+            assert all(p == (0, 0, 0) for p in image.get_flattened_data())

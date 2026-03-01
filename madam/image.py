@@ -6,6 +6,7 @@ from typing import IO, Any
 
 import PIL.ExifTags
 import PIL.Image
+import PIL.ImageEnhance
 from bidict import bidict
 
 from madam.core import Asset, OperatorError, Processor, operator
@@ -421,6 +422,28 @@ class PillowProcessor(Processor):
             cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)
 
         return cropped_asset
+
+    @operator
+    def adjust_brightness(self, asset: Asset, factor: float) -> Asset:
+        """
+        Creates a new asset whose essence has adjusted brightness.
+
+        A factor of ``0.0`` produces a black image. A factor of ``1.0``
+        returns an image identical to the input. Values above ``1.0``
+        increase brightness; values between ``0.0`` and ``1.0`` decrease it.
+
+        :param asset: Asset whose brightness will be adjusted
+        :type asset: Asset
+        :param factor: Brightness enhancement factor; ``1.0`` means no change
+        :type factor: float
+        :return: Asset with adjusted brightness
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            enhanced = PIL.ImageEnhance.Brightness(image).enhance(factor)
+        with enhanced:
+            return self._image_to_asset(enhanced, mime_type=mime_type)
 
     @operator
     def rotate(self, asset: Asset, angle: float, expand: bool = False) -> Asset:
