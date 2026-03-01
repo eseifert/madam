@@ -990,6 +990,53 @@ class TestPillowAdjustContrast:
             assert len(set(pixels)) == 1  # all pixels identical
 
 
+class TestPillowHEIF:
+    """Tests for HEIC/HEIF support via the pillow-heif plugin."""
+
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        pytest.importorskip('pillow_heif')
+        return madam.image.PillowProcessor()
+
+    @pytest.fixture(scope='class')
+    def heic_asset(self, processor):
+        """Create a synthetic HEIC asset for testing."""
+        image = PIL.Image.new('RGB', (DEFAULT_WIDTH, DEFAULT_HEIGHT), (200, 100, 50))
+        buf = io.BytesIO()
+        image.save(buf, format='HEIF')
+        buf.seek(0)
+        return processor.read(buf)
+
+    def test_read_heic_returns_correct_mime_type(self, heic_asset):
+        assert heic_asset.mime_type == 'image/heic'
+
+    def test_read_heic_returns_correct_dimensions(self, heic_asset):
+        assert heic_asset.width == DEFAULT_WIDTH
+        assert heic_asset.height == DEFAULT_HEIGHT
+
+    def test_can_read_heic(self, processor):
+        image = PIL.Image.new('RGB', (DEFAULT_WIDTH, DEFAULT_HEIGHT), (200, 100, 50))
+        buf = io.BytesIO()
+        image.save(buf, format='HEIF')
+        buf.seek(0)
+        assert processor.can_read(buf)
+
+    def test_convert_png_to_heic(self, processor):
+        png_asset = _solid_png_asset((200, 100, 50))
+        convert_op = processor.convert(mime_type='image/heic')
+        heic_asset = convert_op(png_asset)
+        assert heic_asset.mime_type == 'image/heic'
+        assert heic_asset.width == DEFAULT_WIDTH
+        assert heic_asset.height == DEFAULT_HEIGHT
+
+    def test_convert_heic_to_png(self, processor, heic_asset):
+        convert_op = processor.convert(mime_type='image/png')
+        png_asset = convert_op(heic_asset)
+        assert png_asset.mime_type == 'image/png'
+        assert png_asset.width == DEFAULT_WIDTH
+        assert png_asset.height == DEFAULT_HEIGHT
+
+
 class TestPillowAdjustBrightness:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):

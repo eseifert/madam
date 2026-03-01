@@ -42,6 +42,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["coverage", "mutagen", "pytest", "pytest-cov", "pytest-xdist", "ruff", "ty"]
 doc = ["sphinx>=1.3", "sphinx_rtd_theme"]
+heif = [
+    "pillow-heif>=1.3.0",
+]
 
 [tool.setuptools_scm]
 write_to = "madam/_version.py"

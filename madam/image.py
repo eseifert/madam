@@ -110,6 +110,21 @@ class PillowProcessor(Processor):
         }
     )
 
+    # Register HEIC/HEIF support when the pillow-heif plugin is installed.
+    # The plugin registers itself with Pillow's codec registry so that
+    # PIL.Image.open() can decode HEIF files.  HEIC is used as the canonical
+    # MIME type because it is the container Apple devices produce; both
+    # image/heic and image/heif map to the same 'HEIF' Pillow format, but
+    # bidict requires bijective mappings so only one entry is registered here.
+    try:
+        import pillow_heif as _pillow_heif
+
+        _pillow_heif.register_heif_opener()
+        __mime_type_to_pillow_type[MimeType('image/heic')] = 'HEIF'
+        del _pillow_heif
+    except ImportError:
+        pass
+
     __format_defaults = {
         MimeType('image/avif'): dict(
             quality=80,
