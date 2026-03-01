@@ -12,6 +12,7 @@ from math import ceil, cos, isfinite, pi, radians, sin
 from types import TracebackType
 from typing import IO, Any, Self
 
+import PIL.Image
 from bidict import bidict
 
 from madam.core import Asset, MetadataProcessor, OperatorError, Processor, UnsupportedFormatError, operator
@@ -1245,6 +1246,130 @@ class FFmpegProcessor(Processor):
         metadata = _combine_metadata(asset, 'mime_type', 'width', 'height', 'duration', 'video', 'audio', 'subtitle')
         return Asset(essence=result, **metadata)
 
+
+    @operator
+    def thumbnail_sprite(
+        self,
+        asset: Asset,
+        columns: int,
+        rows: int,
+        thumb_width: int,
+        thumb_height: int,
+        mime_type: MimeType | str = 'image/jpeg',
+    ) -> Asset:
+        """
+        Extracts ``columns × rows`` evenly-spaced frames from *asset* and
+        stitches them into a single sprite-sheet image.
+
+        The returned image asset has dimensions ``(columns × thumb_width) ×
+        (rows × thumb_height)``.  Its metadata includes a ``'sprite'`` dict
+        with the grid parameters, which can be used by the application layer
+        to generate a WebVTT thumbnail track.
+
+        :param asset: Source video asset
+        :type asset: Asset
+        :param columns: Number of thumbnail columns in the sprite sheet
+        :type columns: int
+        :param rows: Number of thumbnail rows in the sprite sheet
+        :type rows: int
+        :param thumb_width: Width of each thumbnail in pixels
+        :type thumb_width: int
+        :param thumb_height: Height of each thumbnail in pixels
+        :type thumb_height: int
+        :param mime_type: MIME type of the output image (default ``image/jpeg``)
+        :type mime_type: MimeType or str
+        :return: Image asset containing the sprite sheet
+        :rtype: Asset
+        :raises UnsupportedFormatError: If the source asset is not a video
+        """
+        source_mime = MimeType(asset.mime_type)
+        source_encoder = self.__mime_type_to_encoder.get(source_mime)
+        if not source_encoder or source_mime.type != 'video':
+            raise UnsupportedFormatError(f'Unsupported source asset type: {source_mime}')
+
+        mime_type = MimeType(mime_type)
+        target_encoder = self.__mime_type_to_encoder.get(mime_type)
+        if not target_encoder or mime_type.type != 'image':
+            raise UnsupportedFormatError(f'Unsupported sprite output type: {mime_type}')
+
+        n_frames = columns * rows
+        duration = asset.duration if hasattr(asset, 'duration') and asset.duration else 1.0
+        interval = duration / n_frames
+
+        with _FFmpegContext(asset.essence, io.BytesIO()) as ctx:
+            frame_dir = ctx.input_path + '_frames'
+            os.makedirs(frame_dir, exist_ok=True)
+
+            # Extract n_frames evenly-spaced frames as JPEG files.
+            command = [
+                'ffmpeg', '-loglevel', 'error',
+                '-i', ctx.input_path,
+                '-vf', f'fps=1/{interval},scale={thumb_width}:{thumb_height},trim=end_frame={n_frames}',
+                '-qscale:v', '2',
+                '-f', 'image2',
+                '-y', os.path.join(frame_dir, 'frame_%04d.jpg'),
+            ]
+            try:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'extract sprite frames'))
+
+            # Collect extracted frames; pad with blank frames if fewer were
+            # produced than requested (can happen for very short clips).
+            frame_paths = sorted(
+                os.path.join(frame_dir, f) for f in os.listdir(frame_dir) if f.endswith('.jpg')
+            )
+            blank = PIL.Image.new('RGB', (thumb_width, thumb_height), (0, 0, 0))
+            frames: list[PIL.Image.Image] = []
+            for path in frame_paths[:n_frames]:
+                frames.append(PIL.Image.open(path).convert('RGB'))
+            while len(frames) < n_frames:
+                frames.append(blank.copy())
+
+            # Stitch frames into the sprite sheet.
+            sprite_w = columns * thumb_width
+            sprite_h = rows * thumb_height
+            sheet = PIL.Image.new('RGB', (sprite_w, sprite_h))
+            for idx, frame in enumerate(frames):
+                col = idx % columns
+                row = idx // columns
+                sheet.paste(frame, (col * thumb_width, row * thumb_height))
+
+            buf = io.BytesIO()
+            pil_format = self.__mime_type_to_pillow_format(mime_type)
+            sheet.save(buf, format=pil_format)
+            buf.seek(0)
+
+        sprite_metadata = {
+            'columns': columns,
+            'rows': rows,
+            'thumb_width': thumb_width,
+            'thumb_height': thumb_height,
+            'interval_seconds': interval,
+        }
+        return Asset(
+            essence=buf,
+            mime_type=str(mime_type),
+            width=sprite_w,
+            height=sprite_h,
+            sprite=sprite_metadata,
+        )
+
+    @staticmethod
+    def __mime_type_to_pillow_format(mime_type: MimeType) -> str:
+        """Map a MIME type to the Pillow format string used by ``Image.save``."""
+        _map = {
+            MimeType('image/jpeg'): 'JPEG',
+            MimeType('image/png'): 'PNG',
+            MimeType('image/webp'): 'WebP',
+            MimeType('image/gif'): 'GIF',
+            MimeType('image/bmp'): 'BMP',
+            MimeType('image/tiff'): 'TIFF',
+        }
+        fmt = _map.get(mime_type)
+        if not fmt:
+            raise UnsupportedFormatError(f'Unsupported sprite output type: {mime_type}')
+        return fmt
 
     @operator
     def overlay(

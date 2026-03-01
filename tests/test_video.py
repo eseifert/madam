@@ -705,3 +705,58 @@ class TestFFmpegOverlay:
         result = overlay_op(video_asset)
 
         assert result.duration == pytest.approx(video_asset.duration, rel=0.1)
+
+
+class TestFFmpegThumbnailSprite:
+    @pytest.fixture(name='processor', scope='class')
+    def ffmpeg_processor(self):
+        return madam.video.FFmpegProcessor()
+
+    def test_thumbnail_sprite_returns_image_asset(self, processor, video_asset):
+        sprite_op = processor.thumbnail_sprite(columns=2, rows=2, thumb_width=8, thumb_height=4)
+
+        sprite = sprite_op(video_asset)
+
+        assert sprite.mime_type == 'image/jpeg'
+
+    def test_thumbnail_sprite_has_correct_dimensions(self, processor, video_asset):
+        columns, rows = 2, 2
+        thumb_width, thumb_height = 8, 4
+        sprite_op = processor.thumbnail_sprite(
+            columns=columns, rows=rows, thumb_width=thumb_width, thumb_height=thumb_height
+        )
+
+        sprite = sprite_op(video_asset)
+
+        assert sprite.width == columns * thumb_width
+        assert sprite.height == rows * thumb_height
+
+    def test_thumbnail_sprite_accepts_custom_mime_type(self, processor, video_asset):
+        sprite_op = processor.thumbnail_sprite(
+            columns=2, rows=2, thumb_width=8, thumb_height=4, mime_type='image/png'
+        )
+
+        sprite = sprite_op(video_asset)
+
+        assert sprite.mime_type == 'image/png'
+
+    def test_thumbnail_sprite_raises_for_unsupported_format(self, processor, unknown_asset):
+        sprite_op = processor.thumbnail_sprite(columns=2, rows=2, thumb_width=8, thumb_height=4)
+
+        with pytest.raises(UnsupportedFormatError):
+            sprite_op(unknown_asset)
+
+    def test_thumbnail_sprite_includes_sprite_metadata(self, processor, video_asset):
+        columns, rows = 2, 2
+        thumb_width, thumb_height = 8, 4
+        sprite_op = processor.thumbnail_sprite(
+            columns=columns, rows=rows, thumb_width=thumb_width, thumb_height=thumb_height
+        )
+
+        sprite = sprite_op(video_asset)
+
+        assert 'sprite' in sprite.metadata
+        assert sprite.metadata['sprite']['columns'] == columns
+        assert sprite.metadata['sprite']['rows'] == rows
+        assert sprite.metadata['sprite']['thumb_width'] == thumb_width
+        assert sprite.metadata['sprite']['thumb_height'] == thumb_height
