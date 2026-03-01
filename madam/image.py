@@ -7,8 +7,10 @@ from typing import IO, Any
 
 import PIL.ExifTags
 import PIL.Image
+import PIL.ImageDraw
 import PIL.ImageEnhance
 import PIL.ImageFilter
+import PIL.ImageFont
 import PIL.ImageOps
 from bidict import bidict
 
@@ -853,3 +855,68 @@ class PillowProcessor(Processor):
             rotated_asset = self._image_to_asset(rotated_image, mime_type=asset.mime_type)
 
         return rotated_asset
+
+
+def render_text(
+    text: str,
+    font_path: str | None = None,
+    font_size: int = 24,
+    color: tuple[int, int, int] = (0, 0, 0),
+    background: tuple[int, int, int, int] = (0, 0, 0, 0),
+    padding: int = 0,
+) -> Asset:
+    """
+    Renders the given text into a new RGBA PNG image Asset.
+
+    The canvas is sized to fit the text exactly, with an optional uniform
+    ``padding`` added on all sides. A system font is used when ``font_path``
+    is ``None``.
+
+    :param text: Text string to render
+    :type text: str
+    :param font_path: Path to a TrueType or OpenType font file, or ``None``
+        to use the default Pillow font
+    :type font_path: str or None
+    :param font_size: Font size in points (ignored when ``font_path`` is
+        ``None`` because the default font has a fixed size)
+    :type font_size: int
+    :param color: Text color as an ``(red, green, blue)`` tuple
+    :type color: tuple[int, int, int]
+    :param background: Canvas background color as an ``(r, g, b, alpha)``
+        tuple; defaults to fully transparent
+    :type background: tuple[int, int, int, int]
+    :param padding: Uniform padding in pixels added around the text
+    :type padding: int
+    :return: RGBA PNG Asset containing the rendered text
+    :rtype: Asset
+    """
+    if font_path is not None:
+        font = PIL.ImageFont.truetype(font_path, size=font_size)
+    else:
+        font = PIL.ImageFont.load_default(size=font_size)
+
+    # Measure text extents using a temporary draw surface
+    dummy = PIL.Image.new('RGBA', (1, 1))
+    draw = PIL.ImageDraw.Draw(dummy)
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+
+    canvas_width = text_width + 2 * padding
+    canvas_height = text_height + 2 * padding
+    image = PIL.Image.new('RGBA', (max(1, canvas_width), max(1, canvas_height)), background)
+    draw = PIL.ImageDraw.Draw(image)
+    draw.text((padding - bbox[0], padding - bbox[1]), text, font=font, fill=color + (255,))
+
+    essence = io.BytesIO()
+    image.save(essence, 'PNG')
+    essence.seek(0)
+    return Asset(
+        essence,
+        mime_type='image/png',
+        width=image.width,
+        height=image.height,
+        color_space='RGBA',
+        depth=8,
+        data_type='uint',
+    )

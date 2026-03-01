@@ -356,6 +356,36 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestRenderText:
+    def test_render_text_returns_asset(self):
+        result = madam.image.render_text('Hello')
+        assert isinstance(result, madam.core.Asset)
+
+    def test_render_text_returns_png(self):
+        result = madam.image.render_text('Hello')
+        assert result.mime_type == 'image/png'
+
+    def test_render_text_has_positive_dimensions(self):
+        result = madam.image.render_text('Hello')
+        assert result.width > 0
+        assert result.height > 0
+
+    def test_render_text_longer_text_produces_wider_image(self):
+        short = madam.image.render_text('Hi')
+        long_ = madam.image.render_text('Hello, World!')
+        assert long_.width > short.width
+
+    def test_render_text_larger_font_size_produces_taller_image(self):
+        small = madam.image.render_text('Hi', font_size=12)
+        large = madam.image.render_text('Hi', font_size=48)
+        assert large.height > small.height
+
+    def test_render_text_output_is_rgba(self):
+        result = madam.image.render_text('Hi')
+        with PIL.Image.open(result.essence) as image:
+            assert image.mode == 'RGBA'
+
+
 class TestPillowComposite:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
