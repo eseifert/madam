@@ -25,6 +25,48 @@ _VALID_FORMAT_CONFIG_KEYS: dict[MimeType, frozenset[str]] = {
 }
 
 
+def _resolve_gravity(
+    canvas_width: int,
+    canvas_height: int,
+    source_width: int,
+    source_height: int,
+    gravity: str,
+) -> tuple[int, int]:
+    """
+    Return the ``(x, y)`` top-left offset at which to place a source image of
+    ``(source_width, source_height)`` inside a canvas of
+    ``(canvas_width, canvas_height)`` according to *gravity*.
+
+    Valid gravity values: ``'north_west'``, ``'north'``, ``'north_east'``,
+    ``'west'``, ``'center'``, ``'east'``, ``'south_west'``, ``'south'``,
+    ``'south_east'``.
+    """
+    h_offsets = {
+        'west': 0,
+        'center': (canvas_width - source_width) // 2,
+        'east': canvas_width - source_width,
+    }
+    v_offsets = {
+        'north': 0,
+        'center': (canvas_height - source_height) // 2,
+        'south': canvas_height - source_height,
+    }
+    gravity_map: dict[str, tuple[int, int]] = {
+        'north_west': (h_offsets['west'],   v_offsets['north']),
+        'north':      (h_offsets['center'], v_offsets['north']),
+        'north_east': (h_offsets['east'],   v_offsets['north']),
+        'west':       (h_offsets['west'],   v_offsets['center']),
+        'center':     (h_offsets['center'], v_offsets['center']),
+        'east':       (h_offsets['east'],   v_offsets['center']),
+        'south_west': (h_offsets['west'],   v_offsets['south']),
+        'south':      (h_offsets['center'], v_offsets['south']),
+        'south_east': (h_offsets['east'],   v_offsets['south']),
+    }
+    if gravity not in gravity_map:
+        raise ValueError(f'Unknown gravity: {gravity!r}')
+    return gravity_map[gravity]
+
+
 class ResizeMode(Enum):
     """
     Represents a behavior for image resize operations.
@@ -427,11 +469,61 @@ class PillowProcessor(Processor):
         return cropped_asset
 
     @operator
+    def pad(
+        self,
+        asset: Asset,
+        width: int,
+        height: int,
+        color: tuple[int, int, int] | tuple[int, int, int, int] = (0, 0, 0, 0),
+        gravity: str = 'center',
+    ) -> Asset:
+        """
+        Creates a new asset whose essence is placed on a larger canvas.
+
+        The source image is pasted onto a canvas of size ``(width, height)``
+        filled with ``color``. The position on the canvas is determined by
+        ``gravity``.
+
+        Valid gravity values: ``'north_west'``, ``'north'``, ``'north_east'``,
+        ``'west'``, ``'center'``, ``'east'``, ``'south_west'``, ``'south'``,
+        ``'south_east'``.
+
+        :param asset: Asset whose essence will be padded
+        :type asset: Asset
+        :param width: Canvas width; must be >= the source image width
+        :type width: int
+        :param height: Canvas height; must be >= the source image height
+        :type height: int
+        :param color: Fill color for the added area as an RGB or RGBA tuple
+        :type color: tuple
+        :param gravity: Anchor position of the source image on the canvas
+        :type gravity: str
+        :return: Asset with padded essence
+        :rtype: Asset
+        :raises OperatorError: If the canvas is smaller than the source image
+        """
+        if width < asset.width or height < asset.height:
+            raise OperatorError(
+                f'Canvas ({width}×{height}) is smaller than source ({asset.width}×{asset.height})'
+            )
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            canvas_mode = 'RGBA' if len(color) == 4 else 'RGB'
+            canvas = PIL.Image.new(canvas_mode, (width, height), color)
+            x, y = _resolve_gravity(width, height, image.width, image.height, gravity)
+            if image.mode in ('RGBA', 'LA'):
+                canvas.paste(image, (x, y), mask=image)
+            else:
+                canvas.paste(image, (x, y))
+        with canvas:
+            return self._image_to_asset(canvas, mime_type=mime_type)
+
+    @operator
     def vignette(self, asset: Asset, strength: float = 0.5) -> Asset:
         """
         Creates a new asset whose essence has a radial vignette applied.
 
-        The vignette darkens the edges of the image while leaving the centre
+        The vignette darkens the edges of the image while leaving the center
         unaffected. ``strength`` controls how much darkening is applied at the
         corners: ``0.0`` leaves the image unchanged; ``1.0`` makes the corners
         completely black.

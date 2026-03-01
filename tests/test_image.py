@@ -356,6 +356,52 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowPad:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_pad_sets_output_to_requested_dimensions(self, processor):
+        asset = _solid_png_asset((100, 100, 100), width=10, height=10)
+        result = processor.pad(width=20, height=30)(asset)
+        assert result.width == 20
+        assert result.height == 30
+
+    def test_pad_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((100, 100, 100), width=10, height=10)
+        result = processor.pad(width=20, height=20)(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_pad_fill_color_appears_in_added_area(self, processor):
+        # Source is 4x4 red; pad to 8x4 with blue fill at north_west gravity
+        asset = _solid_png_asset((255, 0, 0), width=4, height=4)
+        result = processor.pad(width=8, height=4, color=(0, 0, 255), gravity='north_west')(asset)
+        with PIL.Image.open(result.essence) as image:
+            # Right half should be blue (fill colour)
+            assert image.getpixel((7, 2)) == (0, 0, 255)
+
+    @pytest.mark.parametrize('gravity,expected_origin', [
+        ('north_west', (0, 0)),
+        ('north_east', (10, 0)),
+        ('south_west', (0, 10)),
+        ('south_east', (10, 10)),
+        ('center',     (5, 5)),
+    ])
+    def test_pad_gravity_positions_source_correctly(self, processor, gravity, expected_origin):
+        # Source: 10x10 white; canvas: 20x20 black
+        asset = _solid_png_asset((255, 255, 255), width=10, height=10)
+        result = processor.pad(width=20, height=20, color=(0, 0, 0), gravity=gravity)(asset)
+        with PIL.Image.open(result.essence) as image:
+            ox, oy = expected_origin
+            # The source pixel at (0,0) should appear at the expected origin
+            assert image.getpixel((ox, oy)) == (255, 255, 255)
+
+    def test_pad_raises_when_canvas_smaller_than_source(self, processor):
+        asset = _solid_png_asset((100, 100, 100), width=20, height=20)
+        with pytest.raises(OperatorError):
+            processor.pad(width=10, height=10)(asset)
+
+
 class TestPillowVignette:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
