@@ -1,5 +1,7 @@
+import io
 import json
 import subprocess
+import zipfile
 from collections import defaultdict
 
 import PIL.Image
@@ -13,6 +15,7 @@ from assets import (
 import madam.video
 from madam.core import OperatorError, UnsupportedFormatError
 from madam.ffmpeg import concatenate
+from madam.streaming import ZipOutput
 
 FFMPEG_PROCESSOR_IMAGE_MIME_TYPES = 'image/bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/tiff', 'image/webp'
 
@@ -760,3 +763,63 @@ class TestFFmpegThumbnailSprite:
         assert sprite.metadata['sprite']['rows'] == rows
         assert sprite.metadata['sprite']['thumb_width'] == thumb_width
         assert sprite.metadata['sprite']['thumb_height'] == thumb_height
+
+
+class TestFFmpegToHLS:
+    @pytest.fixture(name='processor', scope='class')
+    def ffmpeg_processor(self):
+        return madam.video.FFmpegProcessor()
+
+    @pytest.fixture(scope='class')
+    def hls_output(self, processor, nut_video_asset):
+        """Run to_hls once per class and return (buf, names)."""
+        buf = io.BytesIO()
+        output = ZipOutput(buf)
+        processor.to_hls(nut_video_asset, output=output, segment_duration=0.1)
+        buf.seek(0)
+        with zipfile.ZipFile(buf) as zf:
+            names = zf.namelist()
+        return names
+
+    def test_to_hls_writes_manifest(self, hls_output):
+        assert any(name.endswith('.m3u8') for name in hls_output)
+
+    def test_to_hls_writes_segments(self, hls_output):
+        assert any(name.endswith('.ts') for name in hls_output)
+
+    def test_to_hls_raises_for_unsupported_format(self, processor, unknown_asset):
+        buf = io.BytesIO()
+        output = ZipOutput(buf)
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.to_hls(unknown_asset, output=output)
+
+
+class TestFFmpegToDASH:
+    @pytest.fixture(name='processor', scope='class')
+    def ffmpeg_processor(self):
+        return madam.video.FFmpegProcessor()
+
+    @pytest.fixture(scope='class')
+    def dash_output(self, processor, nut_video_asset):
+        """Run to_dash once per class and return file names."""
+        buf = io.BytesIO()
+        output = ZipOutput(buf)
+        processor.to_dash(nut_video_asset, output=output, segment_duration=0.1)
+        buf.seek(0)
+        with zipfile.ZipFile(buf) as zf:
+            names = zf.namelist()
+        return names
+
+    def test_to_dash_writes_manifest(self, dash_output):
+        assert any(name.endswith('.mpd') for name in dash_output)
+
+    def test_to_dash_writes_segments(self, dash_output):
+        assert any(name.endswith('.m4s') or name.endswith('.mp4') for name in dash_output)
+
+    def test_to_dash_raises_for_unsupported_format(self, processor, unknown_asset):
+        buf = io.BytesIO()
+        output = ZipOutput(buf)
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.to_dash(unknown_asset, output=output)

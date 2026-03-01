@@ -17,6 +17,7 @@ from bidict import bidict
 
 from madam.core import Asset, MetadataProcessor, OperatorError, Processor, UnsupportedFormatError, operator
 from madam.mime import MimeType
+from madam.streaming import MultiFileOutput
 
 
 def _parse_version(version_str: str) -> tuple[int, ...]:
@@ -1475,6 +1476,160 @@ class FFmpegProcessor(Processor):
 
         metadata = _combine_metadata(asset, 'mime_type', 'width', 'height', 'duration', 'video', 'audio', 'subtitle')
         return Asset(essence=result, **metadata)
+
+    def to_hls(
+        self,
+        asset: Asset,
+        output: MultiFileOutput,
+        segment_duration: float = 6,
+        video: Mapping[str, Any] | None = None,
+        audio: Mapping[str, Any] | None = None,
+    ) -> None:
+        """
+        Transcodes *asset* to HLS (HTTP Live Streaming) format and writes all
+        output files to *output*.
+
+        The output consists of an M3U8 playlist and one or more MPEG-TS
+        segment files.  Stream options can be provided via *video* and *audio*;
+        by default the video is encoded as H.264 and audio as AAC, which are
+        the most widely supported codecs for HLS.
+
+        :param asset: Source video asset
+        :type asset: Asset
+        :param output: Destination for the playlist and segment files
+        :type output: MultiFileOutput
+        :param segment_duration: Target segment duration in seconds
+        :type segment_duration: float
+        :param video: Optional video stream options (``codec``, ``bitrate``)
+        :type video: dict or None
+        :param audio: Optional audio stream options (``codec``, ``bitrate``)
+        :type audio: dict or None
+        :raises UnsupportedFormatError: If the source asset is not a video
+        """
+        mime_type = MimeType(asset.mime_type)
+        if mime_type.type != 'video':
+            raise UnsupportedFormatError(f'Unsupported source asset type: {mime_type}')
+
+        video_codec = (video or {}).get('codec', 'libx264')
+        audio_codec = (audio or {}).get('codec', 'aac')
+        video_bitrate = (video or {}).get('bitrate')
+        audio_bitrate = (audio or {}).get('bitrate')
+
+        with tempfile.TemporaryDirectory(prefix='madam_hls') as tmpdir:
+            input_path = os.path.join(tmpdir, 'input')
+            with open(input_path, 'wb') as fh:
+                shutil.copyfileobj(asset.essence, fh)
+                asset.essence.seek(0)
+
+            playlist_path = os.path.join(tmpdir, 'index.m3u8')
+            segment_pattern = os.path.join(tmpdir, 'segment_%03d.ts')
+
+            command = ['ffmpeg', '-loglevel', 'error', '-i', input_path]
+            if video_codec:
+                command.extend(['-c:v', video_codec])
+            if video_bitrate:
+                command.extend(['-b:v', f'{video_bitrate}k'])
+            if audio_codec:
+                command.extend(['-c:a', audio_codec])
+            if audio_bitrate:
+                command.extend(['-b:a', f'{audio_bitrate}k'])
+            command.extend([
+                '-f', 'hls',
+                '-hls_time', str(segment_duration),
+                '-hls_list_size', '0',
+                '-hls_segment_filename', segment_pattern,
+                '-threads', str(self._threads),
+                '-y', playlist_path,
+            ])
+
+            try:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'create HLS output'))
+
+            # Write all generated files to the MultiFileOutput.
+            for filename in os.listdir(tmpdir):
+                if filename == 'input':
+                    continue
+                file_path = os.path.join(tmpdir, filename)
+                with open(file_path, 'rb') as fh:
+                    output.write(filename, fh.read())
+            output.close()
+
+    def to_dash(
+        self,
+        asset: Asset,
+        output: MultiFileOutput,
+        segment_duration: float = 6,
+        video: Mapping[str, Any] | None = None,
+        audio: Mapping[str, Any] | None = None,
+    ) -> None:
+        """
+        Transcodes *asset* to MPEG-DASH format and writes all output files
+        to *output*.
+
+        The output consists of an MPD manifest and one or more MP4 segment
+        files.  Stream options can be provided via *video* and *audio*; by
+        default the video is encoded as H.264 and audio as AAC.
+
+        :param asset: Source video asset
+        :type asset: Asset
+        :param output: Destination for the manifest and segment files
+        :type output: MultiFileOutput
+        :param segment_duration: Target segment duration in seconds
+        :type segment_duration: float
+        :param video: Optional video stream options (``codec``, ``bitrate``)
+        :type video: dict or None
+        :param audio: Optional audio stream options (``codec``, ``bitrate``)
+        :type audio: dict or None
+        :raises UnsupportedFormatError: If the source asset is not a video
+        """
+        mime_type = MimeType(asset.mime_type)
+        if mime_type.type != 'video':
+            raise UnsupportedFormatError(f'Unsupported source asset type: {mime_type}')
+
+        video_codec = (video or {}).get('codec', 'libx264')
+        audio_codec = (audio or {}).get('codec', 'aac')
+        video_bitrate = (video or {}).get('bitrate')
+        audio_bitrate = (audio or {}).get('bitrate')
+
+        with tempfile.TemporaryDirectory(prefix='madam_dash') as tmpdir:
+            input_path = os.path.join(tmpdir, 'input')
+            with open(input_path, 'wb') as fh:
+                shutil.copyfileobj(asset.essence, fh)
+                asset.essence.seek(0)
+
+            manifest_path = os.path.join(tmpdir, 'manifest.mpd')
+
+            command = ['ffmpeg', '-loglevel', 'error', '-i', input_path]
+            if video_codec:
+                command.extend(['-c:v', video_codec])
+            if video_bitrate:
+                command.extend(['-b:v', f'{video_bitrate}k'])
+            if audio_codec:
+                command.extend(['-c:a', audio_codec])
+            if audio_bitrate:
+                command.extend(['-b:a', f'{audio_bitrate}k'])
+            command.extend([
+                '-f', 'dash',
+                '-seg_duration', str(segment_duration),
+                '-threads', str(self._threads),
+                '-y', manifest_path,
+            ])
+
+            try:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'create DASH output'))
+
+            # Write all generated files to the MultiFileOutput.
+            for filename in os.listdir(tmpdir):
+                if filename == 'input':
+                    continue
+                file_path = os.path.join(tmpdir, filename)
+                with open(file_path, 'rb') as fh:
+                    output.write(filename, fh.read())
+            output.close()
 
 
 def concatenate(
