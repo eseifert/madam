@@ -1146,6 +1146,109 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
 
+def concatenate(
+    assets: Iterable[Asset],
+    mime_type: MimeType | str,
+    video: Mapping[str, Any] | None = None,
+    audio: Mapping[str, Any] | None = None,
+) -> Asset:
+    """
+    Joins a sequence of audio or video assets end-to-end into a single asset.
+
+    Assets are concatenated in the order they appear in *assets*.  By default
+    the streams are copied without re-encoding (``-c copy``).  Provide *video*
+    and/or *audio* stream options to force re-encoding, which is required when
+    the source clips use different codecs.
+
+    Uses the FFmpeg ``concat`` demuxer, which supports any format that can be
+    read from files.
+
+    :param assets: Iterable of assets to concatenate; must be non-empty
+    :type assets: Iterable[Asset]
+    :param mime_type: MIME type of the output container
+    :type mime_type: MimeType or str
+    :param video: Optional video stream options (same keys as
+        :meth:`FFmpegProcessor.convert`)
+    :type video: dict or None
+    :param audio: Optional audio stream options (same keys as
+        :meth:`FFmpegProcessor.convert`)
+    :type audio: dict or None
+    :return: New asset with concatenated essence
+    :rtype: Asset
+    :raises ValueError: If *assets* is empty
+    :raises UnsupportedFormatError: If *mime_type* is not supported
+    """
+    asset_list = list(assets)
+    if not asset_list:
+        raise ValueError('Cannot concatenate an empty sequence of assets')
+
+    mime_type = MimeType(mime_type)
+
+    # Lazy import to avoid a circular dependency; processor is only used for
+    # its encoder map and read() method.
+    processor = FFmpegProcessor()
+    encoder_name = processor._FFmpegProcessor__mime_type_to_encoder.get(mime_type)  # type: ignore[attr-defined]
+    if not encoder_name:
+        raise UnsupportedFormatError(f'Unsupported output type: {mime_type}')
+
+    with tempfile.TemporaryDirectory(prefix='madam_concat') as tmpdir:
+        # Write each essence to a numbered temp file.
+        input_paths: list[str] = []
+        for idx, asset in enumerate(asset_list):
+            path = os.path.join(tmpdir, f'input_{idx:04d}')
+            with open(path, 'wb') as fh:
+                shutil.copyfileobj(asset.essence, fh)
+                asset.essence.seek(0)
+            input_paths.append(path)
+
+        # Write the concat demuxer list file.
+        list_path = os.path.join(tmpdir, 'concat.txt')
+        with open(list_path, 'w') as fh:
+            for path in input_paths:
+                fh.write(f"file '{path}'\n")
+
+        output_path = os.path.join(tmpdir, 'output_file')
+        command = [
+            'ffmpeg', '-loglevel', 'error',
+            '-f', 'concat', '-safe', '0', '-i', list_path,
+        ]
+
+        if video:
+            if 'codec' in video:
+                if video['codec']:
+                    command.extend(['-c:v', video['codec']])
+                else:
+                    command.extend(['-vn'])
+            if video.get('bitrate'):
+                command.extend(['-b:v', f'{video["bitrate"]:d}k'])
+        if audio:
+            if 'codec' in audio:
+                if audio['codec']:
+                    command.extend(['-c:a', audio['codec']])
+                else:
+                    command.extend(['-an'])
+            if audio.get('bitrate'):
+                command.extend(['-b:a', f'{audio["bitrate"]:d}k'])
+
+        if not video and not audio:
+            # Default: stream copy — fast and lossless when codecs match.
+            command.extend(['-c', 'copy'])
+
+        command.extend(['-f', encoder_name, '-y', output_path])
+
+        try:
+            subprocess.run(command, stderr=subprocess.PIPE, check=True)
+        except subprocess.CalledProcessError as ffmpeg_error:
+            raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'concatenate assets'))
+
+        result = io.BytesIO()
+        with open(output_path, 'rb') as fh:
+            shutil.copyfileobj(fh, result)
+        result.seek(0)
+
+    return processor.read(result)
+
+
 class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.

@@ -12,6 +12,7 @@ from assets import (
 
 import madam.video
 from madam.core import OperatorError, UnsupportedFormatError
+from madam.ffmpeg import concatenate
 
 FFMPEG_PROCESSOR_IMAGE_MIME_TYPES = 'image/bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/tiff', 'image/webp'
 
@@ -566,3 +567,37 @@ class TestFFmpegSetSpeed:
 
         with pytest.raises(UnsupportedFormatError):
             set_speed(unknown_asset)
+
+
+class TestConcatenate:
+    def test_concatenate_returns_asset_with_combined_duration(self, video_asset):
+        result = concatenate([video_asset, video_asset], mime_type=video_asset.mime_type)
+
+        assert result.duration == pytest.approx(video_asset.duration * 2, rel=0.15)
+
+    def test_concatenate_preserves_dimensions(self, video_asset):
+        result = concatenate([video_asset, video_asset], mime_type=video_asset.mime_type)
+
+        assert result.width == video_asset.width
+        assert result.height == video_asset.height
+
+    def test_concatenate_produces_asset_with_requested_mime_type(self, nut_video_asset):
+        result = concatenate(
+            [nut_video_asset, nut_video_asset],
+            mime_type='video/x-matroska',
+            video=dict(codec='vp9', bitrate=50),
+            audio=dict(codec='libopus', bitrate=16),
+        )
+
+        assert result.mime_type == 'video/x-matroska'
+
+    def test_concatenate_three_clips_triples_duration(self, video_asset):
+        result = concatenate(
+            [video_asset, video_asset, video_asset], mime_type=video_asset.mime_type
+        )
+
+        assert result.duration == pytest.approx(video_asset.duration * 3, rel=0.15)
+
+    def test_concatenate_raises_for_empty_input(self, video_asset):
+        with pytest.raises(ValueError):
+            concatenate([], mime_type=video_asset.mime_type)
