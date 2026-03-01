@@ -356,6 +356,93 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowRoundCorners:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_round_corners_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((200, 200, 200))
+        result = processor.round_corners(radius=4)(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_round_corners_output_is_png(self, processor):
+        asset = _solid_png_asset((200, 200, 200))
+        result = processor.round_corners(radius=4)(asset)
+        assert result.mime_type == 'image/png'
+
+    def test_round_corners_output_has_alpha_channel(self, processor):
+        asset = _solid_png_asset((200, 200, 200))
+        result = processor.round_corners(radius=4)(asset)
+        with PIL.Image.open(result.essence) as image:
+            assert image.mode == 'RGBA'
+
+    def test_round_corners_corner_pixels_are_transparent(self, processor):
+        asset = _solid_png_asset((200, 200, 200), width=20, height=20)
+        result = processor.round_corners(radius=8)(asset)
+        with PIL.Image.open(result.essence) as image:
+            # Very corner pixel should be transparent (alpha = 0)
+            assert image.getpixel((0, 0))[3] == 0
+
+    def test_round_corners_center_pixel_is_opaque(self, processor):
+        asset = _solid_png_asset((200, 200, 200), width=20, height=20)
+        result = processor.round_corners(radius=4)(asset)
+        with PIL.Image.open(result.essence) as image:
+            assert image.getpixel((10, 10))[3] == 255
+
+
+class TestPillowApplyMask:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def _grey_png_asset(self, value):
+        """Return a single-channel greyscale PNG Asset filled with `value`."""
+        image = PIL.Image.new('L', (DEFAULT_WIDTH, DEFAULT_HEIGHT), value)
+        essence = io.BytesIO()
+        image.save(essence, 'PNG')
+        essence.seek(0)
+        return madam.core.Asset(
+            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+            color_space='LUMA', depth=8, data_type='uint',
+        )
+
+    def test_apply_mask_preserves_dimensions(self, processor):
+        base = _solid_png_asset((200, 200, 200))
+        mask = self._grey_png_asset(128)
+        result = processor.apply_mask(mask_asset=mask)(base)
+        assert result.width == base.width
+        assert result.height == base.height
+
+    def test_apply_mask_output_is_png(self, processor):
+        base = _solid_png_asset((200, 200, 200))
+        mask = self._grey_png_asset(255)
+        result = processor.apply_mask(mask_asset=mask)(base)
+        assert result.mime_type == 'image/png'
+
+    def test_apply_mask_output_has_alpha_channel(self, processor):
+        base = _solid_png_asset((200, 200, 200))
+        mask = self._grey_png_asset(255)
+        result = processor.apply_mask(mask_asset=mask)(base)
+        with PIL.Image.open(result.essence) as image:
+            assert image.mode == 'RGBA'
+
+    def test_apply_mask_white_mask_makes_image_fully_opaque(self, processor):
+        base = _solid_png_asset((200, 200, 200))
+        mask = self._grey_png_asset(255)
+        result = processor.apply_mask(mask_asset=mask)(base)
+        with PIL.Image.open(result.essence) as image:
+            assert all(p[3] == 255 for p in image.get_flattened_data())
+
+    def test_apply_mask_black_mask_makes_image_fully_transparent(self, processor):
+        base = _solid_png_asset((200, 200, 200))
+        mask = self._grey_png_asset(0)
+        result = processor.apply_mask(mask_asset=mask)(base)
+        with PIL.Image.open(result.essence) as image:
+            assert all(p[3] == 0 for p in image.get_flattened_data())
+
+
 class TestRenderText:
     def test_render_text_returns_asset(self):
         result = madam.image.render_text('Hello')

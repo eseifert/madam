@@ -830,6 +830,55 @@ class PillowProcessor(Processor):
             return self._image_to_asset(enhanced, mime_type=mime_type)
 
     @operator
+    def round_corners(self, asset: Asset, radius: int) -> Asset:
+        """
+        Creates a new asset whose essence has rounded corners.
+
+        The corners are cut to the specified ``radius`` using a smooth
+        circular mask. Pixels outside the rounded rectangle become fully
+        transparent. The output is always an RGBA PNG image.
+
+        :param asset: Asset whose corners will be rounded
+        :type asset: Asset
+        :param radius: Corner radius in pixels
+        :type radius: int
+        :return: RGBA PNG Asset with rounded corners
+        :rtype: Asset
+        """
+        with PIL.Image.open(asset.essence) as image:
+            rgba = image.convert('RGBA')
+            mask = PIL.Image.new('L', rgba.size, 0)
+            draw = PIL.ImageDraw.Draw(mask)
+            draw.rounded_rectangle([(0, 0), (rgba.width - 1, rgba.height - 1)], radius=radius, fill=255)
+            rgba.putalpha(mask)
+        with rgba:
+            return self._image_to_asset(rgba, mime_type=MimeType('image/png'))
+
+    @operator
+    def apply_mask(self, asset: Asset, mask_asset: Asset) -> Asset:
+        """
+        Creates a new asset whose alpha channel is replaced by a mask image.
+
+        The luminance of ``mask_asset`` controls the alpha of the output:
+        white (255) is fully opaque and black (0) is fully transparent.
+        ``mask_asset`` must have the same dimensions as the base image.
+        The output is always an RGBA PNG image.
+
+        :param asset: Base image Asset
+        :type asset: Asset
+        :param mask_asset: Greyscale mask Asset; must match the base dimensions
+        :type mask_asset: Asset
+        :return: RGBA PNG Asset with the mask applied as its alpha channel
+        :rtype: Asset
+        """
+        with PIL.Image.open(asset.essence) as image, PIL.Image.open(mask_asset.essence) as mask_image:
+            rgba = image.convert('RGBA')
+            alpha = mask_image.convert('L')
+            rgba.putalpha(alpha)
+        with rgba:
+            return self._image_to_asset(rgba, mime_type=MimeType('image/png'))
+
+    @operator
     def rotate(self, asset: Asset, angle: float, expand: bool = False) -> Asset:
         """
         Creates an asset whose essence is rotated by the specified angle in
