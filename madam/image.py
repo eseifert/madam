@@ -881,6 +881,66 @@ class PillowProcessor(Processor):
             return self._image_to_asset(enhanced, mime_type=mime_type)
 
     @operator
+    def crop_to_focal_point(
+        self,
+        asset: Asset,
+        width: int,
+        height: int,
+        focal_x: float,
+        focal_y: float,
+    ) -> Asset:
+        """
+        Creates a new asset cropped to the given dimensions, keeping the
+        specified focal point as close to the center of the output as possible.
+
+        The focal point is expressed as relative coordinates in the range
+        ``[0.0, 1.0]``, where ``(0.0, 0.0)`` is the top-left corner and
+        ``(1.0, 1.0)`` is the bottom-right corner.  The crop window is
+        centered on the focal point and clamped so it stays within the image
+        bounds.
+
+        This operator is intentionally geometry-only: the caller is responsible
+        for computing the focal-point coordinates via face detection, saliency
+        analysis, or any other content-aware strategy.
+
+        :param asset: Asset whose essence will be cropped
+        :type asset: Asset
+        :param width: Crop width in pixels; must not exceed the source width
+        :type width: int
+        :param height: Crop height in pixels; must not exceed the source height
+        :type height: int
+        :param focal_x: Horizontal focal-point coordinate in ``[0.0, 1.0]``
+        :type focal_x: float
+        :param focal_y: Vertical focal-point coordinate in ``[0.0, 1.0]``
+        :type focal_y: float
+        :return: Asset with cropped essence centered on the focal point
+        :rtype: Asset
+        :raises OperatorError: If the crop dimensions exceed the source dimensions
+        """
+        if width > asset.width or height > asset.height:
+            raise OperatorError(
+                f'Crop size ({width}x{height}) exceeds source size ({asset.width}x{asset.height})'
+            )
+
+        # Pixel coordinates of the focal point
+        fx = round(focal_x * (asset.width - 1))
+        fy = round(focal_y * (asset.height - 1))
+
+        # Ideal top-left: center the window on the focal point
+        x = fx - width // 2
+        y = fy - height // 2
+
+        # Clamp to image bounds
+        x = max(0, min(x, asset.width - width))
+        y = max(0, min(y, asset.height - height))
+
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            cropped = image.crop((x, y, x + width, y + height))
+        with cropped:
+            return self._image_to_asset(cropped, mime_type=mime_type)
+
+    @operator
     def round_corners(self, asset: Asset, radius: int) -> Asset:
         """
         Creates a new asset whose essence has rounded corners.

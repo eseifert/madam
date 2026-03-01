@@ -429,6 +429,57 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowCropToFocalPoint:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_crop_to_focal_point_produces_requested_dimensions(self, processor):
+        asset = _solid_png_asset((100, 100, 100), width=40, height=30)
+        result = processor.crop_to_focal_point(width=20, height=15, focal_x=0.5, focal_y=0.5)(asset)
+        assert result.width == 20
+        assert result.height == 15
+
+    def test_crop_to_focal_point_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((100, 100, 100), width=40, height=30)
+        result = processor.crop_to_focal_point(width=20, height=15, focal_x=0.5, focal_y=0.5)(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_crop_to_focal_point_center_focal_point_crops_center(self, processor):
+        # 40x10 source: left quarter white, rest black.
+        # focal at (0.5, 0.5) — center. Crop 10x10.
+        # Center of 40x10 is at x=20. A 10x10 window centered there spans x 15-25.
+        # Left column (x<10) should not appear; all crop pixels should be black.
+        image = PIL.Image.new('RGB', (40, 10), (0, 0, 0))
+        for y in range(10):
+            for x in range(10):
+                image.putpixel((x, y), (255, 255, 255))
+        essence = io.BytesIO()
+        image.save(essence, 'PNG')
+        essence.seek(0)
+        asset = madam.core.Asset(
+            essence, mime_type='image/png', width=40, height=10,
+            color_space='RGB', depth=8, data_type='uint',
+        )
+        result = processor.crop_to_focal_point(width=10, height=10, focal_x=0.5, focal_y=0.5)(asset)
+        with PIL.Image.open(result.essence) as img:
+            # All pixels in this center crop should be black
+            assert all(p == (0, 0, 0) for p in img.get_flattened_data())
+
+    def test_crop_to_focal_point_edge_focal_point_clamps_to_bounds(self, processor):
+        # focal at (0.0, 0.0) — top-left corner. The crop window cannot go
+        # left of x=0 or above y=0, so it must start at (0, 0).
+        asset = _solid_png_asset((0, 0, 0), width=40, height=30)
+        result = processor.crop_to_focal_point(width=10, height=10, focal_x=0.0, focal_y=0.0)(asset)
+        assert result.width == 10
+        assert result.height == 10
+
+    def test_crop_to_focal_point_raises_when_crop_larger_than_source(self, processor):
+        asset = _solid_png_asset((100, 100, 100), width=10, height=10)
+        with pytest.raises(OperatorError):
+            processor.crop_to_focal_point(width=20, height=20, focal_x=0.5, focal_y=0.5)(asset)
+
+
 class TestPillowRoundCorners:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
