@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 from collections import namedtuple
 from collections.abc import Callable, Iterable, Mapping
-from math import ceil, cos, pi, radians, sin
+from math import ceil, cos, isfinite, pi, radians, sin
 from types import TracebackType
 from typing import IO, Any, Self
 
@@ -1143,6 +1143,106 @@ class FFmpegProcessor(Processor):
             asset, 'mime_type', 'duration', 'video', 'audio', 'subtitle', width=width, height=height
         )
 
+        return Asset(essence=result, **metadata)
+
+    @operator
+    def normalize_audio(self, asset: Asset, target_lufs: float = -23.0) -> Asset:
+        """
+        Creates a new asset whose audio stream is loudness-normalized to
+        *target_lufs* LUFS (EBU R128).
+
+        Uses a two-pass approach with the FFmpeg ``loudnorm`` filter.  The
+        first pass measures integrated loudness, LRA, and true peak; the
+        second pass applies a linear gain correction using those measurements
+        for accurate normalization without re-quantizing the signal
+        unnecessarily.
+
+        :param asset: Audio or video asset to normalize
+        :type asset: Asset
+        :param target_lufs: Target integrated loudness in LUFS
+        :type target_lufs: float
+        :return: New asset with normalized audio
+        :rtype: Asset
+        :raises UnsupportedFormatError: If the asset type is not supported
+        :raises OperatorError: If loudness measurement or normalization fails
+        """
+        mime_type = MimeType(asset.mime_type)
+        encoder_name = self.__mime_type_to_encoder.get(mime_type)
+        if not encoder_name or mime_type.type not in ('audio', 'video'):
+            raise UnsupportedFormatError(f'Unsupported source asset type: {mime_type}')
+
+        result = io.BytesIO()
+        with _FFmpegContext(asset.essence, result) as ctx:
+            # First pass: measure integrated loudness and write measurements to
+            # stderr as JSON.  The null muxer discards the output entirely.
+            measure_cmd = [
+                'ffmpeg', '-loglevel', 'info',
+                '-i', ctx.input_path,
+                '-af', f'loudnorm=I={target_lufs}:LRA=11:TP=-1.5:print_format=json',
+                '-f', 'null', '-',
+            ]
+            measure_result = subprocess.run(measure_cmd, capture_output=True)
+            stderr_text = measure_result.stderr.decode('utf-8', errors='replace')
+
+            # The JSON block is the last {...} in the filter's stderr output.
+            json_start = stderr_text.rfind('{')
+            json_end = stderr_text.rfind('}')
+            if json_start == -1 or json_end == -1:
+                raise OperatorError('Could not parse loudnorm measurements from FFmpeg output')
+            try:
+                loudnorm_data = json.loads(stderr_text[json_start : json_end + 1])
+            except json.JSONDecodeError as exc:
+                raise OperatorError(f'Invalid loudnorm JSON: {exc}') from exc
+
+            # Check whether the measurement values are finite.  Very short
+            # clips (< ~400 ms) can produce "inf" or "-inf" because the EBU
+            # R128 integration window is 400 ms; passing those values to the
+            # second-pass filter causes an ERANGE error.
+            def _is_finite_str(s: str) -> bool:
+                try:
+                    return isfinite(float(s))
+                except (ValueError, TypeError):
+                    return False
+
+            measurement_keys = ('input_i', 'input_lra', 'input_tp', 'input_thresh', 'target_offset')
+            measurements_valid = all(_is_finite_str(loudnorm_data.get(k, 'inf')) for k in measurement_keys)
+
+            if measurements_valid:
+                # Second pass: apply linear normalization using the measured values.
+                af = (
+                    f'loudnorm=I={target_lufs}:LRA=11:TP=-1.5'
+                    f':measured_I={loudnorm_data["input_i"]}'
+                    f':measured_LRA={loudnorm_data["input_lra"]}'
+                    f':measured_TP={loudnorm_data["input_tp"]}'
+                    f':measured_thresh={loudnorm_data["input_thresh"]}'
+                    f':offset={loudnorm_data["target_offset"]}'
+                    ':linear=true:print_format=summary'
+                )
+            else:
+                # Fall back to single-pass dynamic normalization for clips
+                # that are too short for integrated loudness measurement.
+                af = f'loudnorm=I={target_lufs}:LRA=11:TP=-1.5'
+
+            normalize_cmd = [
+                'ffmpeg', '-loglevel', 'error',
+                '-i', ctx.input_path,
+                '-af', af,
+            ]
+            # Preserve the video stream unchanged when present; without this
+            # flag FFmpeg would attempt to re-encode video with default
+            # settings, which often fails for unusual pixel formats.
+            if 'video' in asset.metadata:
+                normalize_cmd.extend(['-c:v', 'copy'])
+            normalize_cmd.extend([
+                '-threads', str(self._threads),
+                '-f', encoder_name, '-y', ctx.output_path,
+            ])
+            try:
+                subprocess.run(normalize_cmd, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as ffmpeg_error:
+                raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'normalize audio'))
+
+        metadata = _combine_metadata(asset, 'mime_type', 'width', 'height', 'duration', 'video', 'audio', 'subtitle')
         return Asset(essence=result, **metadata)
 
 

@@ -601,3 +601,48 @@ class TestConcatenate:
     def test_concatenate_raises_for_empty_input(self, video_asset):
         with pytest.raises(ValueError):
             concatenate([], mime_type=video_asset.mime_type)
+
+
+class TestFFmpegNormalizeAudio:
+    @pytest.fixture(name='processor', scope='class')
+    def ffmpeg_processor(self):
+        return madam.video.FFmpegProcessor()
+
+    def test_normalize_audio_preserves_mime_type(self, processor, video_asset):
+        normalize = processor.normalize_audio()
+
+        normalized = normalize(video_asset)
+
+        assert normalized.mime_type == video_asset.mime_type
+
+    def test_normalize_audio_preserves_duration(self, processor, video_asset):
+        normalize = processor.normalize_audio()
+
+        normalized = normalize(video_asset)
+
+        assert normalized.duration == pytest.approx(video_asset.duration, rel=0.1)
+
+    def test_normalize_audio_returns_new_asset(self, processor, video_asset):
+        normalize = processor.normalize_audio()
+
+        normalized = normalize(video_asset)
+
+        assert normalized is not video_asset
+
+    def test_normalize_audio_produces_valid_essence(self, processor, video_asset):
+        normalize = processor.normalize_audio()
+
+        normalized = normalize(video_asset)
+
+        command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
+        result = subprocess.run(
+            command, input=normalized.essence.read(), capture_output=True, check=True
+        )
+        info = json.loads(result.stdout.decode('utf-8'))
+        assert bool(info.get('format'))
+
+    def test_normalize_audio_raises_for_unsupported_format(self, processor, unknown_asset):
+        normalize = processor.normalize_audio()
+
+        with pytest.raises(UnsupportedFormatError):
+            normalize(unknown_asset)
