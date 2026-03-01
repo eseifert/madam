@@ -434,24 +434,50 @@ class PillowProcessor(Processor):
         return converted_asset
 
     @operator
-    def crop(self, asset: Asset, x: int, y: int, width: int, height: int) -> Asset:
+    def crop(
+        self,
+        asset: Asset,
+        width: int,
+        height: int,
+        x: int | None = None,
+        y: int | None = None,
+        gravity: str = 'north_west',
+    ) -> Asset:
         """
         Creates a new asset whose essence is cropped to the specified
         rectangular area.
 
+        When ``x`` and ``y`` are both ``None`` (the default), the crop window
+        is positioned using ``gravity``.  When either coordinate is supplied
+        explicitly, both must be provided and ``gravity`` is ignored.
+
+        Valid gravity values: ``'north_west'``, ``'north'``, ``'north_east'``,
+        ``'west'``, ``'center'``, ``'east'``, ``'south_west'``, ``'south'``,
+        ``'south_east'``.
+
         :param asset: Asset whose contents will be cropped
         :type asset: Asset
-        :param x: horizontal offset of the cropping area from left
-        :type x: int
-        :param y: vertical offset of the cropping area from top
-        :type y: int
-        :param width: width of the cropping area
+        :param width: Width of the cropping area
         :type width: int
-        :param height: height of the cropping area
+        :param height: Height of the cropping area
         :type height: int
+        :param x: Horizontal offset of the cropping area from the left edge,
+            or ``None`` to derive from ``gravity``
+        :type x: int or None
+        :param y: Vertical offset of the cropping area from the top edge,
+            or ``None`` to derive from ``gravity``
+        :type y: int or None
+        :param gravity: Anchor position used when ``x`` and ``y`` are not
+            specified
+        :type gravity: str
         :return: New asset with cropped essence
         :rtype: Asset
         """
+        if x is None and y is None:
+            x, y = _resolve_gravity(asset.width, asset.height, width, height, gravity)
+        elif x is None or y is None:
+            raise OperatorError('Both x and y must be provided together, or omit both to use gravity')
+
         if x == 0 and y == 0 and width == asset.width and height == asset.height:
             return asset
 

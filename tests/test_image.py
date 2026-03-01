@@ -315,6 +315,41 @@ class TestPillowProcessor:
         with pytest.raises(OperatorError):
             crop_operator(image_asset)
 
+    def test_crop_with_gravity_center_crops_to_correct_dimensions(self, processor):
+        asset = _solid_png_asset((100, 100, 100), width=20, height=20)
+        result = processor.crop(width=10, height=10, gravity='center')(asset)
+        assert result.width == 10
+        assert result.height == 10
+
+    @pytest.mark.parametrize('gravity,expected_pixel', [
+        # Source: 20x20, white left half, black right half.
+        # Crop 10x20 using gravity — west takes left (white), east takes right (black).
+        ('west',  (255, 255, 255)),
+        ('east',  (0, 0, 0)),
+    ])
+    def test_crop_with_gravity_selects_correct_region(self, processor, gravity, expected_pixel):
+        image = PIL.Image.new('RGB', (20, 20), (0, 0, 0))
+        for y in range(20):
+            for x in range(10):
+                image.putpixel((x, y), (255, 255, 255))
+        essence = io.BytesIO()
+        image.save(essence, 'PNG')
+        essence.seek(0)
+        asset = madam.core.Asset(
+            essence, mime_type='image/png', width=20, height=20,
+            color_space='RGB', depth=8, data_type='uint',
+        )
+        result = processor.crop(width=10, height=20, gravity=gravity)(asset)
+        with PIL.Image.open(result.essence) as img:
+            assert img.getpixel((5, 10)) == expected_pixel
+
+    def test_crop_explicit_x_y_ignores_gravity(self, processor):
+        # Explicit x=0,y=0 always takes the top-left regardless of gravity
+        asset = _solid_png_asset((0, 0, 0), width=20, height=20)
+        result = processor.crop(x=0, y=0, width=10, height=10, gravity='south_east')(asset)
+        assert result.width == 10
+        assert result.height == 10
+
     @pytest.mark.parametrize('angle', [0.0, 360.0, -360.0])
     def test_rotate_without_rotation_returns_identical_asset(self, processor, image_asset, angle):
         rotate_operator = processor.rotate(angle=angle)
