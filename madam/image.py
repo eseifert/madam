@@ -469,6 +469,34 @@ class PillowProcessor(Processor):
         return cropped_asset
 
     @operator
+    def fill_background(self, asset: Asset, color: tuple[int, int, int]) -> Asset:
+        """
+        Creates a new asset whose alpha channel is merged into a solid colour
+        background.
+
+        Transparent and semi-transparent pixels are composited over the
+        specified background colour. If the source image has no alpha channel,
+        the pixels are returned unchanged. The output is always an opaque RGB
+        image in the same format as the input.
+
+        :param asset: Asset whose essence will have its background filled
+        :type asset: Asset
+        :param color: Background colour as an ``(red, green, blue)`` tuple
+            with values in the range ``[0, 255]``
+        :type color: tuple[int, int, int]
+        :return: Asset with alpha composited over the fill colour
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            if image.mode not in ('RGBA', 'LA', 'PA'):
+                return self._image_to_asset(image, mime_type=mime_type)
+            background = PIL.Image.new('RGB', image.size, color)
+            background.paste(image.convert('RGBA'), mask=image.convert('RGBA'))
+        with background:
+            return self._image_to_asset(background, mime_type=mime_type)
+
+    @operator
     def pad(
         self,
         asset: Asset,

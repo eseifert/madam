@@ -356,6 +356,58 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowFillBackground:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_fill_background_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((100, 100, 100))
+        result = processor.fill_background(color=(255, 255, 255))(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_fill_background_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((100, 100, 100))
+        result = processor.fill_background(color=(255, 255, 255))(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_fill_background_opaque_image_pixels_unchanged(self, processor):
+        # An opaque RGB image has no alpha; pixels should be unchanged
+        asset = _solid_png_asset((80, 120, 200))
+        result = processor.fill_background(color=(255, 0, 0))(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) == list(s.get_flattened_data())
+
+    def test_fill_background_removes_alpha_channel(self, processor):
+        # Create a fully transparent RGBA image
+        image = PIL.Image.new('RGBA', (DEFAULT_WIDTH, DEFAULT_HEIGHT), (0, 0, 0, 0))
+        essence = io.BytesIO()
+        image.save(essence, 'PNG')
+        essence.seek(0)
+        asset = madam.core.Asset(
+            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+            color_space='RGBA', depth=8, data_type='uint',
+        )
+        result = processor.fill_background(color=(0, 255, 0))(asset)
+        with PIL.Image.open(result.essence) as image:
+            assert image.mode == 'RGB'
+
+    def test_fill_background_transparent_area_shows_fill_color(self, processor):
+        # Fully transparent RGBA image: after fill, all pixels == fill color
+        image = PIL.Image.new('RGBA', (DEFAULT_WIDTH, DEFAULT_HEIGHT), (255, 0, 0, 0))
+        essence = io.BytesIO()
+        image.save(essence, 'PNG')
+        essence.seek(0)
+        asset = madam.core.Asset(
+            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+            color_space='RGBA', depth=8, data_type='uint',
+        )
+        result = processor.fill_background(color=(0, 0, 255))(asset)
+        with PIL.Image.open(result.essence) as image:
+            assert all(p == (0, 0, 255) for p in image.get_flattened_data())
+
+
 class TestPillowPad:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
