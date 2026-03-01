@@ -425,6 +425,32 @@ class PillowProcessor(Processor):
         return cropped_asset
 
     @operator
+    def sharpen(self, asset: Asset, radius: float = 2, percent: int = 150, threshold: int = 3) -> Asset:
+        """
+        Creates a new asset whose essence is sharpened using an unsharp mask.
+
+        The unsharp mask works by subtracting a blurred version of the image
+        from itself. Higher ``percent`` values produce stronger sharpening;
+        ``threshold`` controls which pixel differences are sharpened.
+
+        :param asset: Asset whose essence will be sharpened
+        :type asset: Asset
+        :param radius: Blur radius for the unsharp mask
+        :type radius: float
+        :param percent: Strength of the sharpening effect as a percentage
+        :type percent: int
+        :param threshold: Minimum brightness difference to sharpen
+        :type threshold: int
+        :return: Asset with sharpened essence
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            sharpened = image.filter(PIL.ImageFilter.UnsharpMask(radius, percent, threshold))
+        with sharpened:
+            return self._image_to_asset(sharpened, mime_type=mime_type)
+
+    @operator
     def blur(self, asset: Asset, radius: float = 2) -> Asset:
         """
         Creates a new asset whose essence is blurred using a Gaussian kernel.

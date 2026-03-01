@@ -356,6 +356,37 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowSharpen:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_sharpen_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((128, 64, 32))
+        result = processor.sharpen()(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_sharpen_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((128, 64, 32))
+        result = processor.sharpen()(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_sharpen_changes_pixels_on_non_uniform_image(self, processor):
+        image = PIL.Image.new('RGB', (DEFAULT_WIDTH, DEFAULT_HEIGHT), (128, 128, 128))
+        image.putpixel((DEFAULT_WIDTH // 2, DEFAULT_HEIGHT // 2), (255, 255, 255))
+        essence = io.BytesIO()
+        image.save(essence, 'PNG')
+        essence.seek(0)
+        asset = madam.core.Asset(
+            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+            color_space='RGB', depth=8, data_type='uint',
+        )
+        result = processor.sharpen()(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) != list(s.get_flattened_data())
+
+
 class TestPillowBlur:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
