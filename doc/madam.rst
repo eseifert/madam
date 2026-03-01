@@ -10,4 +10,5 @@ The main module of MADAM is :mod:`madam`. It contains several submodules.
    madam.ffmpeg
    madam.image
    madam.mime
+   madam.pdf
    madam.vector
