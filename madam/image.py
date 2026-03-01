@@ -7,6 +7,7 @@ from typing import IO, Any
 import PIL.ExifTags
 import PIL.Image
 import PIL.ImageEnhance
+import PIL.ImageFilter
 from bidict import bidict
 
 from madam.core import Asset, OperatorError, Processor, operator
@@ -422,6 +423,27 @@ class PillowProcessor(Processor):
             cropped_asset = self._image_to_asset(cropped_image, mime_type=asset.mime_type)
 
         return cropped_asset
+
+    @operator
+    def blur(self, asset: Asset, radius: float = 2) -> Asset:
+        """
+        Creates a new asset whose essence is blurred using a Gaussian kernel.
+
+        Higher ``radius`` values produce stronger blur. A ``radius`` of ``0``
+        leaves the image unchanged.
+
+        :param asset: Asset whose essence will be blurred
+        :type asset: Asset
+        :param radius: Blur radius in pixels; ``0`` means no blur
+        :type radius: float
+        :return: Asset with blurred essence
+        :rtype: Asset
+        """
+        mime_type = MimeType(asset.mime_type)
+        with PIL.Image.open(asset.essence) as image:
+            blurred = image.filter(PIL.ImageFilter.GaussianBlur(radius))
+        with blurred:
+            return self._image_to_asset(blurred, mime_type=mime_type)
 
     @operator
     def adjust_sharpness(self, asset: Asset, factor: float) -> Asset:

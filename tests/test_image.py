@@ -356,6 +356,44 @@ class TestPillowProcessor:
         assert converted.mime_type == 'image/avif'
 
 
+class TestPillowBlur:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_blur_preserves_dimensions(self, processor):
+        asset = _solid_png_asset((128, 64, 32))
+        result = processor.blur(radius=2)(asset)
+        assert result.width == asset.width
+        assert result.height == asset.height
+
+    def test_blur_preserves_mime_type(self, processor):
+        asset = _solid_png_asset((128, 64, 32))
+        result = processor.blur(radius=2)(asset)
+        assert result.mime_type == asset.mime_type
+
+    def test_blur_changes_pixels_on_non_uniform_image(self, processor):
+        # A non-uniform image: blurring spreads edge pixel values into interior
+        image = PIL.Image.new('RGB', (DEFAULT_WIDTH, DEFAULT_HEIGHT), (0, 0, 0))
+        image.putpixel((0, 0), (255, 255, 255))
+        essence = io.BytesIO()
+        image.save(essence, 'PNG')
+        essence.seek(0)
+        asset = madam.core.Asset(
+            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
+            color_space='RGB', depth=8, data_type='uint',
+        )
+        result = processor.blur(radius=3)(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) != list(s.get_flattened_data())
+
+    def test_blur_radius_zero_preserves_pixels(self, processor):
+        asset = _solid_png_asset((80, 120, 200))
+        result = processor.blur(radius=0)(asset)
+        with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
+            assert list(r.get_flattened_data()) == list(s.get_flattened_data())
+
+
 class TestPillowAdjustSharpness:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
