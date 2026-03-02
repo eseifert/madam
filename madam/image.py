@@ -189,6 +189,8 @@ class PillowProcessor(Processor):
                 depth=bit_depth,
                 data_type=data_type,
             )
+            if getattr(image, 'is_animated', False):
+                metadata['frame_count'] = image.n_frames
         file.seek(0)
         asset = Asset(file, **metadata)
         return asset
@@ -1030,6 +1032,33 @@ class PillowProcessor(Processor):
             rotated_asset = self._image_to_asset(rotated_image, mime_type=asset.mime_type)
 
         return rotated_asset
+
+    @operator
+    def extract_frame(self, asset: Asset, frame: int = 0) -> Asset:
+        """
+        Extracts a single frame from an animated image asset as a static image.
+
+        The returned asset has the same MIME type as the source.  Use
+        ``frame_count`` from the asset metadata to know how many frames are
+        available.
+
+        :param asset: Animated image asset (GIF, WebP, …)
+        :type asset: Asset
+        :param frame: Zero-based frame index
+        :type frame: int
+        :return: Static image asset for the requested frame
+        :rtype: Asset
+        :raises OperatorError: if *frame* is out of range
+        """
+        with PIL.Image.open(asset.essence) as image:
+            n_frames = getattr(image, 'n_frames', 1)
+            if frame < 0 or frame >= n_frames:
+                raise OperatorError(f'Frame index {frame} is out of range for an image with {n_frames} frame(s)')
+            image.seek(frame)
+            frame_image = image.copy()
+
+        with frame_image:
+            return self._image_to_asset(frame_image, mime_type=asset.mime_type)
 
 
 def render_text(

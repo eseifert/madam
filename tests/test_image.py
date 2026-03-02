@@ -1064,3 +1064,79 @@ class TestPillowAdjustBrightness:
         result = processor.adjust_brightness(factor=0.0)(asset)
         with PIL.Image.open(result.essence) as image:
             assert all(p == (0, 0, 0) for p in image.get_flattened_data())
+
+
+class TestPillowAnimatedFrames:
+    """Tests for animated GIF/WebP frame_count metadata and extract_frame operator."""
+
+    _FRAME_COUNT = 3
+
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    @pytest.fixture(name='animated_gif_asset', scope='class')
+    def animated_gif_asset(self, processor):
+        """Create a synthetic animated GIF with _FRAME_COUNT distinct frames."""
+        # Use 'L' (grayscale) mode: 'P' frames with an uninitialized palette
+        # are indistinguishable to the GIF encoder and collapse to 1 frame.
+        frames = [
+            PIL.Image.new('L', (DEFAULT_WIDTH, DEFAULT_HEIGHT), color=i * 80)
+            for i in range(TestPillowAnimatedFrames._FRAME_COUNT)
+        ]
+        buf = io.BytesIO()
+        frames[0].save(buf, format='GIF', save_all=True, append_images=frames[1:], loop=0)
+        buf.seek(0)
+        return processor.read(buf)
+
+    @pytest.fixture(name='animated_webp_asset', scope='class')
+    def animated_webp_asset(self, processor):
+        """Create a synthetic animated WebP with _FRAME_COUNT distinct frames."""
+        frames = [
+            PIL.Image.new('RGB', (DEFAULT_WIDTH, DEFAULT_HEIGHT), color=(i * 80, 0, 0))
+            for i in range(TestPillowAnimatedFrames._FRAME_COUNT)
+        ]
+        buf = io.BytesIO()
+        frames[0].save(buf, format='WEBP', save_all=True, append_images=frames[1:])
+        buf.seek(0)
+        return processor.read(buf)
+
+    def test_read_animated_gif_includes_frame_count(self, animated_gif_asset):
+        assert animated_gif_asset.frame_count == TestPillowAnimatedFrames._FRAME_COUNT
+
+    def test_read_animated_webp_includes_frame_count(self, animated_webp_asset):
+        assert animated_webp_asset.frame_count == TestPillowAnimatedFrames._FRAME_COUNT
+
+    def test_read_static_gif_has_no_frame_count(self, processor):
+        image = PIL.Image.new('P', (DEFAULT_WIDTH, DEFAULT_HEIGHT), color=0)
+        buf = io.BytesIO()
+        image.save(buf, format='GIF')
+        buf.seek(0)
+        asset = processor.read(buf)
+        assert not hasattr(asset, 'frame_count')
+
+    def test_extract_frame_returns_image_asset(self, processor, animated_gif_asset):
+        frame_asset = processor.extract_frame(frame=0)(animated_gif_asset)
+        assert isinstance(frame_asset, madam.core.Asset)
+
+    def test_extract_frame_returns_correct_mime_type(self, processor, animated_gif_asset):
+        frame_asset = processor.extract_frame(frame=0)(animated_gif_asset)
+        assert frame_asset.mime_type == 'image/gif'
+
+    def test_extract_frame_has_correct_dimensions(self, processor, animated_gif_asset):
+        frame_asset = processor.extract_frame(frame=0)(animated_gif_asset)
+        assert frame_asset.width == DEFAULT_WIDTH
+        assert frame_asset.height == DEFAULT_HEIGHT
+
+    def test_extract_frame_zero_and_last_differ(self, processor, animated_gif_asset):
+        frame_0 = processor.extract_frame(frame=0)(animated_gif_asset)
+        frame_last = processor.extract_frame(frame=TestPillowAnimatedFrames._FRAME_COUNT - 1)(animated_gif_asset)
+        assert frame_0.essence.read() != frame_last.essence.read()
+
+    def test_extract_frame_raises_for_out_of_range_index(self, processor, animated_gif_asset):
+        with pytest.raises(OperatorError):
+            processor.extract_frame(frame=TestPillowAnimatedFrames._FRAME_COUNT)(animated_gif_asset)
+
+    def test_extract_frame_webp_returns_png(self, processor, animated_webp_asset):
+        frame_asset = processor.extract_frame(frame=0)(animated_webp_asset)
+        assert frame_asset.mime_type == 'image/webp'
