@@ -195,8 +195,7 @@ class LazyAsset(Asset):
         loader = object.__getattribute__(self, '_loader')
         if loader is None:
             raise RuntimeError(
-                'LazyAsset has no loader — cannot access essence. '
-                'Attach a loader before calling essence.'
+                'LazyAsset has no loader — cannot access essence. Attach a loader before calling essence.'
             )
         return loader(self.uri)
 
@@ -500,6 +499,7 @@ class Madam:
         # Initialize metadata processors
         self.metadata_processors = {
             'madam.exif.ExifMetadataProcessor',
+            'madam.iptc.IPTCMetadataProcessor',
             'madam.vector.SVGMetadataProcessor',
             'madam.ffmpeg.FFmpegMetadataProcessor',
         }
@@ -955,6 +955,7 @@ class ShelveStorage(AssetStorage[str]):
         """
         with shelve.open(str(self.path)) as store:
             return len(store)
+
 
 class FileSystemAssetStorage(AssetStorage[str]):
     """
