@@ -500,6 +500,7 @@ class Madam:
         self.metadata_processors = {
             'madam.exif.ExifMetadataProcessor',
             'madam.iptc.IPTCMetadataProcessor',
+            'madam.xmp.XMPMetadataProcessor',
             'madam.vector.SVGMetadataProcessor',
             'madam.ffmpeg.FFmpegMetadataProcessor',
         }

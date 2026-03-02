@@ -14,3 +14,4 @@ The main module of MADAM is :mod:`madam`. It contains several submodules.
    madam.pdf
    madam.raw
    madam.vector
+   madam.xmp
