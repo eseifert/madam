@@ -10,7 +10,7 @@ import shutil
 import threading
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, MutableMapping, MutableSequence
 from pathlib import Path
-from typing import IO, Any, Generic, TypeVar
+from typing import IO, Any, Concatenate, Generic, ParamSpec, TypeVar
 
 from frozendict import frozendict
 
@@ -270,7 +270,12 @@ class UnsupportedFormatError(PermanentOperatorError):
         super().__init__(*args)
 
 
-def operator(function: Callable[..., Asset]) -> Callable[..., Callable[..., Asset]]:
+_P = ParamSpec('_P')
+
+
+def operator(
+    function: Callable[Concatenate[Any, 'Asset', _P], 'Asset'],
+) -> Callable[Concatenate[Any, _P], Callable[['Asset'], 'Asset']]:
     """
     Decorator function for methods that process assets.
 
@@ -292,7 +297,7 @@ def operator(function: Callable[..., Asset]) -> Callable[..., Callable[..., Asse
     """
 
     @functools.wraps(function)
-    def wrapper(self, **kwargs: Any) -> Callable[..., Asset]:
+    def wrapper(self: Any, **kwargs: _P.kwargs) -> Callable[['Asset'], 'Asset']:
         configured_operator = functools.partial(function, self, **kwargs)
         return configured_operator
 
@@ -320,6 +325,11 @@ class _WhenStep:
         self.else_ = else_
 
 
+# A pipeline step is either a plain operator callable or one of the control-flow
+# step objects introduced by Pipeline.branch() and Pipeline.when().
+_PipelineStep = Callable[['Asset'], 'Asset'] | _BranchStep | _WhenStep
+
+
 class Pipeline:
     """
     Represents a processing pipeline for :class:`~madam.core.Asset` objects.
@@ -336,7 +346,7 @@ class Pipeline:
         """
         Initializes a new pipeline without operators.
         """
-        self.operators: MutableSequence[Callable] = []
+        self.operators: MutableSequence[_PipelineStep] = []
 
     def process(self, *assets: Asset) -> Generator[Asset, float, None]:
         """
