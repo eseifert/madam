@@ -1203,6 +1203,35 @@ def _ssimulacra2_score(img_a: PIL.Image.Image, img_b: PIL.Image.Image) -> float:
     return msssim.score()
 
 
+def extract_palette(asset: Asset, count: int = 5) -> list[tuple[int, int, int]]:
+    """Extract the dominant colors from an image asset.
+
+    Quantizes the image to *count* representative colors using Pillow's median-cut
+    algorithm and returns them as ``(r, g, b)`` tuples sorted by frequency (most
+    frequent color first).
+
+    The returned list contains at most *count* entries; it may be shorter if the
+    image has fewer unique colors than *count*.
+
+    :param asset: Source image asset (any format readable by Pillow)
+    :param count: Maximum number of colors to return (default 5)
+    :return: List of ``(r, g, b)`` tuples sorted by pixel frequency, descending
+    """
+    from collections import Counter
+
+    with PIL.Image.open(asset.essence) as image:
+        rgb = image.convert('RGB')
+
+    quantized = rgb.quantize(colors=count)
+    palette = quantized.getpalette()  # flat [r, g, b, r, g, b, …] for 256 slots
+
+    pixel_counts: Counter[int] = Counter(quantized.get_flattened_data())
+
+    # Sort palette indices by descending frequency, then map to RGB tuples.
+    sorted_indices = sorted(pixel_counts, key=lambda i: pixel_counts[i], reverse=True)
+    return [(palette[i * 3], palette[i * 3 + 1], palette[i * 3 + 2]) for i in sorted_indices]
+
+
 def render_text(
     text: str,
     font_path: str | None = None,

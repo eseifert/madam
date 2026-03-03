@@ -1249,3 +1249,81 @@ class TestPillowOptimizeQuality:
         # Source is PNG; no mime_type → target defaults to image/png → OperatorError.
         with pytest.raises(OperatorError):
             processor.optimize_quality(min_ssim_score=80.0)(source_asset)
+
+
+def _gradient_png_asset(width=256, height=256) -> madam.core.Asset:
+    """Return a lossless PNG Asset filled with a color gradient."""
+    image = PIL.Image.new('RGB', (width, height))
+    pixels = image.load()
+    for x in range(width):
+        for y in range(height):
+            pixels[x, y] = (x % 256, y % 256, (x + y) % 256)
+    buf = io.BytesIO()
+    image.save(buf, 'PNG')
+    buf.seek(0)
+    return madam.image.PillowProcessor().read(buf)
+
+
+class TestExtractPalette:
+    def test_extract_palette_returns_list(self):
+        asset = _solid_png_asset((255, 0, 0))
+
+        result = madam.image.extract_palette(asset)
+
+        assert isinstance(result, list)
+
+    def test_extract_palette_returns_rgb_tuples(self):
+        asset = _solid_png_asset((0, 128, 64))
+
+        result = madam.image.extract_palette(asset)
+
+        for entry in result:
+            assert isinstance(entry, tuple)
+            assert len(entry) == 3
+            assert all(isinstance(c, int) for c in entry)
+
+    def test_extract_palette_solid_color_first_entry_matches_color(self):
+        color = (200, 100, 50)
+        asset = _solid_png_asset(color)
+
+        result = madam.image.extract_palette(asset, count=5)
+
+        assert result[0] == color
+
+    def test_extract_palette_returns_count_entries_for_rich_image(self):
+        # A gradient has many unique colors; quantizing to 5 should yield 5 entries.
+        asset = _gradient_png_asset()
+
+        result = madam.image.extract_palette(asset, count=5)
+
+        assert len(result) == 5
+
+    def test_extract_palette_count_one_returns_dominant_color(self):
+        color = (10, 20, 30)
+        asset = _solid_png_asset(color)
+
+        result = madam.image.extract_palette(asset, count=1)
+
+        assert len(result) == 1
+        assert result[0] == color
+
+    def test_extract_palette_most_frequent_color_is_first(self):
+        # Build an image: large red region and a small blue pixel.
+        image = PIL.Image.new('RGB', (DEFAULT_WIDTH, DEFAULT_HEIGHT), (255, 0, 0))
+        image.putpixel((0, 0), (0, 0, 255))
+        buf = io.BytesIO()
+        image.save(buf, 'PNG')
+        buf.seek(0)
+        asset = madam.core.Asset(
+            buf,
+            mime_type='image/png',
+            width=DEFAULT_WIDTH,
+            height=DEFAULT_HEIGHT,
+            color_space='RGB',
+            depth=8,
+            data_type='uint',
+        )
+
+        result = madam.image.extract_palette(asset, count=2)
+
+        assert result[0] == (255, 0, 0)
