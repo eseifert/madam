@@ -17,6 +17,17 @@ from bidict import bidict
 from madam.core import Asset, OperatorError, Processor, operator
 from madam.mime import MimeType
 
+# Formats whose Pillow encoder accepts an explicit icc_profile= keyword.
+_ICC_PROFILE_FORMATS: frozenset[MimeType] = frozenset(
+    {
+        MimeType('image/avif'),
+        MimeType('image/jpeg'),
+        MimeType('image/png'),
+        MimeType('image/tiff'),
+        MimeType('image/webp'),
+    }
+)
+
 _VALID_FORMAT_CONFIG_KEYS: dict[MimeType, frozenset[str]] = {
     MimeType('image/avif'): frozenset({'quality', 'speed'}),
     MimeType('image/jpeg'): frozenset({'quality', 'progressive'}),
@@ -191,6 +202,9 @@ class PillowProcessor(Processor):
             )
             if getattr(image, 'is_animated', False):
                 metadata['frame_count'] = image.n_frames
+            icc_profile = image.info.get('icc_profile')
+            if icc_profile:
+                metadata['icc_profile'] = icc_profile
         file.seek(0)
         asset = Asset(file, **metadata)
         return asset
@@ -241,6 +255,7 @@ class PillowProcessor(Processor):
         """
         mime_type = MimeType(asset.mime_type)
         with PIL.Image.open(asset.essence) as image:
+            icc_profile: bytes | None = image.info.get('icc_profile')
             if mode == ResizeMode.EXACT:
                 resized_width = width
                 resized_height = height
@@ -268,10 +283,12 @@ class PillowProcessor(Processor):
                 resized_image = resized_image.crop((crop_x, crop_y, crop_x + width, crop_y + height))
 
         with resized_image:
-            resized_asset = self._image_to_asset(resized_image, mime_type=mime_type)
+            resized_asset = self._image_to_asset(resized_image, mime_type=mime_type, icc_profile=icc_profile)
         return resized_asset
 
-    def _image_to_asset(self, image: PIL.Image.Image, mime_type: MimeType | str) -> Asset:
+    def _image_to_asset(
+        self, image: PIL.Image.Image, mime_type: MimeType | str, *, icc_profile: bytes | None = None
+    ) -> Asset:
         """
         Converts an PIL image to a MADAM asset. The conversion can also include
         a change in file type.
@@ -280,6 +297,8 @@ class PillowProcessor(Processor):
         :type image: PIL.Image.Image
         :param mime_type: MIME type of the target asset
         :type mime_type: MimeType or str
+        :param icc_profile: Raw ICC profile bytes to embed in the output file, or ``None``
+        :type icc_profile: bytes or None
         :return: MADAM asset with the specified MIME type
         :rtype: Asset
         """
@@ -298,6 +317,9 @@ class PillowProcessor(Processor):
                     UserWarning,
                     stacklevel=4,
                 )
+
+        if icc_profile and mime_type in _ICC_PROFILE_FORMATS:
+            pil_options['icc_profile'] = icc_profile
 
         image_buffer = io.BytesIO()
 
@@ -464,11 +486,12 @@ class PillowProcessor(Processor):
         mime_type = MimeType(mime_type)
         try:
             with PIL.Image.open(asset.essence) as image:
+                icc_profile_bytes: bytes | None = image.info.get('icc_profile')
                 color_mode = color_space or asset.color_space, depth or asset.depth, data_type or asset.data_type
                 pil_mode = PillowProcessor.__pillow_mode_to_color_mode.inv.get(color_mode)
                 if pil_mode is not None and pil_mode != image.mode:
                     image = image.convert(pil_mode)
-                converted_asset = self._image_to_asset(image, mime_type)
+                converted_asset = self._image_to_asset(image, mime_type, icc_profile=icc_profile_bytes)
         except (IOError, KeyError) as pil_error:
             raise OperatorError(f'Could not convert image to {mime_type}: {pil_error}')
 

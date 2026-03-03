@@ -2,6 +2,7 @@ import io
 
 import PIL.Image
 import PIL.ImageChops
+import PIL.ImageCms
 import pytest
 from assets import (
     DEFAULT_HEIGHT,
@@ -1327,3 +1328,64 @@ class TestExtractPalette:
         result = madam.image.extract_palette(asset, count=2)
 
         assert result[0] == (255, 0, 0)
+
+
+def _jpeg_with_icc_profile() -> madam.core.Asset:
+    """Return a small JPEG Asset with an embedded sRGB ICC profile."""
+    icc_profile = PIL.ImageCms.ImageCmsProfile(PIL.ImageCms.createProfile('sRGB')).tobytes()
+    image = PIL.Image.new('RGB', (8, 8), (100, 150, 200))
+    buf = io.BytesIO()
+    image.save(buf, 'JPEG', icc_profile=icc_profile, quality=95)
+    buf.seek(0)
+    return madam.core.Asset(
+        buf, mime_type='image/jpeg', width=8, height=8, color_space='RGB', depth=8, data_type='uint'
+    )
+
+
+class TestPillowIccProfile:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    @pytest.fixture(name='jpeg_with_icc', scope='class')
+    def jpeg_with_icc_fixture(self):
+        return _jpeg_with_icc_profile()
+
+    def test_read_jpeg_with_icc_profile_stores_profile_in_metadata(self, processor):
+        asset = _jpeg_with_icc_profile()
+
+        read_asset = processor.read(asset.essence)
+
+        assert hasattr(read_asset, 'icc_profile') or 'icc_profile' in read_asset.metadata
+        assert read_asset.icc_profile is not None
+        assert isinstance(read_asset.icc_profile, bytes)
+        assert len(read_asset.icc_profile) > 0
+
+    def test_read_jpeg_without_icc_profile_has_no_icc_profile(self, processor):
+        image = PIL.Image.new('RGB', (8, 8), (100, 150, 200))
+        buf = io.BytesIO()
+        image.save(buf, 'JPEG', quality=95)
+        buf.seek(0)
+
+        read_asset = processor.read(buf)
+
+        assert read_asset.metadata.get('icc_profile') is None
+
+    def test_convert_jpeg_to_png_preserves_icc_profile(self, processor, jpeg_with_icc):
+        read_asset = processor.read(jpeg_with_icc.essence)
+        convert_op = processor.convert(mime_type='image/png')
+
+        converted = convert_op(read_asset)
+
+        assert converted.icc_profile is not None
+        assert isinstance(converted.icc_profile, bytes)
+        assert len(converted.icc_profile) > 0
+
+    def test_resize_preserves_icc_profile(self, processor, jpeg_with_icc):
+        read_asset = processor.read(jpeg_with_icc.essence)
+        resize_op = processor.resize(width=4, height=4)
+
+        resized = resize_op(read_asset)
+
+        assert resized.metadata.get('icc_profile') is not None
+        assert isinstance(resized.metadata.get('icc_profile'), bytes)
