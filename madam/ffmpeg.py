@@ -550,9 +550,7 @@ class FFmpegProcessor(Processor):
                 timeout=10,
             )
         except FileNotFoundError:
-            raise EnvironmentError(
-                'ffprobe not found. Install FFmpeg >= 3.3 and ensure it is on PATH.'
-            )
+            raise EnvironmentError('ffprobe not found. Install FFmpeg >= 3.3 and ensure it is on PATH.')
         except subprocess.TimeoutExpired:
             raise EnvironmentError('ffprobe version check timed out.')
 
@@ -566,9 +564,7 @@ class FFmpegProcessor(Processor):
         detected = _parse_version(version_string)
         if detected < self._MIN_VERSION:
             min_str = '.'.join(str(v) for v in self._MIN_VERSION)
-            raise EnvironmentError(
-                f'Found ffprobe version {version_string}. Requiring at least version {min_str}.'
-            )
+            raise EnvironmentError(f'Found ffprobe version {version_string}. Requiring at least version {min_str}.')
 
         self._configured_threads: int = self.config.get('ffmpeg', {}).get('threads', 0)
 
@@ -1068,7 +1064,13 @@ class FFmpegProcessor(Processor):
 
         duration = asset.duration / factor if hasattr(asset, 'duration') and asset.duration else None
         metadata = _combine_metadata(
-            asset, 'mime_type', 'width', 'height', 'video', 'audio', 'subtitle',
+            asset,
+            'mime_type',
+            'width',
+            'height',
+            'video',
+            'audio',
+            'subtitle',
             **({'duration': duration} if duration is not None else {}),
         )
 
@@ -1178,10 +1180,16 @@ class FFmpegProcessor(Processor):
             # First pass: measure integrated loudness and write measurements to
             # stderr as JSON.  The null muxer discards the output entirely.
             measure_cmd = [
-                'ffmpeg', '-loglevel', 'info',
-                '-i', ctx.input_path,
-                '-af', f'loudnorm=I={target_lufs}:LRA=11:TP=-1.5:print_format=json',
-                '-f', 'null', '-',
+                'ffmpeg',
+                '-loglevel',
+                'info',
+                '-i',
+                ctx.input_path,
+                '-af',
+                f'loudnorm=I={target_lufs}:LRA=11:TP=-1.5:print_format=json',
+                '-f',
+                'null',
+                '-',
             ]
             measure_result = subprocess.run(measure_cmd, capture_output=True)
             stderr_text = measure_result.stderr.decode('utf-8', errors='replace')
@@ -1226,19 +1234,29 @@ class FFmpegProcessor(Processor):
                 af = f'loudnorm=I={target_lufs}:LRA=11:TP=-1.5'
 
             normalize_cmd = [
-                'ffmpeg', '-loglevel', 'error',
-                '-i', ctx.input_path,
-                '-af', af,
+                'ffmpeg',
+                '-loglevel',
+                'error',
+                '-i',
+                ctx.input_path,
+                '-af',
+                af,
             ]
             # Preserve the video stream unchanged when present; without this
             # flag FFmpeg would attempt to re-encode video with default
             # settings, which often fails for unusual pixel formats.
             if 'video' in asset.metadata:
                 normalize_cmd.extend(['-c:v', 'copy'])
-            normalize_cmd.extend([
-                '-threads', str(self._threads),
-                '-f', encoder_name, '-y', ctx.output_path,
-            ])
+            normalize_cmd.extend(
+                [
+                    '-threads',
+                    str(self._threads),
+                    '-f',
+                    encoder_name,
+                    '-y',
+                    ctx.output_path,
+                ]
+            )
             try:
                 subprocess.run(normalize_cmd, stderr=subprocess.PIPE, check=True)
             except subprocess.CalledProcessError as ffmpeg_error:
@@ -1246,7 +1264,6 @@ class FFmpegProcessor(Processor):
 
         metadata = _combine_metadata(asset, 'mime_type', 'width', 'height', 'duration', 'video', 'audio', 'subtitle')
         return Asset(essence=result, **metadata)
-
 
     @operator
     def thumbnail_sprite(
@@ -1303,12 +1320,19 @@ class FFmpegProcessor(Processor):
 
             # Extract n_frames evenly-spaced frames as JPEG files.
             command = [
-                'ffmpeg', '-loglevel', 'error',
-                '-i', ctx.input_path,
-                '-vf', f'fps=1/{interval},scale={thumb_width}:{thumb_height},trim=end_frame={n_frames}',
-                '-qscale:v', '2',
-                '-f', 'image2',
-                '-y', os.path.join(frame_dir, 'frame_%04d.jpg'),
+                'ffmpeg',
+                '-loglevel',
+                'error',
+                '-i',
+                ctx.input_path,
+                '-vf',
+                f'fps=1/{interval},scale={thumb_width}:{thumb_height},trim=end_frame={n_frames}',
+                '-qscale:v',
+                '2',
+                '-f',
+                'image2',
+                '-y',
+                os.path.join(frame_dir, 'frame_%04d.jpg'),
             ]
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
@@ -1317,9 +1341,7 @@ class FFmpegProcessor(Processor):
 
             # Collect extracted frames; pad with blank frames if fewer were
             # produced than requested (can happen for very short clips).
-            frame_paths = sorted(
-                os.path.join(frame_dir, f) for f in os.listdir(frame_dir) if f.endswith('.jpg')
-            )
+            frame_paths = sorted(os.path.join(frame_dir, f) for f in os.listdir(frame_dir) if f.endswith('.jpg'))
             blank = PIL.Image.new('RGB', (thumb_width, thumb_height), (0, 0, 0))
             frames: list[PIL.Image.Image] = []
             for path in frame_paths[:n_frames]:
@@ -1447,7 +1469,7 @@ class FFmpegProcessor(Processor):
             enable_parts.append(f'lte(t,{to_seconds})')
         enable_expr = ':'.join(enable_parts) if enable_parts else '1'
 
-        overlay_filter = f'overlay={px}:{py}:enable=\'{enable_expr}\''
+        overlay_filter = f"overlay={px}:{py}:enable='{enable_expr}'"
 
         result = io.BytesIO()
         with _FFmpegContext(asset.essence, result) as ctx:
@@ -1458,15 +1480,27 @@ class FFmpegProcessor(Processor):
                 overlay_asset.essence.seek(0)
 
             command = [
-                'ffmpeg', '-loglevel', 'error',
-                '-i', ctx.input_path,
-                '-i', overlay_path,
-                '-filter_complex', f'[0:v][1:v]{overlay_filter}[v]',
-                '-map', '[v]',
-                '-map', '0:a?',
-                '-codec:a', 'copy',
-                '-threads', str(self._threads),
-                '-f', encoder_name, '-y', ctx.output_path,
+                'ffmpeg',
+                '-loglevel',
+                'error',
+                '-i',
+                ctx.input_path,
+                '-i',
+                overlay_path,
+                '-filter_complex',
+                f'[0:v][1:v]{overlay_filter}[v]',
+                '-map',
+                '[v]',
+                '-map',
+                '0:a?',
+                '-codec:a',
+                'copy',
+                '-threads',
+                str(self._threads),
+                '-f',
+                encoder_name,
+                '-y',
+                ctx.output_path,
             ]
 
             try:
@@ -1533,14 +1567,22 @@ class FFmpegProcessor(Processor):
                 command.extend(['-c:a', audio_codec])
             if audio_bitrate:
                 command.extend(['-b:a', f'{audio_bitrate}k'])
-            command.extend([
-                '-f', 'hls',
-                '-hls_time', str(segment_duration),
-                '-hls_list_size', '0',
-                '-hls_segment_filename', segment_pattern,
-                '-threads', str(self._threads),
-                '-y', playlist_path,
-            ])
+            command.extend(
+                [
+                    '-f',
+                    'hls',
+                    '-hls_time',
+                    str(segment_duration),
+                    '-hls_list_size',
+                    '0',
+                    '-hls_segment_filename',
+                    segment_pattern,
+                    '-threads',
+                    str(self._threads),
+                    '-y',
+                    playlist_path,
+                ]
+            )
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
@@ -1610,12 +1652,18 @@ class FFmpegProcessor(Processor):
                 command.extend(['-c:a', audio_codec])
             if audio_bitrate:
                 command.extend(['-b:a', f'{audio_bitrate}k'])
-            command.extend([
-                '-f', 'dash',
-                '-seg_duration', str(segment_duration),
-                '-threads', str(self._threads),
-                '-y', manifest_path,
-            ])
+            command.extend(
+                [
+                    '-f',
+                    'dash',
+                    '-seg_duration',
+                    str(segment_duration),
+                    '-threads',
+                    str(self._threads),
+                    '-y',
+                    manifest_path,
+                ]
+            )
 
             try:
                 subprocess.run(command, stderr=subprocess.PIPE, check=True)
@@ -1695,8 +1743,15 @@ def concatenate(
 
         output_path = os.path.join(tmpdir, 'output_file')
         command = [
-            'ffmpeg', '-loglevel', 'error',
-            '-f', 'concat', '-safe', '0', '-i', list_path,
+            'ffmpeg',
+            '-loglevel',
+            'error',
+            '-f',
+            'concat',
+            '-safe',
+            '0',
+            '-i',
+            list_path,
         ]
 
         if video:
@@ -1764,10 +1819,45 @@ class FFmpegMetadataProcessor(MetadataProcessor):
 
     # See https://wiki.multimedia.cx/index.php?title=FFmpeg_Metadata
     metadata_keys_by_mime_type = {
-        MimeType('video/x-matroska'): bidict({}),
-        MimeType('video/x-msvideo'): bidict({}),
+        # Matroska stores most tags in uppercase; 'title' is the exception.
+        MimeType('video/x-matroska'): bidict(
+            {
+                'title': 'title',
+                'artist': 'ARTIST',
+                'comment': 'COMMENT',
+                'copyright': 'COPYRIGHT',
+                'date': 'DATE',
+                'description': 'DESCRIPTION',
+                'encoder': 'ENCODER',
+                'genre': 'GENRE',
+                'language': 'LANGUAGE',
+            }
+        ),
+        # AVI uses lowercase INFO chunk tags.
+        MimeType('video/x-msvideo'): bidict(
+            {
+                'title': 'title',
+                'artist': 'artist',
+                'comment': 'comment',
+                'copyright': 'copyright',
+                'date': 'date',
+                'genre': 'genre',
+            }
+        ),
         MimeType('video/mp2t'): bidict({}),
-        MimeType('video/quicktime'): bidict({}),
+        # QuickTime/MP4 uses lowercase atoms.
+        MimeType('video/quicktime'): bidict(
+            {
+                'title': 'title',
+                'artist': 'artist',
+                'comment': 'comment',
+                'copyright': 'copyright',
+                'date': 'date',
+                'description': 'description',
+                'encoder': 'encoder',
+                'genre': 'genre',
+            }
+        ),
         MimeType('video/ogg'): bidict({}),
         MimeType('audio/mpeg'): bidict(
             {

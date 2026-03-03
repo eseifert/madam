@@ -823,3 +823,113 @@ class TestFFmpegToDASH:
 
         with pytest.raises(UnsupportedFormatError):
             processor.to_dash(unknown_asset, output=output)
+
+
+class TestFFmpegVideoMetadataProcessor:
+    """Test FFmpegMetadataProcessor for video containers (MKV, MOV/MP4, AVI)."""
+
+    @pytest.fixture(name='processor', scope='class')
+    def ffmpeg_metadata_processor(self):
+        return madam.video.FFmpegMetadataProcessor()
+
+    def _make_video_bytes(self, fmt, *, video_codec='libx264', audio_codec='aac', extra_metadata=None, tmpdir=None):
+        """Create a minimal video as bytes with optional metadata tags.
+
+        Uses pipe output for streamable formats; falls back to a temp file
+        for seekable-only formats like MOV/MP4.
+        """
+        import tempfile, os
+
+        cmd = [
+            'ffmpeg', '-loglevel', 'error',
+            '-f', 'lavfi', '-i', 'color=red:size=32x24:rate=1:duration=0.5',
+            '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.5',
+            '-map', '0:v', '-map', '1:a',
+            '-c:v', video_codec, '-c:a', audio_codec,
+        ]
+        for key, val in (extra_metadata or {}).items():
+            cmd += ['-metadata', f'{key}={val}']
+
+        # MOV/MP4 requires a seekable output (moov atom written at end)
+        if fmt in ('mov', 'mp4'):
+            with tempfile.NamedTemporaryFile(suffix=f'.{fmt}', delete=False) as tmp:
+                tmp_path = tmp.name
+            try:
+                subprocess.run(cmd + ['-y', '-f', fmt, tmp_path], check=True, stderr=subprocess.PIPE)
+                with open(tmp_path, 'rb') as f:
+                    return f.read()
+            finally:
+                os.unlink(tmp_path)
+        else:
+            cmd += ['-y', '-f', fmt, 'pipe:1']
+            result = subprocess.run(cmd, capture_output=True, check=True)
+            return result.stdout
+
+    def test_read_returns_title_for_mkv(self, processor):
+        data = self._make_video_bytes('matroska', video_codec='libx264', audio_codec='aac',
+                                      extra_metadata={'title': 'MKV Title'})
+        metadata = processor.read(io.BytesIO(data))
+
+        assert metadata['ffmetadata']['title'] == 'MKV Title'
+
+    def test_read_returns_title_for_mov(self, processor):
+        data = self._make_video_bytes('mov', video_codec='libx264', audio_codec='aac',
+                                      extra_metadata={'title': 'MOV Title'})
+        metadata = processor.read(io.BytesIO(data))
+
+        assert metadata['ffmetadata']['title'] == 'MOV Title'
+
+    def test_read_returns_title_for_avi(self, processor):
+        data = self._make_video_bytes('avi', video_codec='libx264', audio_codec='mp3',
+                                      extra_metadata={'title': 'AVI Title'})
+        metadata = processor.read(io.BytesIO(data))
+
+        assert metadata['ffmetadata']['title'] == 'AVI Title'
+
+    def test_read_returns_comment_for_mkv(self, processor):
+        data = self._make_video_bytes('matroska', video_codec='libx264', audio_codec='aac',
+                                      extra_metadata={'COMMENT': 'MKV Comment'})
+        metadata = processor.read(io.BytesIO(data))
+
+        assert metadata['ffmetadata']['comment'] == 'MKV Comment'
+
+    def test_read_returns_comment_for_mov(self, processor):
+        data = self._make_video_bytes('mov', video_codec='libx264', audio_codec='aac',
+                                      extra_metadata={'comment': 'MOV Comment'})
+        metadata = processor.read(io.BytesIO(data))
+
+        assert metadata['ffmetadata']['comment'] == 'MOV Comment'
+
+    def test_combine_round_trips_title_for_mkv(self, processor):
+        # Create a plain MKV with no metadata.
+        data = self._make_video_bytes('matroska', video_codec='libx264', audio_codec='aac')
+        stripped = processor.strip(io.BytesIO(data))
+        stripped.seek(0)
+
+        result = processor.combine(stripped, {'ffmetadata': {'title': 'New MKV Title'}})
+        result.seek(0)
+        metadata = processor.read(result)
+
+        assert metadata['ffmetadata']['title'] == 'New MKV Title'
+
+    def test_combine_round_trips_title_for_mov(self, processor):
+        data = self._make_video_bytes('mov', video_codec='libx264', audio_codec='aac')
+        stripped = processor.strip(io.BytesIO(data))
+        stripped.seek(0)
+
+        result = processor.combine(stripped, {'ffmetadata': {'title': 'New MOV Title'}})
+        result.seek(0)
+        metadata = processor.read(result)
+
+        assert metadata['ffmetadata']['title'] == 'New MOV Title'
+
+    def test_combine_round_trips_artist_for_mkv(self, processor):
+        data = self._make_video_bytes('matroska', video_codec='libx264', audio_codec='aac')
+        stripped = processor.strip(io.BytesIO(data))
+        stripped.seek(0)
+
+        result = processor.combine(stripped, {'ffmetadata': {'artist': 'MKV Artist'}})
+        result.seek(0)
+        metadata = processor.read(result)
+
+        assert metadata['ffmetadata']['artist'] == 'MKV Artist'
