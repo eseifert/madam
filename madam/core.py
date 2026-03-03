@@ -299,6 +299,27 @@ def operator(function: Callable[..., Asset]) -> Callable[..., Callable[..., Asse
     return wrapper
 
 
+class _BranchStep:
+    """Internal step that fans out each asset into one output per sub-pipeline."""
+
+    def __init__(self, pipelines: tuple['Pipeline', ...]) -> None:
+        self.pipelines = pipelines
+
+
+class _WhenStep:
+    """Internal step that conditionally applies one of two operators."""
+
+    def __init__(
+        self,
+        predicate: Callable[['Asset'], bool],
+        then: Callable[['Asset'], 'Asset'],
+        else_: Callable[['Asset'], 'Asset'] | None,
+    ) -> None:
+        self.predicate = predicate
+        self.then = then
+        self.else_ = else_
+
+
 class Pipeline:
     """
     Represents a processing pipeline for :class:`~madam.core.Asset` objects.
@@ -306,6 +327,9 @@ class Pipeline:
     The pipeline can be configured to hold a list of asset processing
     operators, all of which are applied to one or more assets when calling the
     :func:`~madam.core.Pipeline.process` method.
+
+    In addition to linear chains of operators, the pipeline supports fan-out
+    via :meth:`branch` and conditional dispatch via :meth:`when`.
     """
 
     def __init__(self) -> None:
@@ -322,11 +346,27 @@ class Pipeline:
         :type \\*assets: Asset
         :return: Generator with processed assets
         """
-        for asset in assets:
-            processed_asset = asset
-            for operator in self.operators:
-                processed_asset = operator(processed_asset)
-            yield processed_asset
+        current: list[Asset] = list(assets)
+        for step in self.operators:
+            if isinstance(step, _BranchStep):
+                next_assets: list[Asset] = []
+                for asset in current:
+                    for sub_pipeline in step.pipelines:
+                        next_assets.extend(sub_pipeline.process(asset))
+                current = next_assets
+            elif isinstance(step, _WhenStep):
+                next_assets = []
+                for asset in current:
+                    if step.predicate(asset):
+                        next_assets.append(step.then(asset))
+                    elif step.else_ is not None:
+                        next_assets.append(step.else_(asset))
+                    else:
+                        next_assets.append(asset)
+                current = next_assets
+            else:
+                current = [step(asset) for asset in current]
+        yield from current
 
     def add(self, operator: Callable) -> None:
         """
@@ -335,6 +375,32 @@ class Pipeline:
         :param operator: Operator to be added
         """
         self.operators.append(operator)
+
+    def branch(self, *pipelines: 'Pipeline') -> None:
+        """
+        Adds a fan-out step that sends each incoming asset through every
+        sub-pipeline, yielding one output asset per sub-pipeline per input.
+
+        :param \\*pipelines: Sub-pipelines to fan out into
+        """
+        self.operators.append(_BranchStep(pipelines))
+
+    def when(
+        self,
+        predicate: Callable[['Asset'], bool],
+        then: Callable[['Asset'], 'Asset'],
+        else_: Callable[['Asset'], 'Asset'] | None = None,
+    ) -> None:
+        """
+        Adds a conditional step that applies *then* when *predicate* returns
+        ``True`` and *else_* (if given) otherwise.  When *predicate* returns
+        ``False`` and no *else_* is provided, the asset passes through unchanged.
+
+        :param predicate: Callable that receives an asset and returns a bool
+        :param then: Operator applied when *predicate* is ``True``
+        :param else_: Operator applied when *predicate* is ``False``; optional
+        """
+        self.operators.append(_WhenStep(predicate, then, else_))
 
 
 class Processor(metaclass=abc.ABCMeta):

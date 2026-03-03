@@ -292,27 +292,98 @@ class TestPipeline:
 
         operator.assert_called_once_with(asset)
 
+    def test_branch_fans_out_one_asset_per_pipeline(self, pipeline):
+        p1, p2 = Pipeline(), Pipeline()
+        asset = Asset(io.BytesIO(b'x'))
+
+        pipeline.branch(p1, p2)
+        results = list(pipeline.process(asset))
+
+        assert len(results) == 2
+
+    def test_branch_pipelines_apply_independent_operators(self, pipeline):
+        p1 = Pipeline()
+        p1.add(lambda a: Asset(io.BytesIO(b'from_p1')))
+        p2 = Pipeline()
+        p2.add(lambda a: Asset(io.BytesIO(b'from_p2')))
+        asset = Asset(io.BytesIO(b'original'))
+
+        pipeline.branch(p1, p2)
+        results = list(pipeline.process(asset))
+
+        essences = {r.essence.read() for r in results}
+        assert essences == {b'from_p1', b'from_p2'}
+
+    def test_branch_step_is_recorded_in_operators(self, pipeline):
+        p1, p2 = Pipeline(), Pipeline()
+
+        pipeline.branch(p1, p2)
+
+        assert len(pipeline.operators) == 1
+
+    def test_when_applies_then_if_predicate_is_true(self, pipeline, asset):
+        def then_op(a):
+            return Asset(io.BytesIO(b'then'))
+
+        pipeline.when(lambda a: True, then_op)
+        results = list(pipeline.process(asset))
+
+        assert results[0].essence.read() == b'then'
+
+    def test_when_applies_else_if_predicate_is_false(self, pipeline, asset):
+        def then_op(a):
+            return Asset(io.BytesIO(b'then'))
+
+        def else_op(a):
+            return Asset(io.BytesIO(b'else'))
+
+        pipeline.when(lambda a: False, then_op, else_op)
+        results = list(pipeline.process(asset))
+
+        assert results[0].essence.read() == b'else'
+
+    def test_when_passes_through_if_predicate_is_false_and_no_else(self, pipeline):
+        asset = Asset(io.BytesIO(b'original'))
+
+        def then_op(a):
+            return Asset(io.BytesIO(b'then'))
+
+        pipeline.when(lambda a: False, then_op)
+        results = list(pipeline.process(asset))
+
+        assert results[0].essence.read() == b'original'
+
+    def test_when_step_is_recorded_in_operators(self, pipeline, asset):
+        pipeline.when(lambda a: True, lambda a: a)
+
+        assert len(pipeline.operators) == 1
+
 
 class TestErrorHierarchy:
     def test_transient_operator_error_is_subclass_of_operator_error(self):
         from madam.core import OperatorError, TransientOperatorError
+
         assert issubclass(TransientOperatorError, OperatorError)
 
     def test_permanent_operator_error_is_subclass_of_operator_error(self):
         from madam.core import OperatorError, PermanentOperatorError
+
         assert issubclass(PermanentOperatorError, OperatorError)
 
     def test_unsupported_format_error_is_subclass_of_permanent_operator_error(self):
         from madam.core import PermanentOperatorError, UnsupportedFormatError
+
         assert issubclass(UnsupportedFormatError, PermanentOperatorError)
 
     def test_transient_operator_error_can_be_raised_and_caught_as_operator_error(self):
         from madam.core import OperatorError, TransientOperatorError
+
         with pytest.raises(OperatorError):
             raise TransientOperatorError('disk full')
 
     def test_permanent_operator_error_can_be_raised_and_caught_as_operator_error(self):
         from madam.core import OperatorError, PermanentOperatorError
+
         with pytest.raises(OperatorError):
             raise PermanentOperatorError('bad codec')
 
@@ -324,6 +395,7 @@ class TestAssetGetattr:
         """Even if metadata contains a dunder key, accessing it raises AttributeError."""
         # Construct the metadata dict manually to bypass normal guards.
         from frozendict import frozendict
+
         asset = Asset.__new__(Asset)
         object.__setattr__(asset, '_essence_data', b'')
         object.__setattr__(asset, 'metadata', frozendict({'__len__': lambda: 42}))
@@ -360,6 +432,7 @@ class TestAssetFromBytes:
 
     def test_from_bytes_content_id_matches(self):
         import hashlib
+
         data = b'check bytes'
         asset = Asset._from_bytes(data)
         assert asset.content_id == hashlib.sha256(data).hexdigest()
@@ -370,10 +443,12 @@ class TestAssetFromBytes:
 
     def test_from_bytes_does_not_read_stream(self):
         calls = []
+
         class CountingBytesIO(io.BytesIO):
             def read(self, *args, **kwargs):
                 calls.append(1)
                 return super().read(*args, **kwargs)
+
         # _from_bytes should bypass stream reads entirely
         data = b'skip read'
         Asset._from_bytes(data)
@@ -402,6 +477,7 @@ class TestAssetContentId:
 
     def test_content_id_is_sha256_of_essence(self):
         import hashlib
+
         data = b'check me'
         asset = Asset(io.BytesIO(data))
         expected = hashlib.sha256(data).hexdigest()
@@ -433,6 +509,7 @@ class TestLazyAssetContentId:
 
     def test_content_id_is_correct_hash(self):
         import hashlib
+
         data = b'lazy bytes'
         asset = self._make_lazy_asset(data)
         expected = hashlib.sha256(data).hexdigest()
@@ -445,9 +522,7 @@ class TestLazyAssetContentId:
         _ = asset.content_id
         _ = asset.content_id  # second access — must NOT trigger another loader call
 
-        assert len(asset._loader_calls) == 1, (
-            f'Expected loader called once, got {len(asset._loader_calls)} calls'
-        )
+        assert len(asset._loader_calls) == 1, f'Expected loader called once, got {len(asset._loader_calls)} calls'
 
     def test_content_id_is_stable_across_accesses(self):
         data = b'stable'
@@ -548,10 +623,7 @@ class TestInMemoryStorageThreadSafety:
                 except Exception as exc:  # noqa: BLE001
                     errors.append(exc)
 
-        threads = [
-            threading.Thread(target=deleter, args=(list(range(i, 100, 4)),))
-            for i in range(4)
-        ]
+        threads = [threading.Thread(target=deleter, args=(list(range(i, 100, 4)),)) for i in range(4)]
         for t in threads:
             t.start()
         for t in threads:
