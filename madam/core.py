@@ -614,7 +614,24 @@ class Madam:
             except UnsupportedFormatError:
                 stripped.seek(0)
 
-        # Pass 3: construct exactly one clean Asset using the fast-path constructor.
+        # Pass 3: normalize the most authoritative creation timestamp into a
+        # top-level 'created_at' key (ISO 8601 string).  Sources are checked
+        # in priority order: EXIF > XMP > FFmpeg container metadata.
+        created_at: str | None = None
+        exif = asset_metadata.get('exif', {})
+        dt = exif.get('datetime_original') or exif.get('datetime_digitized')
+        if dt is not None:
+            created_at = dt.strftime('%Y-%m-%dT%H:%M:%S')
+        if created_at is None:
+            xmp = asset_metadata.get('xmp', {})
+            created_at = xmp.get('create_date')
+        if created_at is None:
+            ffmeta = asset_metadata.get('ffmetadata', {})
+            created_at = ffmeta.get('creation_time')
+        if created_at is not None:
+            asset_metadata['created_at'] = created_at
+
+        # Pass 4: apply caller-supplied overrides and construct the final asset.
         if additional_metadata:
             asset_metadata.update(additional_metadata)
         return Asset._from_bytes(stripped.read(), **asset_metadata)

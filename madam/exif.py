@@ -43,6 +43,8 @@ class ExifMetadataProcessor(MetadataProcessor):
             'brightness': ('Exif', piexif.ExifIFD.BrightnessValue),
             'camera.manufacturer': ('0th', piexif.ImageIFD.Make),
             'camera.model': ('0th', piexif.ImageIFD.Model),
+            'datetime_digitized': ('Exif', piexif.ExifIFD.DateTimeDigitized),
+            'datetime_original': ('Exif', piexif.ExifIFD.DateTimeOriginal),
             'description': ('0th', piexif.ImageIFD.ImageDescription),
             'exposure_time': ('Exif', piexif.ExifIFD.ExposureTime),
             'firmware': ('0th', piexif.ImageIFD.Software),
@@ -78,6 +80,10 @@ class ExifMetadataProcessor(MetadataProcessor):
         lambda exif_val: datetime.datetime.strptime(exif_val.decode('utf-8'), '%Y:%m:%d').date(),
         lambda value: value.strftime('%Y:%m:%d'),
     )
+    __DATETIME = (
+        lambda exif_val: datetime.datetime.strptime(exif_val.decode('utf-8'), '%Y:%m:%d %H:%M:%S'),
+        lambda value: value.strftime('%Y:%m:%d %H:%M:%S').encode('utf-8'),
+    )
     __TIME = (
         lambda exif_val: datetime.time(*map(lambda v: round(float(Fraction(*v))), exif_val)),
         lambda value: ((value.hour, 1), (value.minute, 1), (value.second, 1)),
@@ -89,6 +95,8 @@ class ExifMetadataProcessor(MetadataProcessor):
         'brightness': __RATIONAL,
         'camera.manufacturer': __STRING,
         'camera.model': __STRING,
+        'datetime_digitized': __DATETIME,
+        'datetime_original': __DATETIME,
         'description': __STRING,
         'exposure_time': __RATIONAL,
         'firmware': __STRING,

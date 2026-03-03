@@ -233,6 +233,8 @@ class TestMadam:
     def test_contains_set_of_all_metadata_processors_by_default(self, manager):
         assert manager.metadata_processors == {
             'madam.exif.ExifMetadataProcessor',
+            'madam.iptc.IPTCMetadataProcessor',
+            'madam.xmp.XMPMetadataProcessor',
             'madam.vector.SVGMetadataProcessor',
             'madam.ffmpeg.FFmpegMetadataProcessor',
         }
@@ -266,3 +268,31 @@ class TestMadam:
             manager = Madam()
 
         assert 'madam.exif.ExifMetadataProcessor' not in manager.metadata_processors
+
+    def test_read_sets_created_at_from_exif_datetime_original(self):
+        """Madam.read() must extract a top-level created_at from EXIF DateTimeOriginal."""
+        manager = Madam()
+        with open('tests/resources/image_with_exif.jpg', 'rb') as f:
+            asset = manager.read(f)
+
+        # image_with_exif.jpg has DateTimeOriginal = 2014:05:24 19:35:30
+        assert hasattr(asset, 'created_at')
+        assert asset.created_at == '2014-05-24T19:35:30'
+
+    def test_read_sets_created_at_from_xmp_create_date(self):
+        """Madam.read() must fall back to XMP CreateDate when no EXIF datetime is present."""
+        manager = Madam()
+        with open('tests/resources/image_with_xmp.jpg', 'rb') as f:
+            asset = manager.read(f)
+
+        # image_with_xmp.jpg has xmp:CreateDate = 2024-01-15T10:30:00
+        assert hasattr(asset, 'created_at')
+        assert asset.created_at == '2024-01-15T10:30:00'
+
+    def test_read_does_not_set_created_at_when_no_timestamp_available(self, png_image_asset):
+        """Madam.read() must not add created_at when no creation timestamp can be found."""
+        manager = Madam()
+
+        asset = manager.read(png_image_asset.essence)
+
+        assert not hasattr(asset, 'created_at')
