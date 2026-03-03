@@ -52,6 +52,9 @@ pdf = [
 raw = [
     "rawpy>=0.26.1",
 ]
+analysis = [
+    "ssimulacra2>=0.3.0",
+]
 
 [tool.setuptools_scm]
 write_to = "madam/_version.py"

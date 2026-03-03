@@ -54,15 +54,15 @@ def _resolve_gravity(
         'south': canvas_height - source_height,
     }
     gravity_map: dict[str, tuple[int, int]] = {
-        'north_west': (h_offsets['west'],   v_offsets['north']),
-        'north':      (h_offsets['center'], v_offsets['north']),
-        'north_east': (h_offsets['east'],   v_offsets['north']),
-        'west':       (h_offsets['west'],   v_offsets['center']),
-        'center':     (h_offsets['center'], v_offsets['center']),
-        'east':       (h_offsets['east'],   v_offsets['center']),
-        'south_west': (h_offsets['west'],   v_offsets['south']),
-        'south':      (h_offsets['center'], v_offsets['south']),
-        'south_east': (h_offsets['east'],   v_offsets['south']),
+        'north_west': (h_offsets['west'], v_offsets['north']),
+        'north': (h_offsets['center'], v_offsets['north']),
+        'north_east': (h_offsets['east'], v_offsets['north']),
+        'west': (h_offsets['west'], v_offsets['center']),
+        'center': (h_offsets['center'], v_offsets['center']),
+        'east': (h_offsets['east'], v_offsets['center']),
+        'south_west': (h_offsets['west'], v_offsets['south']),
+        'south': (h_offsets['center'], v_offsets['south']),
+        'south_east': (h_offsets['east'], v_offsets['south']),
     }
     if gravity not in gravity_map:
         raise ValueError(f'Unknown gravity: {gravity!r}')
@@ -294,8 +294,7 @@ class PillowProcessor(Processor):
         for key in format_config:
             if key not in valid_keys:
                 warnings.warn(
-                    f'Unknown config key {key!r} for format {mime_type}. '
-                    f'Valid keys: {sorted(valid_keys)}',
+                    f'Unknown config key {key!r} for format {mime_type}. Valid keys: {sorted(valid_keys)}',
                     UserWarning,
                     stacklevel=4,
                 )
@@ -586,8 +585,10 @@ class PillowProcessor(Processor):
 
             if x == 0 and y == 0:
                 x, y = _resolve_gravity(
-                    base_rgba.width, base_rgba.height,
-                    overlay_rgba.width, overlay_rgba.height,
+                    base_rgba.width,
+                    base_rgba.height,
+                    overlay_rgba.width,
+                    overlay_rgba.height,
                     gravity,
                 )
 
@@ -660,9 +661,7 @@ class PillowProcessor(Processor):
         :raises OperatorError: If the canvas is smaller than the source image
         """
         if width < asset.width or height < asset.height:
-            raise OperatorError(
-                f'Canvas ({width}×{height}) is smaller than source ({asset.width}×{asset.height})'
-            )
+            raise OperatorError(f'Canvas ({width}×{height}) is smaller than source ({asset.width}×{asset.height})')
         mime_type = MimeType(asset.mime_type)
         with PIL.Image.open(asset.essence) as image:
             canvas_mode = 'RGBA' if len(color) == 4 else 'RGB'
@@ -935,9 +934,7 @@ class PillowProcessor(Processor):
         :raises OperatorError: If the crop dimensions exceed the source dimensions
         """
         if width > asset.width or height > asset.height:
-            raise OperatorError(
-                f'Crop size ({width}x{height}) exceeds source size ({asset.width}x{asset.height})'
-            )
+            raise OperatorError(f'Crop size ({width}x{height}) exceeds source size ({asset.width}x{asset.height})')
 
         # Pixel coordinates of the focal point
         fx = round(focal_x * (asset.width - 1))
@@ -1059,6 +1056,151 @@ class PillowProcessor(Processor):
 
         with frame_image:
             return self._image_to_asset(frame_image, mime_type=asset.mime_type)
+
+    # Output formats that accept a Pillow ``quality`` keyword argument.
+    _LOSSY_FORMATS = frozenset(
+        {
+            MimeType('image/jpeg'),
+            MimeType('image/webp'),
+            MimeType('image/avif'),
+        }
+    )
+
+    @operator
+    def optimize_quality(
+        self,
+        asset: Asset,
+        min_ssim_score: float = 80.0,
+        mime_type: 'str | MimeType | None' = None,
+        min_quality: int = 20,
+        max_quality: int = 95,
+    ) -> Asset:
+        """
+        Re-encodes *asset* at the lowest quality whose SSIMULACRA2 score against
+        the original is at least *min_ssim_score*.
+
+        SSIMULACRA2 is a perceptual quality metric in (−∞, 100] where 100 means
+        identical.  Typical thresholds: ≥ 90 nearly imperceptible, ≥ 80 good
+        quality, ≥ 70 acceptable.
+
+        The operator binary-searches quality values in
+        [*min_quality*, *max_quality*] (Pillow ``quality`` scale, 1–95) and
+        returns the highest-compression encoding that still meets the score
+        threshold.  If no quality value satisfies the constraint the result is
+        encoded at *max_quality* (best achievable).
+
+        Accepts lossless source formats (PNG, TIFF, …) when *mime_type* names a
+        lossy target format.  Requires the ``ssimulacra2`` optional dependency
+        (``pip install "madam[analysis]"``).
+
+        Supported output formats: JPEG, WebP, AVIF.
+
+        :param asset: Source image asset (any format readable by Pillow)
+        :param min_ssim_score: Minimum acceptable SSIMULACRA2 score (default 80.0)
+        :param mime_type: Output MIME type; defaults to the asset's own MIME type
+        :param min_quality: Lower bound for Pillow quality value (1–95)
+        :param max_quality: Upper bound for Pillow quality value (1–95)
+        :return: Re-encoded image asset
+        :raises OperatorError: if the target format does not support
+            quality-based compression, or if ssimulacra2 is not installed
+        """
+        try:
+            import ssimulacra2 as _s2_check  # noqa: F401
+        except ImportError as exc:
+            raise OperatorError('optimize_quality requires ssimulacra2: pip install "madam[analysis]"') from exc
+
+        target_mime = MimeType(mime_type) if mime_type is not None else MimeType(asset.mime_type)
+        if target_mime not in PillowProcessor._LOSSY_FORMATS:
+            raise OperatorError(
+                f'optimize_quality requires a lossy output format (JPEG, WebP, or AVIF); '
+                f'got {target_mime} — pass mime_type= to specify the output format'
+            )
+
+        pil_format = PillowProcessor.__mime_type_to_pillow_type[target_mime]
+        base_opts: dict = {}
+        if target_mime == MimeType('image/jpeg'):
+            base_opts = {'optimize': True, 'progressive': True}
+        elif target_mime == MimeType('image/webp'):
+            base_opts = {'method': 6}
+
+        with PIL.Image.open(asset.essence) as _src:
+            _src.load()
+            original_rgb = _src.convert('RGB')
+
+        def _encode(quality: int) -> bytes:
+            buf = io.BytesIO()
+            original_rgb.save(buf, pil_format, quality=quality, **base_opts)
+            return buf.getvalue()
+
+        def _score(quality: int) -> float:
+            decoded = PIL.Image.open(io.BytesIO(_encode(quality)))
+            decoded.load()
+            return _ssimulacra2_score(original_rgb, decoded)
+
+        lo, hi = min_quality, max_quality
+        best_quality = max_quality  # fallback: best available when nothing meets threshold
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            if _score(mid) >= min_ssim_score:
+                best_quality = mid
+                hi = mid - 1  # acceptable — try lower quality (more compression)
+            else:
+                lo = mid + 1  # score too low — need higher quality
+
+        result_buf = io.BytesIO(_encode(best_quality))
+        return self.read(result_buf)
+
+
+def _ssimulacra2_score(img_a: PIL.Image.Image, img_b: PIL.Image.Image) -> float:
+    """Compute an SSIMULACRA2 score between two PIL images without temporary files.
+
+    Uses the ``ssimulacra2`` library's internal functions directly with numpy
+    arrays to avoid disk I/O.  Both images are converted to RGB before scoring.
+
+    :param img_a: Reference (original) image
+    :param img_b: Distorted (compressed) image
+    :return: SSIMULACRA2 score in (−∞, 100] where 100 means identical;
+        typical thresholds: ≥ 90 nearly imperceptible, ≥ 80 good quality
+    :raises ImportError: if ssimulacra2 is not installed
+    """
+    import numpy as np
+    from ssimulacra2.ssimulacra2 import (
+        Msssim,
+        MsssimScale,
+        blur_image,
+        downsample,
+        edge_diff_map,
+        kNumScales,
+        linear_rgb_to_xyb,
+        make_positive_xyb,
+        srgb_to_linear,
+        ssim_map,
+    )
+
+    orig_arr = np.array(img_a.convert('RGB'), dtype=np.float64)
+    dist_arr = np.array(img_b.convert('RGB'), dtype=np.float64)
+
+    orig_linear = srgb_to_linear(orig_arr)
+    dist_linear = srgb_to_linear(dist_arr)
+    img1 = make_positive_xyb(linear_rgb_to_xyb(orig_linear))
+    img2 = make_positive_xyb(linear_rgb_to_xyb(dist_linear))
+
+    msssim = Msssim()
+    for scale in range(kNumScales):
+        if img1.shape[0] < 8 or img1.shape[1] < 8:
+            break
+        mu1, mu2 = blur_image(img1), blur_image(img2)
+        sd = MsssimScale()
+        sd.avg_ssim = ssim_map(mu1, mu2, blur_image(img1 * img1), blur_image(img2 * img2), blur_image(img1 * img2))
+        sd.avg_edgediff = edge_diff_map(img1, mu1, img2, mu2)
+        msssim.scales.append(sd)
+        if scale < kNumScales - 1:
+            orig_linear = downsample(orig_linear, 2, 2)
+            dist_linear = downsample(dist_linear, 2, 2)
+            img1 = make_positive_xyb(linear_rgb_to_xyb(orig_linear))
+            img2 = make_positive_xyb(linear_rgb_to_xyb(dist_linear))
+
+    return msssim.score()
 
 
 def render_text(

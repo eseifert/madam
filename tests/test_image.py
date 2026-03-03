@@ -94,17 +94,18 @@ class TestPillowProcessor:
         assert result.width == 9
         assert result.height == 10
 
-    @pytest.mark.parametrize('gravity,x_sample,expected_pixel_column', [
-        # Source: 20x10 image, left half white, right half black.
-        # Scaled to fill 10x10 doubles width → 20x10 (height already fits).
-        # west gravity crops from left  → white column at x=0
-        # east gravity crops from right → black column at x=0 of the crop
-        ('west', 0, (255, 255, 255)),
-        ('east', 0, (0, 0, 0)),
-    ])
-    def test_resize_in_fill_mode_gravity_selects_crop_region(
-        self, processor, gravity, x_sample, expected_pixel_column
-    ):
+    @pytest.mark.parametrize(
+        'gravity,x_sample,expected_pixel_column',
+        [
+            # Source: 20x10 image, left half white, right half black.
+            # Scaled to fill 10x10 doubles width → 20x10 (height already fits).
+            # west gravity crops from left  → white column at x=0
+            # east gravity crops from right → black column at x=0 of the crop
+            ('west', 0, (255, 255, 255)),
+            ('east', 0, (0, 0, 0)),
+        ],
+    )
+    def test_resize_in_fill_mode_gravity_selects_crop_region(self, processor, gravity, x_sample, expected_pixel_column):
         # Build a 20x10 PNG: left half white, right half black
         image = PIL.Image.new('RGB', (20, 10), (0, 0, 0))
         for y in range(10):
@@ -114,13 +115,17 @@ class TestPillowProcessor:
         image.save(essence, 'PNG')
         essence.seek(0)
         asset = madam.core.Asset(
-            essence, mime_type='image/png', width=20, height=10,
-            color_space='RGB', depth=8, data_type='uint',
+            essence,
+            mime_type='image/png',
+            width=20,
+            height=10,
+            color_space='RGB',
+            depth=8,
+            data_type='uint',
         )
         # Resize to 10x10 fill — the image already fills height; width is
         # cropped. west keeps left (white), east keeps right (black).
-        result = processor.resize(width=10, height=10, mode=madam.image.ResizeMode.FILL,
-                                  gravity=gravity)(asset)
+        result = processor.resize(width=10, height=10, mode=madam.image.ResizeMode.FILL, gravity=gravity)(asset)
         assert result.width == 10
         assert result.height == 10
         with PIL.Image.open(result.essence) as img:
@@ -359,12 +364,15 @@ class TestPillowProcessor:
         assert result.width == 10
         assert result.height == 10
 
-    @pytest.mark.parametrize('gravity,expected_pixel', [
-        # Source: 20x20, white left half, black right half.
-        # Crop 10x20 using gravity — west takes left (white), east takes right (black).
-        ('west',  (255, 255, 255)),
-        ('east',  (0, 0, 0)),
-    ])
+    @pytest.mark.parametrize(
+        'gravity,expected_pixel',
+        [
+            # Source: 20x20, white left half, black right half.
+            # Crop 10x20 using gravity — west takes left (white), east takes right (black).
+            ('west', (255, 255, 255)),
+            ('east', (0, 0, 0)),
+        ],
+    )
     def test_crop_with_gravity_selects_correct_region(self, processor, gravity, expected_pixel):
         image = PIL.Image.new('RGB', (20, 20), (0, 0, 0))
         for y in range(20):
@@ -374,8 +382,13 @@ class TestPillowProcessor:
         image.save(essence, 'PNG')
         essence.seek(0)
         asset = madam.core.Asset(
-            essence, mime_type='image/png', width=20, height=20,
-            color_space='RGB', depth=8, data_type='uint',
+            essence,
+            mime_type='image/png',
+            width=20,
+            height=20,
+            color_space='RGB',
+            depth=8,
+            data_type='uint',
         )
         result = processor.crop(width=10, height=20, gravity=gravity)(asset)
         with PIL.Image.open(result.essence) as img:
@@ -458,8 +471,13 @@ class TestPillowCropToFocalPoint:
         image.save(essence, 'PNG')
         essence.seek(0)
         asset = madam.core.Asset(
-            essence, mime_type='image/png', width=40, height=10,
-            color_space='RGB', depth=8, data_type='uint',
+            essence,
+            mime_type='image/png',
+            width=40,
+            height=10,
+            color_space='RGB',
+            depth=8,
+            data_type='uint',
         )
         result = processor.crop_to_focal_point(width=10, height=10, focal_x=0.5, focal_y=0.5)(asset)
         with PIL.Image.open(result.essence) as img:
@@ -528,8 +546,13 @@ class TestPillowApplyMask:
         image.save(essence, 'PNG')
         essence.seek(0)
         return madam.core.Asset(
-            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-            color_space='LUMA', depth=8, data_type='uint',
+            essence,
+            mime_type='image/png',
+            width=DEFAULT_WIDTH,
+            height=DEFAULT_HEIGHT,
+            color_space='LUMA',
+            depth=8,
+            data_type='uint',
         )
 
     def test_apply_mask_preserves_dimensions(self, processor):
@@ -673,8 +696,13 @@ class TestPillowFillBackground:
         image.save(essence, 'PNG')
         essence.seek(0)
         asset = madam.core.Asset(
-            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-            color_space='RGBA', depth=8, data_type='uint',
+            essence,
+            mime_type='image/png',
+            width=DEFAULT_WIDTH,
+            height=DEFAULT_HEIGHT,
+            color_space='RGBA',
+            depth=8,
+            data_type='uint',
         )
         result = processor.fill_background(color=(0, 255, 0))(asset)
         with PIL.Image.open(result.essence) as image:
@@ -687,8 +715,13 @@ class TestPillowFillBackground:
         image.save(essence, 'PNG')
         essence.seek(0)
         asset = madam.core.Asset(
-            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-            color_space='RGBA', depth=8, data_type='uint',
+            essence,
+            mime_type='image/png',
+            width=DEFAULT_WIDTH,
+            height=DEFAULT_HEIGHT,
+            color_space='RGBA',
+            depth=8,
+            data_type='uint',
         )
         result = processor.fill_background(color=(0, 0, 255))(asset)
         with PIL.Image.open(result.essence) as image:
@@ -719,13 +752,16 @@ class TestPillowPad:
             # Right half should be blue (fill colour)
             assert image.getpixel((7, 2)) == (0, 0, 255)
 
-    @pytest.mark.parametrize('gravity,expected_origin', [
-        ('north_west', (0, 0)),
-        ('north_east', (10, 0)),
-        ('south_west', (0, 10)),
-        ('south_east', (10, 10)),
-        ('center',     (5, 5)),
-    ])
+    @pytest.mark.parametrize(
+        'gravity,expected_origin',
+        [
+            ('north_west', (0, 0)),
+            ('north_east', (10, 0)),
+            ('south_west', (0, 10)),
+            ('south_east', (10, 10)),
+            ('center', (5, 5)),
+        ],
+    )
     def test_pad_gravity_positions_source_correctly(self, processor, gravity, expected_origin):
         # Source: 10x10 white; canvas: 20x20 black
         asset = _solid_png_asset((255, 255, 255), width=10, height=10)
@@ -859,8 +895,13 @@ class TestPillowSharpen:
         image.save(essence, 'PNG')
         essence.seek(0)
         asset = madam.core.Asset(
-            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-            color_space='RGB', depth=8, data_type='uint',
+            essence,
+            mime_type='image/png',
+            width=DEFAULT_WIDTH,
+            height=DEFAULT_HEIGHT,
+            color_space='RGB',
+            depth=8,
+            data_type='uint',
         )
         result = processor.sharpen()(asset)
         with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
@@ -891,8 +932,13 @@ class TestPillowBlur:
         image.save(essence, 'PNG')
         essence.seek(0)
         asset = madam.core.Asset(
-            essence, mime_type='image/png', width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT,
-            color_space='RGB', depth=8, data_type='uint',
+            essence,
+            mime_type='image/png',
+            width=DEFAULT_WIDTH,
+            height=DEFAULT_HEIGHT,
+            color_space='RGB',
+            depth=8,
+            data_type='uint',
         )
         result = processor.blur(radius=3)(asset)
         with PIL.Image.open(result.essence) as r, PIL.Image.open(asset.essence) as s:
@@ -1140,3 +1186,66 @@ class TestPillowAnimatedFrames:
     def test_extract_frame_webp_returns_png(self, processor, animated_webp_asset):
         frame_asset = processor.extract_frame(frame=0)(animated_webp_asset)
         assert frame_asset.mime_type == 'image/webp'
+
+
+class TestPillowOptimizeQuality:
+    @pytest.fixture(name='processor', scope='class')
+    def pillow_processor(self):
+        pytest.importorskip('ssimulacra2')
+        return madam.image.PillowProcessor()
+
+    @pytest.fixture(name='source_asset', scope='class')
+    def source_asset_fixture(self):
+        # 256×256 RGB gradient PNG (lossless) — varied content for SSIMULACRA2 measurement.
+        image = PIL.Image.new('RGB', (256, 256))
+        pixels = image.load()
+        for x in range(256):
+            for y in range(256):
+                pixels[x, y] = (x, y, (x + y) % 256)
+        buf = io.BytesIO()
+        image.save(buf, 'PNG')
+        buf.seek(0)
+        return madam.image.PillowProcessor().read(buf)
+
+    def test_optimize_quality_returns_asset(self, processor, source_asset):
+        result = processor.optimize_quality(min_ssim_score=80.0, mime_type='image/jpeg')(source_asset)
+
+        assert isinstance(result, madam.core.Asset)
+
+    def test_optimize_quality_preserves_dimensions(self, processor, source_asset):
+        result = processor.optimize_quality(min_ssim_score=80.0, mime_type='image/jpeg')(source_asset)
+
+        assert result.width == source_asset.width
+        assert result.height == source_asset.height
+
+    def test_optimize_quality_produces_jpeg(self, processor, source_asset):
+        result = processor.optimize_quality(min_ssim_score=80.0, mime_type='image/jpeg')(source_asset)
+
+        assert result.mime_type == 'image/jpeg'
+
+    def test_optimize_quality_produces_webp(self, processor, source_asset):
+        result = processor.optimize_quality(min_ssim_score=80.0, mime_type='image/webp')(source_asset)
+
+        assert result.mime_type == 'image/webp'
+
+    def test_optimize_quality_satisfies_ssim_score(self, processor, source_asset):
+        min_score = 80.0
+        result = processor.optimize_quality(min_ssim_score=min_score, mime_type='image/jpeg')(source_asset)
+
+        source_asset.essence.seek(0)
+        original_img = PIL.Image.open(source_asset.essence).convert('RGB')
+        result_img = PIL.Image.open(result.essence).convert('RGB')
+        score = madam.image._ssimulacra2_score(original_img, result_img)
+        assert score >= min_score
+
+    def test_optimize_quality_higher_score_threshold_yields_larger_file(self, processor, source_asset):
+        # Higher minimum SSIM score → higher encoding quality → larger output file.
+        strict = processor.optimize_quality(min_ssim_score=90.0, mime_type='image/jpeg')(source_asset)
+        lenient = processor.optimize_quality(min_ssim_score=70.0, mime_type='image/jpeg')(source_asset)
+
+        assert len(strict.essence.read()) >= len(lenient.essence.read())
+
+    def test_optimize_quality_raises_when_target_format_is_lossless(self, processor, source_asset):
+        # Source is PNG; no mime_type → target defaults to image/png → OperatorError.
+        with pytest.raises(OperatorError):
+            processor.optimize_quality(min_ssim_score=80.0)(source_asset)
