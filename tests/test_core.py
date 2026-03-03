@@ -1,5 +1,6 @@
 import glob
 import io
+import threading
 import unittest.mock
 
 import pytest
@@ -502,3 +503,58 @@ class TestIndexedAssetStorage:
         result = list(storage.filter(width=10))
 
         assert result == []
+
+
+class TestInMemoryStorageThreadSafety:
+    def test_storage_has_reentrant_lock(self):
+        storage = InMemoryStorage()
+
+        assert hasattr(storage, '_lock')
+        assert isinstance(storage._lock, type(threading.RLock()))
+
+    def test_concurrent_writes_preserve_all_entries(self):
+        storage = InMemoryStorage()
+        errors: list[Exception] = []
+
+        def writer(start: int) -> None:
+            try:
+                for i in range(20):
+                    key = start + i
+                    storage[key] = Asset(io.BytesIO(b'x'), width=key), frozenset()
+            except Exception as exc:  # noqa: BLE001
+                errors.append(exc)
+
+        threads = [threading.Thread(target=writer, args=(n * 20,)) for n in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert not errors
+        assert len(storage) == 200
+
+    def test_concurrent_deletes_are_safe(self):
+        storage = InMemoryStorage()
+        for i in range(100):
+            storage[i] = Asset(io.BytesIO(b'x')), frozenset()
+        errors: list[Exception] = []
+
+        def deleter(keys: list[int]) -> None:
+            for key in keys:
+                try:
+                    del storage[key]
+                except KeyError:
+                    pass  # Already deleted by another thread — acceptable.
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(exc)
+
+        threads = [
+            threading.Thread(target=deleter, args=(list(range(i, 100, 4)),))
+            for i in range(4)
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert not errors

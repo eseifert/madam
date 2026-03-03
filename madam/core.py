@@ -7,6 +7,7 @@ import json
 import os
 import shelve
 import shutil
+import threading
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, MutableMapping, MutableSequence
 from pathlib import Path
 from typing import IO, Any, Generic, TypeVar
@@ -786,6 +787,7 @@ class InMemoryStorage(IndexedAssetStorage[Any]):
         Initializes a new, empty `InMemoryStorage` object.
         """
         super().__init__()
+        self._lock = threading.RLock()
         self.store: dict[Any, tuple[Asset, AssetTags]] = {}
 
     def __setitem__(self, asset_key: AssetKey, asset_and_tags: tuple[Asset, AssetTags]):
@@ -805,11 +807,12 @@ class InMemoryStorage(IndexedAssetStorage[Any]):
         asset, tags = asset_and_tags
         if not tags:
             tags = frozenset()
-        # Deindex old asset if replacing an existing key.
-        if asset_key in self.store:
-            self._deindex_asset(asset_key, self.store[asset_key][0])
-        self.store[asset_key] = asset, frozenset(tags)
-        self._index_asset(asset_key, asset)
+        with self._lock:
+            # Deindex old asset if replacing an existing key.
+            if asset_key in self.store:
+                self._deindex_asset(asset_key, self.store[asset_key][0])
+            self.store[asset_key] = asset, frozenset(tags)
+            self._index_asset(asset_key, asset)
 
     def __getitem__(self, asset_key: AssetKey) -> tuple[Asset, AssetTags]:
         """
@@ -823,9 +826,10 @@ class InMemoryStorage(IndexedAssetStorage[Any]):
         :rtype: Tuple[Asset, Set[str]]
         :raise KeyError: if the key does not exist in this storage
         """
-        if asset_key not in self.store:
-            raise KeyError(f'Asset with key {asset_key!r} cannot be found in storage')
-        return self.store[asset_key]
+        with self._lock:
+            if asset_key not in self.store:
+                raise KeyError(f'Asset with key {asset_key!r} cannot be found in storage')
+            return self.store[asset_key]
 
     def __delitem__(self, asset_key: AssetKey) -> None:
         """
@@ -835,10 +839,11 @@ class InMemoryStorage(IndexedAssetStorage[Any]):
         :param asset_key: Key of the asset to be removed
         :raise KeyError: if the key does not exist in this storage
         """
-        if asset_key not in self.store:
-            raise KeyError(f'Asset with key {asset_key!r} cannot be found in storage')
-        self._deindex_asset(asset_key, self.store[asset_key][0])
-        del self.store[asset_key]
+        with self._lock:
+            if asset_key not in self.store:
+                raise KeyError(f'Asset with key {asset_key!r} cannot be found in storage')
+            self._deindex_asset(asset_key, self.store[asset_key][0])
+            del self.store[asset_key]
 
     def __contains__(self, asset_key: AssetKey) -> bool:
         """
@@ -849,7 +854,8 @@ class InMemoryStorage(IndexedAssetStorage[Any]):
         :return: `True` if the key exists, `False` otherwise
         :rtype: bool
         """
-        return asset_key in self.store
+        with self._lock:
+            return asset_key in self.store
 
     def __iter__(self) -> Iterator[AssetKey]:
         """
@@ -858,7 +864,8 @@ class InMemoryStorage(IndexedAssetStorage[Any]):
 
         :return: Iterator object
         """
-        return iter(list(self.store.keys()))
+        with self._lock:
+            return iter(list(self.store.keys()))
 
     def __len__(self) -> int:
         """
@@ -867,7 +874,8 @@ class InMemoryStorage(IndexedAssetStorage[Any]):
         :return: Number of assets in this storage
         :rtype: int
         """
-        return len(self.store)
+        with self._lock:
+            return len(self.store)
 
 
 class ShelveStorage(AssetStorage[str]):
