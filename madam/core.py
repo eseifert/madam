@@ -469,13 +469,26 @@ class Madam:
         self.config: dict[str, Any] = dict(config) if config else {}
 
         # Initialize processors
+        # Order matters: more specific processors must come before general-purpose
+        # ones.  PillowProcessor handles still-image formats (including AVIF) and
+        # must be checked before FFmpegProcessor, which also accepts AVIF via the
+        # MP4/ISOBMFF container and would misidentify it as video/quicktime.
         self.processors = {
             'madam.image.PillowProcessor',
             'madam.vector.SVGProcessor',
             'madam.ffmpeg.FFmpegProcessor',
         }
+        _processor_priority = [
+            'madam.image.PillowProcessor',
+            'madam.vector.SVGProcessor',
+            'madam.ffmpeg.FFmpegProcessor',
+        ]
+
+        def _proc_key(p: str) -> int:
+            return _processor_priority.index(p) if p in _processor_priority else len(_processor_priority)
+
         self._processors = []
-        for processor_path in set(self.processors):
+        for processor_path in sorted(self.processors, key=_proc_key):
             try:
                 processor_class = Madam._import_from(processor_path)
             except ImportError:
@@ -490,8 +503,20 @@ class Madam:
             'madam.vector.SVGMetadataProcessor',
             'madam.ffmpeg.FFmpegMetadataProcessor',
         }
+        _metadata_processor_priority = [
+            'madam.exif.ExifMetadataProcessor',
+            'madam.iptc.IPTCMetadataProcessor',
+            'madam.xmp.XMPMetadataProcessor',
+            'madam.vector.SVGMetadataProcessor',
+            'madam.ffmpeg.FFmpegMetadataProcessor',
+        ]
+
+        def _meta_key(p: str) -> int:
+            pri = _metadata_processor_priority
+            return pri.index(p) if p in pri else len(pri)
+
         self._metadata_processors = []
-        for processor_path in set(self.metadata_processors):
+        for processor_path in sorted(self.metadata_processors, key=_meta_key):
             try:
                 processor_class = Madam._import_from(processor_path)
             except ImportError:
