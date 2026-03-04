@@ -12,8 +12,6 @@ import io
 from collections.abc import Mapping
 from typing import IO, Any
 
-import pypdf
-
 from madam.core import Asset, OperatorError, Processor, operator
 
 _MIME_TYPE_TO_PIL_FORMAT: dict[str, str] = {
@@ -56,6 +54,10 @@ class PDFProcessor(Processor):
         :return: Asset with ``mime_type='application/pdf'`` and ``page_count``
         :rtype: Asset
         """
+        try:
+            import pypdf
+        except ImportError as e:
+            raise OperatorError('pypdf is required for reading PDFs; install the pdf extra') from e
         pdf_bytes = file.read()
         reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
         page_count = len(reader.pages)

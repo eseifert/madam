@@ -12,8 +12,6 @@ import io
 from collections.abc import Mapping
 from typing import IO, Any
 
-import rawpy
-
 from madam.core import Asset, OperatorError, Processor, operator
 
 _MIME_TYPE_TO_PIL_FORMAT: dict[str, str] = {
@@ -46,6 +44,10 @@ class RawImageProcessor(Processor):
         super().__init__(config)
 
     def can_read(self, file: IO) -> bool:
+        try:
+            import rawpy
+        except ImportError:
+            return False
         data = file.read()
         file.seek(0)
         try:
@@ -67,6 +69,10 @@ class RawImageProcessor(Processor):
         :return: Asset with ``mime_type='image/x-raw'``, ``width``, and ``height``
         :rtype: Asset
         """
+        try:
+            import rawpy
+        except ImportError as e:
+            raise OperatorError('rawpy is required for reading raw images; install the raw extra') from e
         raw_bytes = file.read()
         with rawpy.imread(io.BytesIO(raw_bytes)) as raw:
             width = raw.sizes.width
@@ -91,6 +97,10 @@ class RawImageProcessor(Processor):
         :rtype: Asset
         :raises OperatorError: if *mime_type* is not supported
         """
+        try:
+            import rawpy
+        except ImportError as e:
+            raise OperatorError('rawpy is required for decoding raw images; install the raw extra') from e
         import PIL.Image
 
         pil_format = _MIME_TYPE_TO_PIL_FORMAT.get(mime_type)
