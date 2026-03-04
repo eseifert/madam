@@ -88,6 +88,11 @@ class SVGProcessor(Processor):
     Represents a processor that handles *Scalable Vector Graphics* (SVG) data.
     """
 
+    @property
+    def supported_mime_types(self) -> frozenset:
+        from madam.mime import MimeType
+        return frozenset({MimeType('image/svg+xml')})
+
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `SVGProcessor`.

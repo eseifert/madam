@@ -431,6 +431,11 @@ class Processor(metaclass=abc.ABCMeta):
         """
         self.config: dict[str, Any] = dict(config) if config else {}
 
+    @property
+    def supported_mime_types(self) -> frozenset:
+        """MIME types this processor can handle (used to build the Madam index)."""
+        return frozenset()
+
     @abc.abstractmethod
     def can_read(self, file: IO) -> bool:
         """
@@ -603,6 +608,17 @@ class Madam:
             processor = processor_class(self.config)
             self._metadata_processors.append(processor)
 
+        # Build a MIME-type → processor index for O(1) lookup.
+        # The _processors list is already in priority order, so the first
+        # processor that claims a MIME type wins (e.g. PillowProcessor beats
+        # FFmpegProcessor for image/jpeg).
+        self._mime_type_to_processor: dict[str, Processor] = {}
+        for _proc in self._processors:
+            for _mt in _proc.supported_mime_types:
+                _key = str(_mt)
+                if _key not in self._mime_type_to_processor:
+                    self._mime_type_to_processor[_key] = _proc
+
     @staticmethod
     def _import_from(member_path: str):
         """
@@ -616,23 +632,42 @@ class Madam:
         member_class = getattr(module, member_name)
         return member_class
 
-    def get_processor(self, file: IO) -> 'Processor | None':
+    def get_processor(self, source: 'Asset | IO | str') -> 'Processor':
         """
-        Returns a processor that can read the data in the specified file.
-        If no suitable processor can be found None will be returned.
+        Returns a processor that can handle the given source.
 
-        :param file: file-like object to be parsed.
-        :type file: IO
-        :return: Processor object that can handle the data in the specified file,
-                 or None if no suitable processor could be found.
-        :rtype: Processor or None
+        Three calling forms are supported:
+
+        - ``get_processor(asset)`` — fast O(1) lookup by ``asset.mime_type``;
+          falls back to byte-probing the essence when the MIME type is not in
+          the index.
+        - ``get_processor('image/jpeg')`` — fast O(1) lookup by MIME type string.
+        - ``get_processor(file)`` — slow byte-probe loop (same as before).
+
+        :param source: An :class:`Asset`, a MIME type string, or a file-like object.
+        :raises UnsupportedFormatError: if no processor can handle the given source.
+        :return: Processor that can handle the source.
+        :rtype: Processor
         """
-        for processor in self._processors:
-            file.seek(0)
-            if processor.can_read(file):
-                file.seek(0)
+        if isinstance(source, Asset):
+            processor = self._mime_type_to_processor.get(str(source.mime_type))
+            if processor is not None:
                 return processor
-        return None
+            source = source.essence  # fall back to byte probe
+
+        if isinstance(source, str):
+            processor = self._mime_type_to_processor.get(source)
+            if processor is not None:
+                return processor
+            raise UnsupportedFormatError(f'No processor found for MIME type {source!r}')
+
+        # IO path: existing can_read() probe loop
+        for processor in self._processors:
+            source.seek(0)
+            if processor.can_read(source):
+                source.seek(0)
+                return processor
+        raise UnsupportedFormatError()
 
     def read(self, file: IO, additional_metadata: Mapping | None = None):
         r"""
@@ -662,9 +697,6 @@ class Madam:
             raise TypeError(f'Unable to read object of type {type(file)}')
 
         processor = self.get_processor(file)
-        if not processor:
-            raise UnsupportedFormatError()
-
         asset = processor.read(file)
         asset_metadata: dict[str, Any] = dict(asset.metadata)
 

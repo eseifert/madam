@@ -11,7 +11,7 @@ from assets import (
 )
 
 from madam import Madam
-from madam.core import Asset, UnsupportedFormatError
+from madam.core import Asset, Processor, UnsupportedFormatError
 
 
 class TestAsset:
@@ -55,14 +55,34 @@ class TestMadam:
         assert manager.config['foo'] == 'bar'
 
     def test_get_processor_returns_processor_for_readable_asset(self, manager, asset):
-        processor = manager.get_processor(asset.essence)
+        processor = manager.get_processor(asset)
 
         assert processor is not None
 
-    def test_get_processor_returns_none_for_unreadable_asset(self, manager, unknown_asset):
-        processor = manager.get_processor(unknown_asset.essence)
+    def test_get_processor_raises_for_unreadable_file(self, manager, unknown_asset):
+        with pytest.raises(UnsupportedFormatError):
+            manager.get_processor(unknown_asset.essence)
 
-        assert processor is None
+    def test_get_processor_accepts_asset(self, manager, asset):
+        processor = manager.get_processor(asset)
+
+        assert isinstance(processor, Processor)
+
+    def test_get_processor_accepts_mime_type_string(self, manager):
+        processor = manager.get_processor('image/jpeg')
+
+        assert isinstance(processor, Processor)
+
+    def test_get_processor_asset_matches_essence(self, manager, asset):
+        assert manager.get_processor(asset) is manager.get_processor(asset.essence)
+
+    def test_get_processor_raises_for_unknown_asset(self, manager, unknown_asset):
+        with pytest.raises(UnsupportedFormatError):
+            manager.get_processor(unknown_asset)
+
+    def test_get_processor_raises_for_unknown_mime_type(self, manager):
+        with pytest.raises(UnsupportedFormatError):
+            manager.get_processor('application/octet-stream')
 
     def test_get_processor_does_not_change_file_seek_position(self, manager, asset):
         with asset.essence as essence:

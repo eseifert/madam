@@ -180,6 +180,10 @@ class PillowProcessor(Processor):
         }
     )
 
+    @property
+    def supported_mime_types(self) -> frozenset:
+        return frozenset(PillowProcessor.__mime_type_to_pillow_type.keys())
+
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `PillowProcessor`.

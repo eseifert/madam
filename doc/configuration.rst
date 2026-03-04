@@ -5,19 +5,37 @@ Setting default format options
 ==============================
 
 MADAM has several configuration options that can modify the default settings
-which are used to write file formats. The configuration is stored in a
-dictionary that can be passed to :func:`madam.core.Madam.__init__`. The
-structure of the dict depends on the file type category (e.g. audio, image, or
-video).
+used when writing file formats.  The configuration is a dictionary passed to
+:func:`madam.core.Madam.__init__`.  The structure of the dict depends on the
+file type category (image, video, etc.).
+
+A configuration option set under the broad media type key (e.g. ``'image'``)
+applies to all formats of that type.  A more specific MIME-type key (e.g.
+``'image/jpeg'``) overrides the broad setting for that format only:
+
+.. code:: pycon
+
+    >>> config = {
+    ...     'image': {'quality': 80},          # applies to all image formats
+    ...     'image/jpeg': {'progressive': True, 'quality': 85},  # JPEG override
+    ... }
+    >>> from madam import Madam
+    >>> madam = Madam(config)
+
+.. warning::
+
+   :class:`~madam.image.PillowProcessor` emits a :exc:`UserWarning` when it
+   encounters an unknown configuration key for a given format.  Check your
+   configuration dict carefully if you see these warnings at startup.
 
 
 Image options
 =============
 
-Image settings can be stored for all image formats or for a certain MIME type.
+Image settings can be stored for all image formats or for a specific MIME type.
 
-The following example shows how to set the quality factor for all images and
-how to enable Zopfli compression for PNG images:
+The following example sets a quality default for all image formats and enables
+Zopfli compression for PNG specifically:
 
 .. code:: pycon
 
@@ -30,7 +48,7 @@ how to enable Zopfli compression for PNG images:
     ...     },
     ... }
 
-The following list shows all available options for file formats.
+The following list documents all available per-format options.
 
 AVIF (image/avif)
 -----------------
@@ -103,14 +121,33 @@ quality
     Defaults to 80.
 
 
+GIF (image/gif)
+---------------
+optimize
+    Boolean that defines whether Pillow should try to optimize the palette and
+    frame order when saving animated GIF images.
+
+    Defaults to ``True``.
+
+TIFF (image/tiff)
+-----------------
+compression
+    String specifying the TIFF compression algorithm.  Common values:
+    ``'tiff_deflate'`` (lossless), ``'tiff_lzw'`` (lossless), ``'jpeg'``
+    (lossy), or ``'raw'`` (no compression).
+
+    Defaults to ``'tiff_deflate'``.
+
+
 Video options
 =============
 
-Video content is split in two categories: Container options are stored by MIME
-type and codec options are stored in a separate MIME type category ``codec``.
+Video content is split into two categories: container options are stored by
+MIME type, and codec options are stored under a separate ``'codec/<name>'``
+key.
 
-The following example shows how to set the Constant Rate Factor (CRF) for the
-h.264 codec (using ``libx265``):
+The following example sets the ``faststart`` flag for QuickTime/MPEG-4
+containers and lowers the CRF for h.265 encoding:
 
 .. code:: pycon
 
@@ -123,7 +160,18 @@ h.264 codec (using ``libx265``):
     ...     },
     ... }
 
-The following list shows all available options for video containers.
+To cap the number of threads used by FFmpeg, add an ``'ffmpeg'`` key:
+
+.. code:: pycon
+
+    >>> config = {
+    ...     'ffmpeg': {'threads': 4},
+    ... }
+
+When ``threads`` is ``0`` or absent, MADAM uses ``multiprocessing.cpu_count()``
+threads by default.
+
+The following list documents all available options for video containers.
 
 Quicktime/MPEG4 (video/quicktime)
 ---------------------------------

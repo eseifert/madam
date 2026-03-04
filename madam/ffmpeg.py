@@ -532,6 +532,10 @@ class FFmpegProcessor(Processor):
 
     _MIN_VERSION: tuple[int, ...] = (3, 3)
 
+    @property
+    def supported_mime_types(self) -> frozenset:
+        return frozenset(FFmpegProcessor.__decoder_and_stream_type_to_mime_type.values())
+
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:
         """
         Initializes a new `FFmpegProcessor`.

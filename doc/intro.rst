@@ -28,15 +28,17 @@ look at the :doc:`quickstart` section.
 File format support
 ===================
 
-MADAM supports a wide range of file formats for video, image, and audio data.
-This is achieved by using several external open source libraries. `Pillow`_
-and `piexif`_ (for metadata) are used to read, process, or write image files.
-`FFmpeg`_ is used to read, process, or write audio and video files.
+MADAM supports a wide range of file formats for video, image, audio, and
+document data.  This is achieved by using several external open source
+libraries.  `Pillow`_ and `piexif`_ (for EXIF metadata) are used to read,
+process, or write raster image files.  `FFmpeg`_ is used to read, process, or
+write audio and video files.  Additional optional libraries extend support to
+HEIC/HEIF, PDF, raw camera formats, and more.
 
 .. note:: The support of file formats heavily depends on the configuration of
-    your local system. The formats shown in the following list should be
-    available on most configurations. However, it represents only a fraction of
-    the formats supported by the underlying libraries.
+    your local system.  The formats shown in the following list should be
+    available on most configurations.  However, they represent only a fraction
+    of the formats supported by the underlying libraries.
 
 Audio
     -   AAC (ADTS)
@@ -49,11 +51,19 @@ Audio
 Image
     -   AVIF
     -   BMP
-    -   GIF
+    -   GIF (including animated GIF)
+    -   HEIC / HEIF *(requires* ``pillow-heif``; install with*
+        ``pip install "madam[heif]"``)*
     -   JPEG / JFIF
     -   PNG
+    -   Raw camera formats: DNG, CR2, NEF, ARW, and others *(requires*
+        ``rawpy`` *and LibRaw; install with* ``pip install "madam[raw]"``)*
     -   TIFF
     -   WebP
+
+Documents
+    -   PDF *(read and rasterize individual pages; requires* ``pdf2image`` *and*
+        ``pypdf``; *install with* ``pip install "madam[pdf]"``)*
 
 Video
     -   AVI
@@ -65,6 +75,16 @@ Video
 
 Vector graphics
     -   SVG
+
+Embedded metadata
+    -   EXIF (JPEG, WebP) — via :class:`~madam.exif.ExifMetadataProcessor`
+    -   IPTC Application Record 2 (JPEG APP13) — via
+        :class:`~madam.iptc.IPTCMetadataProcessor`
+    -   XMP (JPEG APP1) — via :class:`~madam.xmp.XMPMetadataProcessor`
+    -   ID3 / FFmpeg tags (audio/video) — via
+        :class:`~madam.ffmpeg.FFmpegMetadataProcessor`
+    -   RDF/Dublin Core (SVG) — via
+        :class:`~madam.vector.SVGMetadataProcessor`
 
 Adding support for a new format often just means adding a mapping of the
 library format name to a MIME type to one of the existing processors. If you

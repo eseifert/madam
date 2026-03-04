@@ -9,6 +9,711 @@ of when upgrading from one release to the next.
    :depth: 2
 
 
+0.23.0 → 0.24.0
+----------------
+
+All changes in this release are new features.  There are no breaking changes.
+
+
+New features
+~~~~~~~~~~~~
+
+New: ``get_processor()`` accepts ``Asset`` and MIME type strings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.core.Madam.get_processor` now accepts three kinds of input:
+
+* **An** :class:`~madam.core.Asset` *(preferred)* — performs an O(1) MIME type
+  look-up; no I/O or byte-probing is needed because the type is already known.
+* **A MIME type string** — also O(1), useful when you know the format without
+  holding an asset.
+* **A file-like object** — the original byte-probe loop (unchanged).
+
+The preferred calling form is now:
+
+.. code-block:: python
+
+   # Before (still works, but triggers a byte-probe)
+   processor = madam.get_processor(asset.essence)
+
+   # After (O(1) lookup — preferred)
+   processor = madam.get_processor(asset)
+
+   # Also new: look up by MIME type string
+   processor = madam.get_processor('image/jpeg')
+
+Additionally, ``get_processor()`` now **raises** :class:`~madam.core.UnsupportedFormatError`
+when no processor can handle the input instead of returning ``None``.
+Update any code that checks the return value:
+
+.. code-block:: python
+
+   # Before
+   processor = madam.get_processor(file)
+   if processor is None:
+       handle_unknown()
+
+   # After
+   try:
+       processor = madam.get_processor(file)
+   except UnsupportedFormatError:
+       handle_unknown()
+
+
+New: Image adjustment operators
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.image.PillowProcessor` gained four tonal and colour adjustment
+operators.  Each returns an ``Asset → Asset`` callable and accepts a *factor*
+of ``1.0`` to produce an output identical to the input:
+
+.. code-block:: python
+
+   processor = madam.get_processor(asset)
+
+   # Increase brightness by 40 %
+   brighter = processor.adjust_brightness(factor=1.4)
+   result = brighter(asset)
+
+   # Increase contrast by 20 %
+   more_contrast = processor.adjust_contrast(factor=1.2)
+   result = more_contrast(asset)
+
+   # Desaturate to 50 % colour intensity
+   faded = processor.adjust_saturation(factor=0.5)
+   result = faded(asset)
+
+   # Slightly sharpen the image
+   sharpened = processor.adjust_sharpness(factor=1.5)
+   result = sharpened(asset)
+
+Available operators:
+
+* :meth:`~madam.image.PillowProcessor.adjust_brightness` — ``factor``:
+  ``0.0`` → black image, ``1.0`` → no change, ``2.0`` → doubled brightness.
+* :meth:`~madam.image.PillowProcessor.adjust_contrast` — ``factor``:
+  ``0.0`` → solid grey, ``1.0`` → no change.
+* :meth:`~madam.image.PillowProcessor.adjust_saturation` — ``factor``:
+  ``0.0`` → greyscale, ``1.0`` → no change.
+* :meth:`~madam.image.PillowProcessor.adjust_sharpness` — ``factor``:
+  ``0.0`` → blurred, ``1.0`` → no change, ``>1.0`` → sharpened.
+
+
+New: Artistic effect operators
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Three new operators apply artistic visual effects to image assets:
+
+.. code-block:: python
+
+   # Vintage sepia tone
+   make_sepia = processor.sepia()
+   sepia_asset = make_sepia(asset)
+
+   # Warm orange colour tint at 30 % opacity
+   warm_tint = processor.tint(color=(255, 180, 80), opacity=0.3)
+   tinted = warm_tint(asset)
+
+   # Radial vignette that darkens the corners by 50 %
+   add_vignette = processor.vignette(strength=0.5)
+   vignetted = add_vignette(asset)
+
+* :meth:`~madam.image.PillowProcessor.sepia` — no parameters; converts the
+  image to greyscale and recolorises it with warm brown tones.
+* :meth:`~madam.image.PillowProcessor.tint` — ``color`` (RGB tuple),
+  ``opacity`` in ``[0.0, 1.0]``.
+* :meth:`~madam.image.PillowProcessor.vignette` — ``strength`` in
+  ``[0.0, 1.0]``; ``0.0`` leaves the image unchanged, ``1.0`` makes the
+  corners completely black.
+
+
+New: ``blur`` and ``sharpen`` operators
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Two new filter operators complement the adjustment operators above:
+
+.. code-block:: python
+
+   # Gaussian blur with a 3-pixel radius
+   make_blur = processor.blur(radius=3)
+   blurred = make_blur(asset)
+
+   # Unsharp mask: radius, sharpening strength (%), minimum pixel difference
+   do_sharpen = processor.sharpen(radius=2, percent=150, threshold=3)
+   result = do_sharpen(asset)
+
+* :meth:`~madam.image.PillowProcessor.blur` — Gaussian blur; ``radius`` in
+  pixels, ``0`` means no blur.
+* :meth:`~madam.image.PillowProcessor.sharpen` — unsharp mask; ``percent``
+  controls strength (100 = 100 % of the mask added back), ``threshold`` is
+  the minimum brightness difference (0–255) that will be sharpened.
+
+
+New: Canvas and compositing operators
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Several new operators handle canvas manipulation and multi-image compositing:
+
+.. code-block:: python
+
+   # Place an image on a white canvas with a 20 px border on all sides
+   add_border = processor.pad(
+       width=asset.width + 40,
+       height=asset.height + 40,
+       color=(255, 255, 255),
+       gravity='center',
+   )
+   padded = add_border(asset)
+
+   # Flatten a transparent PNG onto a solid white background
+   flatten = processor.fill_background(color=(255, 255, 255))
+   opaque = flatten(asset)
+
+   # Composite a watermark at 70 % opacity in the bottom-right corner
+   add_watermark = processor.composite(
+       overlay_asset=watermark,
+       gravity='south_east',
+       opacity=0.7,
+   )
+   watermarked = add_watermark(asset)
+
+* :meth:`~madam.image.PillowProcessor.pad` — ``width``, ``height``, ``color``
+  (RGB or RGBA tuple), ``gravity``.  Raises :exc:`~madam.core.OperatorError`
+  if the canvas is smaller than the source image.
+* :meth:`~madam.image.PillowProcessor.fill_background` — ``color`` (RGB
+  tuple); composites alpha pixels over a solid background.  If the source has
+  no alpha channel the image is returned unchanged.
+* :meth:`~madam.image.PillowProcessor.composite` — ``overlay_asset``, ``x``,
+  ``y``, ``gravity``, ``opacity`` in ``[0.0, 1.0]``.
+
+Valid gravity strings for all operators: ``'north_west'``, ``'north'``,
+``'north_east'``, ``'west'``, ``'center'``, ``'east'``, ``'south_west'``,
+``'south'``, ``'south_east'``.
+
+
+New: Masking and rounded corners
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Two new operators create shaped images; both always produce RGBA PNG assets:
+
+.. code-block:: python
+
+   # Cut rounded corners with a 20 px radius (output is RGBA PNG)
+   rounded = processor.round_corners(radius=20)(asset)
+
+   # Replace the alpha channel with a greyscale mask image
+   masked = processor.apply_mask(mask_asset=mask)(asset)
+
+* :meth:`~madam.image.PillowProcessor.round_corners` — ``radius`` in pixels.
+* :meth:`~madam.image.PillowProcessor.apply_mask` — ``mask_asset`` must have
+  the same dimensions as the base image; white (255) → fully opaque, black
+  (0) → fully transparent.
+
+
+New: Gravity parameter on ``crop`` and ``resize(FILL)``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.image.PillowProcessor.crop` now accepts a ``gravity`` parameter
+so callers no longer need to compute ``x``/``y`` manually:
+
+.. code-block:: python
+
+   from madam.image import ResizeMode
+
+   processor = madam.get_processor(asset)
+
+   # Crop 800×600 from the centre of the image
+   center_crop = processor.crop(width=800, height=600, gravity='center')
+   result = center_crop(asset)
+
+:meth:`~madam.image.PillowProcessor.resize` with ``mode=ResizeMode.FILL``
+now accepts a ``gravity`` parameter that controls which part of the
+over-cropped image is preserved (default: ``'center'``):
+
+.. code-block:: python
+
+   # Cover-fill to 400×400, keeping the top of the image
+   cover_top = processor.resize(
+       width=400, height=400,
+       mode=ResizeMode.FILL,
+       gravity='north',
+   )
+   result = cover_top(asset)
+
+Existing code that passes explicit ``x`` and ``y`` to ``crop`` continues to
+work unchanged.
+
+
+New: ``crop_to_focal_point``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.image.PillowProcessor.crop_to_focal_point` crops to the given
+dimensions while keeping a focal point — expressed as relative ``[0.0, 1.0]``
+coordinates — as close to the centre of the output as possible:
+
+.. code-block:: python
+
+   # Crop to 640×480 keeping the subject at 60 % across and 30 % down
+   crop_face = processor.crop_to_focal_point(
+       width=640, height=480,
+       focal_x=0.6, focal_y=0.3,
+   )
+   result = crop_face(portrait)
+
+The caller is responsible for supplying the focal-point coordinates (e.g. via
+face detection or saliency analysis); the operator only handles the geometry.
+
+
+New: ``extract_frame`` and ``frame_count`` for animated images
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.image.PillowProcessor.read` now stores ``frame_count`` in the
+asset metadata for animated images (GIF, animated WebP):
+
+.. code-block:: python
+
+   with open('animation.gif', 'rb') as f:
+       animated = madam.read(f)
+
+   print(animated.frame_count)   # e.g. 24
+
+The new :meth:`~madam.image.PillowProcessor.extract_frame` operator extracts a
+single frame as a static image:
+
+.. code-block:: python
+
+   # Extract the fifth frame (zero-based index)
+   get_frame = processor.extract_frame(frame=4)
+   static = get_frame(animated)
+
+Raises :exc:`~madam.core.OperatorError` when the frame index is out of range.
+
+
+New: ``render_text`` module-level function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:func:`~madam.image.render_text` creates a new RGBA PNG
+:class:`~madam.core.Asset` from a text string.  The canvas is automatically
+sized to fit the text, with optional padding:
+
+.. code-block:: python
+
+   from madam.image import render_text
+
+   label = render_text(
+       'Hello, MADAM!',
+       font_path='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+       font_size=48,
+       color=(255, 255, 255),
+       background=(0, 0, 0, 200),   # semi-transparent black background
+       padding=16,
+   )
+   # label is an RGBA PNG Asset sized to the text + padding
+
+When ``font_path`` is ``None``, Pillow's built-in default font is used
+(``font_size`` is then ignored).
+
+
+New: ``optimize_quality`` operator
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.image.PillowProcessor.optimize_quality` re-encodes an image at
+the lowest quality level whose perceptual quality (measured by SSIMULACRA2)
+still meets a given threshold.
+
+Requires the ``ssimulacra2`` optional dependency::
+
+   pip install "madam[analysis]"
+
+.. code-block:: python
+
+   # Smallest JPEG that scores ≥ 85 on the SSIMULACRA2 scale
+   optimize = processor.optimize_quality(
+       min_ssim_score=85.0,
+       mime_type='image/jpeg',
+   )
+   small_jpeg = optimize(png_asset)
+
+SSIMULACRA2 scores are in ``(−∞, 100]`` where ``100`` means identical.
+Typical thresholds: ≥ 90 nearly imperceptible, ≥ 80 good, ≥ 70 acceptable.
+Supported output formats: JPEG, WebP, AVIF.
+
+
+New: ``extract_palette`` module-level function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:func:`~madam.image.extract_palette` returns the *count* dominant colors in
+an image as a list of ``(r, g, b)`` tuples sorted by pixel frequency:
+
+.. code-block:: python
+
+   from madam.image import extract_palette
+
+   colors = extract_palette(asset, count=5)
+   # [(255, 200, 0), (10, 60, 120), …]  — most frequent first
+
+
+New: HEIC/HEIF format support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.image.PillowProcessor` now supports HEIC/HEIF images when the
+``pillow-heif`` optional dependency is installed::
+
+   pip install "madam[heif]"
+
+After installation, ``madam.read()`` automatically recognises HEIC files and
+returns assets with ``mime_type='image/heic'``.  All standard image operators
+(``resize``, ``convert``, ``crop``, etc.) work on the resulting asset.
+
+.. note::
+
+   HEIC read and conversion to other formats are supported.  Writing back to
+   HEIC/HEIF is not supported by the ``pillow-heif`` plugin.
+
+
+New: PDF support
+^^^^^^^^^^^^^^^^
+
+A new :class:`~madam.pdf.PDFProcessor` is available with the ``[pdf]``
+optional extra::
+
+   pip install "madam[pdf]"
+
+.. code-block:: python
+
+   from madam.pdf import PDFProcessor
+
+   processor = PDFProcessor()
+
+   with open('document.pdf', 'rb') as f:
+       pdf_asset = processor.read(f)
+
+   print(pdf_asset.page_count)   # total number of pages
+
+   # Rasterize the second page (0-based) at 150 DPI as PNG
+   rasterize = processor.rasterize(page=1, dpi=150, mime_type='image/png')
+   image_asset = rasterize(pdf_asset)
+
+Metadata set by ``read()``: ``mime_type='application/pdf'``, ``page_count``.
+The default output format for ``rasterize`` is ``'image/jpeg'`` at 72 DPI.
+
+
+New: Raw camera format support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A new :class:`~madam.raw.RawImageProcessor` is available with the ``[raw]``
+optional extra (requires LibRaw to be installed system-wide)::
+
+   pip install "madam[raw]"
+
+.. code-block:: python
+
+   from madam.raw import RawImageProcessor
+
+   processor = RawImageProcessor()
+
+   with open('photo.dng', 'rb') as f:
+       raw_asset = processor.read(f)
+
+   # Decode the raw Bayer data to a standard image format
+   decode = processor.decode(mime_type='image/tiff')
+   image_asset = decode(raw_asset)
+
+``read()`` returns an asset with ``mime_type='image/x-raw'`` and the sensor
+``width`` / ``height``.  Supported raw formats depend on LibRaw; common ones
+include DNG, CR2, NEF, and ARW.
+
+
+New: ``IPTCMetadataProcessor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.iptc.IPTCMetadataProcessor` reads and writes IPTC Application
+Record (record 2) metadata stored in JPEG APP13 segments:
+
+.. code-block:: python
+
+   from madam.iptc import IPTCMetadataProcessor
+
+   processor = IPTCMetadataProcessor()
+
+   with open('photo.jpg', 'rb') as f:
+       metadata = processor.read(f)
+
+   iptc = metadata.get('iptc', {})
+   print(iptc.get('headline'))
+   print(iptc.get('keywords'))   # list of strings
+   print(iptc.get('copyright'))
+
+Supported keys: ``object_name``, ``category``, ``keywords`` (list),
+``instructions``, ``author``, ``author_title``, ``city``, ``sublocation``,
+``state``, ``country_code``, ``country``, ``headline``, ``credit``,
+``source``, ``copyright``, ``caption``.
+
+``IPTCMetadataProcessor`` is registered in :class:`~madam.core.Madam` by
+default, so IPTC values appear automatically in assets returned by
+:meth:`~madam.core.Madam.read`:
+
+.. code-block:: python
+
+   asset = madam.read(open('photo.jpg', 'rb'))
+   print(asset.metadata.get('iptc', {}).get('headline'))
+
+
+New: ``XMPMetadataProcessor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.xmp.XMPMetadataProcessor` reads and writes XMP sidecar data
+stored in JPEG APP1 segments:
+
+.. code-block:: python
+
+   from madam.xmp import XMPMetadataProcessor
+
+   processor = XMPMetadataProcessor()
+
+   with open('photo.jpg', 'rb') as f:
+       metadata = processor.read(f)
+
+   xmp = metadata.get('xmp', {})
+   print(xmp.get('title'))
+   print(xmp.get('subject'))      # list of strings
+   print(xmp.get('create_date'))
+
+Supported keys: ``title``, ``description``, ``subject`` (list), ``rights``,
+``creator``, ``create_date``, ``modify_date``.
+
+Like ``IPTCMetadataProcessor``, ``XMPMetadataProcessor`` is registered in
+:class:`~madam.core.Madam` by default.
+
+
+New: ``created_at`` unified timestamp in ``Madam.read()``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.core.Madam.read` now sets a top-level ``created_at`` key on
+the returned asset when a creation timestamp can be found in the media.  The
+value is a normalised ISO 8601 string and is resolved from the first available
+source in priority order:
+
+1. EXIF ``DateTimeOriginal``
+2. XMP ``CreateDate``
+3. FFmpeg ``creation_time`` tag (video/audio)
+
+.. code-block:: python
+
+   asset = madam.read(open('photo.jpg', 'rb'))
+   print(asset.created_at)   # e.g. '2024-06-15T10:30:00'
+
+The attribute is absent (not ``None``) when no creation timestamp is found in
+any metadata source.
+
+
+New: EXIF ``datetime_original`` and ``datetime_digitized`` as ``datetime`` objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.exif.ExifMetadataProcessor` now returns ``datetime_original``
+and ``datetime_digitized`` as :class:`datetime.datetime` objects instead of
+raw EXIF date strings:
+
+.. code-block:: python
+
+   asset = madam.read(open('photo.jpg', 'rb'))
+   dt = asset.metadata.get('exif', {}).get('datetime_original')
+   if dt:
+       print(f'Taken on {dt.strftime("%Y-%m-%d at %H:%M")}')
+
+Code that previously compared or parsed these values as strings must be
+updated to use the ``datetime`` interface.
+
+
+New: FFmpegMetadataProcessor key coverage for MKV, MOV, and AVI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.ffmpeg.FFmpegMetadataProcessor` now maps common metadata keys
+for the following containers:
+
+* **MKV / WebM** — title (lowercase), plus uppercase tags such as
+  ``DESCRIPTION``, ``ARTIST``, ``ALBUM``, ``DATE``, etc.
+* **MOV / MP4 / QuickTime** — title, artist, album, date, comment, copyright,
+  etc.
+* **AVI** — INAM (title), IART (artist), ICRD (date), etc.
+
+Previously these containers returned an empty metadata dict from ``read()``.
+No changes are needed for existing code; the new keys are simply available
+where they were absent before.
+
+
+New: ICC profile preservation in ``PillowProcessor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.image.PillowProcessor` now extracts an embedded ICC profile
+during ``read()`` and re-embeds it when writing.  All image operators
+(``resize``, ``convert``, ``crop``, ``pad``, ``composite``, etc.) propagate
+the ICC profile transparently through the transformation chain.
+
+The raw profile bytes are stored in ``asset.metadata['icc_profile']``.  They
+are automatically re-embedded when writing to formats that support ICC
+profiles: JPEG, PNG, TIFF, WebP, and AVIF.
+
+No action is required for existing code; the change is transparent.  To
+strip an ICC profile, remove the ``'icc_profile'`` key from the metadata
+dict before passing the asset to an operator.
+
+
+New: FFmpeg audio/video operators
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following operators were added to
+:class:`~madam.ffmpeg.FFmpegProcessor`:
+
+**set_speed** — scale playback speed:
+
+.. code-block:: python
+
+   processor = madam.get_processor(video_asset)
+
+   slow_mo = processor.set_speed(factor=0.5)    # half-speed slow motion
+   time_lapse = processor.set_speed(factor=4.0) # 4× timelapse
+
+   slowed = slow_mo(video_asset)
+
+The ``atempo`` filter is chained automatically for extreme factors outside
+the ``[0.5, 2.0]`` range.
+
+**normalize_audio** — loudness-normalize to a target LUFS level (EBU R128):
+
+.. code-block:: python
+
+   # Broadcast standard: −23 LUFS
+   normalize = processor.normalize_audio(target_lufs=-23.0)
+   normalized = normalize(asset)
+
+Uses a two-pass FFmpeg ``loudnorm`` filter for accurate linear correction.
+
+**overlay** — burn a static image or time-bounded graphic onto a video:
+
+.. code-block:: python
+
+   # Watermark in the bottom-right corner, visible only for the first 5 s
+   burn_in = processor.overlay(
+       overlay_asset=logo,
+       gravity='south_east',
+       to_seconds=5.0,
+   )
+   watermarked = burn_in(video_asset)
+
+**thumbnail_sprite** — extract evenly-spaced frames into a sprite sheet:
+
+.. code-block:: python
+
+   # 5×4 grid of 160×90 px thumbnails
+   make_sprite = processor.thumbnail_sprite(
+       columns=5, rows=4,
+       thumb_width=160, thumb_height=90,
+   )
+   sheet = make_sprite(video_asset)
+
+   # sheet.sprite contains: columns, rows, thumb_width, thumb_height,
+   # interval_seconds — enough to generate a WebVTT thumbnail track.
+
+**to_hls / to_dash** — package a video for adaptive HTTP streaming:
+
+.. code-block:: python
+
+   from madam.streaming import DirectoryOutput
+
+   output = DirectoryOutput('/var/www/streams/video1')
+   processor.to_hls(video_asset, output, segment_duration=6)
+   # Writes: index.m3u8 + segment_000.ts, segment_001.ts, …
+
+   output = DirectoryOutput('/var/www/streams/video1')
+   processor.to_dash(video_asset, output, segment_duration=4)
+   # Writes: manifest.mpd + media segment files
+
+Both methods accept optional ``video`` and ``audio`` dicts with ``codec`` and
+``bitrate`` keys, using the same :class:`~madam.video.VideoCodec` /
+:class:`~madam.audio.AudioCodec` constants.
+
+
+New: ``concatenate`` function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:func:`madam.ffmpeg.concatenate` (also importable from :mod:`madam.audio` and
+:mod:`madam.video`) joins an iterable of audio or video assets end-to-end
+into a single asset.  By default streams are copied without re-encoding:
+
+.. code-block:: python
+
+   from madam.video import concatenate, VideoCodec
+   from madam.audio import AudioCodec
+
+   # Fast stream copy when all clips share the same codec
+   result = concatenate(
+       [intro, main_clip, outro],
+       mime_type='video/mp4',
+   )
+
+   # Force re-encoding when clips use different codecs
+   result = concatenate(
+       clips,
+       mime_type='video/mp4',
+       video={'codec': VideoCodec.H264},
+       audio={'codec': AudioCodec.AAC},
+   )
+
+Raises :exc:`ValueError` if the asset list is empty.
+
+
+New: ``Pipeline.branch`` and ``Pipeline.when``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.core.Pipeline` gained two control-flow methods.
+
+**branch** — fan each input asset through several independent sub-pipelines,
+yielding one output per sub-pipeline per input:
+
+.. code-block:: python
+
+   from madam.core import Pipeline
+   from madam.image import ResizeMode
+
+   processor = madam.get_processor(asset)
+
+   thumbnail_pipe = Pipeline()
+   thumbnail_pipe.add(processor.resize(width=150, height=150, mode=ResizeMode.FILL))
+
+   preview_pipe = Pipeline()
+   preview_pipe.add(processor.resize(width=800, height=600, mode=ResizeMode.FIT))
+
+   pipeline = Pipeline()
+   pipeline.branch(thumbnail_pipe, preview_pipe)
+
+   for asset in pipeline.process(*originals):
+       # yields 2 × len(originals) assets: thumbnail and preview for each
+       manager.write(asset, open(f'out_{asset.width}.jpg', 'wb'))
+
+**when** — apply one operator when a predicate returns ``True``, another
+when it returns ``False`` (optional):
+
+.. code-block:: python
+
+   pipeline = Pipeline()
+   pipeline.when(
+       predicate=lambda a: a.width > 1920,
+       then=processor.resize(width=1920, height=1080, mode=ResizeMode.FIT),
+   )
+   # Assets narrower than 1920 px pass through unchanged.
+
+   # With an else_ branch:
+   pipeline.when(
+       predicate=lambda a: a.mime_type == 'image/png',
+       then=processor.convert(mime_type='image/webp'),
+       else_=processor.convert(mime_type='image/jpeg'),
+   )
+
+
+----
+
+
 0.22.0 → 0.23.0
 ----------------
 
@@ -75,7 +780,7 @@ Changes requiring attention
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Changed: ``FFmpegProcessor.__init__`` raises ``EnvironmentError`` on bad setup
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :class:`~madam.ffmpeg.FFmpegProcessor` now raises :exc:`EnvironmentError`
 (rather than crashing with an unhandled exception) if:
@@ -115,7 +820,7 @@ Valid keys per format:
 * ``image/webp`` — ``quality``, ``method``
 
 Changed: ``FFmpegProcessor._threads`` is now a property
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The private attribute ``_FFmpegProcessor__threads`` (name-mangled) no longer
 exists.  It has been replaced by the ``_threads`` property, which evaluates
@@ -130,7 +835,7 @@ New features
 ~~~~~~~~~~~~
 
 New: retry-aware error hierarchy
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Two new :class:`~madam.core.OperatorError` subclasses allow worker tasks to
 decide whether to retry or move a job to a dead-letter queue:
@@ -153,7 +858,7 @@ decide whether to retry or move a job to a dead-letter queue:
        queue.dead_letter()
 
 New: ``Asset.content_id``
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :class:`~madam.core.Asset` now exposes a ``content_id`` property that returns
 a hex-encoded SHA-256 digest of the asset's essence bytes.  Two assets with
@@ -167,7 +872,7 @@ an object-store key or a cache lookup key.
    # 'e3b0c44298fc1c149afb…'
 
 New: ``madam.default_madam`` singleton
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A module-level lazy singleton is now available for scripts that do not need a
 custom configuration:
@@ -180,7 +885,7 @@ custom configuration:
 The singleton is created on first access and reused thereafter.
 
 New: ``FFmpegProcessor`` thread count configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The number of threads used by FFmpeg can be capped via the processor config:
 
@@ -192,7 +897,7 @@ The number of threads used by FFmpeg can be capped via the processor config:
 When unset (or set to ``0``), the default is ``multiprocessing.cpu_count()``.
 
 New: ``LazyAsset``
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 :class:`~madam.core.LazyAsset` is an :class:`~madam.core.Asset` subclass that
 stores only a URI and metadata dict.  Essence bytes are fetched on demand via
@@ -212,7 +917,7 @@ even for large video files.
    # essence is fetched only when asset.essence is accessed
 
 New: ``progress_callback`` in ``FFmpegProcessor.convert``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :meth:`~madam.ffmpeg.FFmpegProcessor.convert` now accepts an optional
 ``progress_callback`` keyword argument.  When provided it is called after each
@@ -229,7 +934,7 @@ FFmpeg progress block with a ``dict[str, str]`` of progress fields (``frame``,
    result = convert(asset)
 
 New: ``FileSystemAssetStorage``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A new storage backend :class:`~madam.core.FileSystemAssetStorage` stores each
 asset as two files on disk: essence bytes and a JSON metadata/tags sidecar.
@@ -245,7 +950,7 @@ the root directory is created automatically on init.
    storage['my-key'] = (asset, {'project': 'demo'})
 
 New: additional format support
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following formats are now supported out of the box:
 
@@ -254,7 +959,7 @@ The following formats are now supported out of the box:
 * **Video**: MP4 (``video/mp4``), WebM (``video/webm``) as encode targets
 
 New: ``VideoCodec`` and ``AudioCodec`` constant classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Two new classes provide stable, named constants for the codec strings accepted
 by :meth:`~madam.ffmpeg.FFmpegProcessor.convert`.
@@ -304,3 +1009,4 @@ public interface is identical.
 :class:`~madam.core.ShelveStorage` and
 :class:`~madam.core.FileSystemAssetStorage` still use an unindexed linear
 scan.
+
