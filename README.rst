@@ -139,7 +139,7 @@ Converting format and saving
 Building a pipeline
 --------------------
 
-Use :class:`~madam.core.Pipeline` to chain operators and process batches:
+Use ``Pipeline`` to chain operators and process batches:
 
 .. code:: pycon
 
