@@ -55,6 +55,9 @@ raw = [
 analysis = [
     "ssimulacra2>=0.3.0",
 ]
+all = [
+    "madam[heif,pdf,raw,analysis]",
+]
 
 [tool.setuptools_scm]
 write_to = "madam/_version.py"

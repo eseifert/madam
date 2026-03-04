@@ -65,6 +65,9 @@ Documents
     -   PDF *(read and rasterize individual pages; requires* ``pdf2image`` *and*
         ``pypdf``; *install with* ``pip install "madam[pdf]"``)*
 
+.. note:: All optional extras can be installed at once with
+    ``pip install "madam[all]"``.
+
 Video
     -   AVI
     -   Matroska (MKV), WebM
