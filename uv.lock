@@ -306,6 +306,13 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+all = [
+    { name = "pdf2image" },
+    { name = "pillow-heif" },
+    { name = "pypdf" },
+    { name = "rawpy" },
+    { name = "ssimulacra2" },
+]
 analysis = [
     { name = "ssimulacra2" },
 ]
@@ -339,6 +346,7 @@ requires-dist = [
     { name = "bidict" },
     { name = "coverage", marker = "extra == 'dev'" },
     { name = "frozendict" },
+    { name = "madam", extras = ["analysis", "heif", "pdf", "raw"], marker = "extra == 'all'" },
     { name = "mutagen", marker = "extra == 'dev'" },
     { name = "pdf2image", marker = "extra == 'pdf'", specifier = ">=1.17.0" },
     { name = "piexif" },
@@ -356,7 +364,7 @@ requires-dist = [
     { name = "ty", marker = "extra == 'dev'" },
     { name = "zopflipy", specifier = ">=1.1" },
 ]
-provides-extras = ["dev", "doc", "heif", "pdf", "raw", "analysis"]
+provides-extras = ["dev", "doc", "heif", "pdf", "raw", "analysis", "all"]
 
 [[package]]
 name = "markupsafe"
