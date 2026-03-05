@@ -359,6 +359,91 @@ class TestPipeline:
         assert len(pipeline.operators) == 1
 
 
+class _FakeProcessor:
+    """Minimal fake processor for run-grouping tests."""
+
+    def __init__(self):
+        self.run_calls: list[tuple] = []
+
+    def execute_run(self, steps, asset_or_context):
+        self.run_calls.append((steps, asset_or_context))
+        result = asset_or_context
+        for step in steps:
+            result = step(result)
+        return result
+
+    def _make_op(self):
+        """Return a tagged no-op operator."""
+        def noop(asset):
+            return asset
+        noop._processor = self
+        return noop
+
+
+class TestPipelineRunGrouping:
+    def test_same_processor_ops_yield_single_execute_run_call(self):
+        from madam.core import Pipeline
+
+        proc = _FakeProcessor()
+        op1, op2, op3 = proc._make_op(), proc._make_op(), proc._make_op()
+        pipeline = Pipeline()
+        pipeline.add(op1)
+        pipeline.add(op2)
+        pipeline.add(op3)
+        asset = Asset(io.BytesIO(b'x'))
+
+        list(pipeline.process(asset))
+
+        assert len(proc.run_calls) == 1
+
+    def test_two_processor_groups_yield_two_execute_run_calls(self):
+        from madam.core import Pipeline
+
+        proc_a = _FakeProcessor()
+        proc_b = _FakeProcessor()
+        op_a1, op_a2 = proc_a._make_op(), proc_a._make_op()
+        op_b1, op_b2 = proc_b._make_op(), proc_b._make_op()
+        pipeline = Pipeline()
+        pipeline.add(op_a1)
+        pipeline.add(op_a2)
+        pipeline.add(op_b1)
+        pipeline.add(op_b2)
+        asset = Asset(io.BytesIO(b'x'))
+
+        list(pipeline.process(asset))
+
+        assert len(proc_a.run_calls) == 1
+        assert len(proc_b.run_calls) == 1
+
+    def test_untagged_callable_does_not_call_execute_run(self):
+        from madam.core import Pipeline
+
+        proc = _FakeProcessor()
+        untagged = lambda a: a  # noqa: E731
+        pipeline = Pipeline()
+        pipeline.add(untagged)
+        asset = Asset(io.BytesIO(b'x'))
+
+        list(pipeline.process(asset))
+
+        assert proc.run_calls == []
+
+    def test_execute_run_receives_correct_steps(self):
+        from madam.core import Pipeline
+
+        proc = _FakeProcessor()
+        op1, op2 = proc._make_op(), proc._make_op()
+        pipeline = Pipeline()
+        pipeline.add(op1)
+        pipeline.add(op2)
+        asset = Asset(io.BytesIO(b'x'))
+
+        list(pipeline.process(asset))
+
+        steps, _ = proc.run_calls[0]
+        assert list(steps) == [op1, op2]
+
+
 class TestOperatorTagging:
     def test_operator_has_processor_attribute(self):
         from madam.image import PillowProcessor

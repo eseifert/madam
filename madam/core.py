@@ -376,18 +376,30 @@ class Pipeline:
         """
         Applies the operators in this pipeline on the specified assets.
 
+        Consecutive operators that share the same :class:`Processor` are
+        grouped into a *run* and dispatched via
+        :meth:`Processor.execute_run` so that each processor can defer
+        encoding until the run boundary.  Untagged callables (plain
+        functions, lambdas) and control-flow steps
+        (:class:`_BranchStep`, :class:`_WhenStep`) are treated as
+        materialisation points.
+
         :param \\*assets: Asset objects to be processed
         :type \\*assets: Asset
         :return: Generator with processed assets
         """
         current: list[Asset] = list(assets)
-        for step in self.operators:
+        ops = self.operators
+        i = 0
+        while i < len(ops):
+            step = ops[i]
             if isinstance(step, _BranchStep):
                 next_assets: list[Asset] = []
                 for asset in current:
                     for sub_pipeline in step.pipelines:
                         next_assets.extend(sub_pipeline.process(asset))
                 current = next_assets
+                i += 1
             elif isinstance(step, _WhenStep):
                 next_assets = []
                 for asset in current:
@@ -398,8 +410,33 @@ class Pipeline:
                     else:
                         next_assets.append(asset)
                 current = next_assets
+                i += 1
             else:
-                current = [step(asset) for asset in current]
+                step_proc = step.__dict__.get('_processor') if hasattr(step, '__dict__') else None
+                if step_proc is not None:
+                    # Collect consecutive operators from the same processor.
+                    run = [step]
+                    j = i + 1
+                    while j < len(ops):
+                        nxt = ops[j]
+                        if isinstance(nxt, (_BranchStep, _WhenStep)):
+                            break
+                        if getattr(nxt, '_processor', None) is not step_proc:
+                            break
+                        run.append(nxt)
+                        j += 1
+                    new_current = []
+                    for asset in current:
+                        result = step_proc.execute_run(run, asset)
+                        if isinstance(result, ProcessingContext):
+                            result = result.materialize()
+                        new_current.append(result)
+                    current = new_current
+                    i = j
+                else:
+                    # Untagged callable — apply immediately.
+                    current = [step(asset) for asset in current]
+                    i += 1
         yield from current
 
     def add(self, operator: Callable) -> None:
@@ -485,6 +522,31 @@ class Processor(metaclass=abc.ABCMeta):
         :raises UnsupportedFormatError: if the specified data format is not supported
         """
         raise NotImplementedError()
+
+    def execute_run(
+        self,
+        steps: list[Callable],
+        asset_or_context: 'Asset | ProcessingContext',
+    ) -> 'Asset | ProcessingContext':
+        """
+        Execute a grouped run of consecutive operators from this processor.
+
+        The default implementation applies each step sequentially, equivalent
+        to the old per-step behaviour.  Subclasses may override this to defer
+        encoding: accumulate each operator's effect into a
+        :class:`ProcessingContext` and return it; :class:`Pipeline` will call
+        :meth:`ProcessingContext.materialize` at the next processor boundary
+        or at the end of the pipeline.
+
+        :param steps: Ordered list of tagged operator callables in this run.
+        :param asset_or_context: Input asset (or live context from a preceding
+            run of the same processor).
+        :return: Processed :class:`Asset` or a live :class:`ProcessingContext`.
+        """
+        result: Asset | ProcessingContext = asset_or_context
+        for step in steps:
+            result = step(result)  # type: ignore[arg-type]
+        return result
 
 
 class MetadataProcessor(metaclass=abc.ABCMeta):
