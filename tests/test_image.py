@@ -1446,3 +1446,115 @@ class TestPillowContext:
         from madam.image import PillowContext
 
         assert issubclass(PillowContext, ProcessingContext)
+
+
+class TestPillowDeferredExecution:
+    @pytest.fixture(name='processor')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_pipeline_calls_pil_open_once_for_chained_operators(self, processor):
+        """Two Pillow operators in a Pipeline must decode the image only once."""
+        import unittest.mock
+        from madam.core import Pipeline
+
+        jpeg_asset = get_jpeg_image_asset(width=64, height=64)
+        resize_op = processor.resize(width=32, height=32)
+        crop_op = processor.crop(width=16, height=16, x=0, y=0)
+        pipeline = Pipeline()
+        pipeline.add(resize_op)
+        pipeline.add(crop_op)
+
+        original_open = PIL.Image.open
+        open_calls = []
+
+        def counting_open(fp, *args, **kwargs):
+            open_calls.append(1)
+            return original_open(fp, *args, **kwargs)
+
+        with unittest.mock.patch('PIL.Image.open', side_effect=counting_open):
+            result = list(pipeline.process(jpeg_asset))
+
+        assert len(open_calls) == 1, f'Expected 1 PIL.Image.open call, got {len(open_calls)}'
+        assert result[0].width == 16
+        assert result[0].height == 16
+
+    def test_pipeline_deferred_result_has_correct_mime_type(self, processor):
+        from madam.core import Pipeline
+
+        jpeg_asset = get_jpeg_image_asset(width=32, height=32)
+        resize_op = processor.resize(width=16, height=16)
+        pipeline = Pipeline()
+        pipeline.add(resize_op)
+
+        result = list(pipeline.process(jpeg_asset))
+
+        assert result[0].mime_type == 'image/jpeg'
+
+
+class TestPillowDeferredICC:
+    """ICC profile propagation through PillowContext (regression guard)."""
+
+    @pytest.fixture(name='processor')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_icc_profile_preserved_through_deferred_pipeline(self, processor):
+        from madam.core import Pipeline
+
+        # Build a JPEG with an embedded ICC profile.
+        icc_bytes = b'\x00\x01' * 50  # minimal fake ICC
+        img = PIL.Image.new('RGB', (64, 64), (200, 100, 50))
+        buf = io.BytesIO()
+        img.save(buf, 'JPEG', icc_profile=icc_bytes, quality=90)
+        buf.seek(0)
+        asset_with_icc = processor.read(buf)
+
+        resize_op = processor.resize(width=32, height=32)
+        crop_op = processor.crop(width=16, height=16, x=0, y=0)
+        pipeline = Pipeline()
+        pipeline.add(resize_op)
+        pipeline.add(crop_op)
+
+        result = list(pipeline.process(asset_with_icc))
+
+        assert result[0].metadata.get('icc_profile') is not None
+
+
+class TestPillowDeferredFormatConversion:
+    """Format conversion inside a Pillow run without intermediate encode."""
+
+    @pytest.fixture(name='processor')
+    def pillow_processor(self):
+        return madam.image.PillowProcessor()
+
+    def test_resize_then_convert_calls_pil_open_once(self, processor):
+        import unittest.mock
+        from madam.core import Pipeline
+
+        png_img = PIL.Image.new('RGB', (64, 64), (0, 128, 255))
+        buf = io.BytesIO()
+        png_img.save(buf, 'PNG')
+        buf.seek(0)
+        png_asset = processor.read(buf)
+
+        resize_op = processor.resize(width=32, height=32)
+        convert_op = processor.convert(mime_type='image/jpeg')
+        pipeline = Pipeline()
+        pipeline.add(resize_op)
+        pipeline.add(convert_op)
+
+        original_open = PIL.Image.open
+        open_calls = []
+
+        def counting_open(fp, *args, **kwargs):
+            open_calls.append(1)
+            return original_open(fp, *args, **kwargs)
+
+        with unittest.mock.patch('PIL.Image.open', side_effect=counting_open):
+            result = list(pipeline.process(png_asset))
+
+        assert len(open_calls) == 1
+        assert result[0].mime_type == 'image/jpeg'
+        assert result[0].width == 32
+        assert result[0].height == 32

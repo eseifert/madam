@@ -216,6 +216,143 @@ class PillowProcessor(Processor):
         """
         super().__init__(config)
 
+    def execute_run(self, steps, asset_or_context):
+        """
+        Apply a group of consecutive Pillow operators in a single decode/encode cycle.
+
+        The input :class:`Asset` (or incoming :class:`PillowContext` from a prior
+        run) is decoded once.  Each step's PIL image transform is applied in memory.
+        The result is returned as a :class:`PillowContext`; :class:`~madam.core.Pipeline`
+        encodes it only when a processor boundary or pipeline end is reached.
+        """
+        from collections.abc import Callable as _Callable
+
+        if isinstance(asset_or_context, PillowContext):
+            image = asset_or_context.image
+            mime_type = str(asset_or_context.mime_type)
+        else:
+            asset = asset_or_context
+            mime_type = str(asset.mime_type)
+            with PIL.Image.open(asset.essence) as img:
+                img.load()  # force pixel decode so the file handle can be released
+                image = img.copy()
+
+        for step in steps:
+            # Look up a PIL-level transform for this operator.
+            op_name = getattr(step, 'func', None)
+            op_name = op_name.__name__ if op_name is not None else None
+            transform = getattr(self, f'_transform_{op_name}', None) if op_name else None
+
+            if transform is not None:
+                image, mime_type = transform(image, mime_type, **step.keywords)
+            else:
+                # Fallback: materialise the current context, apply the step, then decode back.
+                tmp_ctx = PillowContext(self, image, mime_type)
+                tmp_asset = tmp_ctx.materialize()
+                result = step(tmp_asset)
+                if isinstance(result, PillowContext):
+                    image = result.image
+                    mime_type = str(result.mime_type)
+                else:
+                    with PIL.Image.open(result.essence) as img:
+                        img.load()
+                        image = img.copy()
+                    mime_type = str(result.mime_type)
+
+        return PillowContext(self, image, mime_type)
+
+    def _transform_resize(
+        self,
+        image: PIL.Image.Image,
+        mime_type: str,
+        *,
+        width: int,
+        height: int,
+        mode: ResizeMode = ResizeMode.EXACT,
+        gravity: str = 'center',
+    ) -> tuple[PIL.Image.Image, str]:
+        """PIL-level resize transform (no encode/decode)."""
+        if mode == ResizeMode.EXACT:
+            resized_width, resized_height = width, height
+        else:
+            aspect = image.width / image.height
+            aspect_target = width / height
+            if (
+                mode == ResizeMode.FIT
+                and aspect >= aspect_target
+                or mode == ResizeMode.FILL
+                and aspect <= aspect_target
+            ):
+                resize_factor = width / image.width
+            else:
+                resize_factor = height / image.height
+            resized_width = max(1, round(resize_factor * image.width))
+            resized_height = max(1, round(resize_factor * image.height))
+
+        depth = 32 if image.mode in ('I', 'F') else (16 if image.mode == 'I;16' else 8)
+        resampling = PIL.Image.Resampling.LANCZOS if depth == 8 else PIL.Image.Resampling.NEAREST
+        resized = image.resize((resized_width, resized_height), resample=resampling)
+
+        if mode == ResizeMode.FILL and (resized_width != width or resized_height != height):
+            crop_x, crop_y = _resolve_gravity(resized_width, resized_height, width, height, gravity)
+            resized = resized.crop((crop_x, crop_y, crop_x + width, crop_y + height))
+
+        return resized, mime_type
+
+    def _transform_crop(
+        self,
+        image: PIL.Image.Image,
+        mime_type: str,
+        *,
+        width: int,
+        height: int,
+        x: int | None = None,
+        y: int | None = None,
+        gravity: str = 'north_west',
+    ) -> tuple[PIL.Image.Image, str]:
+        """PIL-level crop transform (no encode/decode)."""
+        if x is None and y is None:
+            x, y = _resolve_gravity(image.width, image.height, width, height, gravity)
+        elif x is None or y is None:
+            raise OperatorError('Both x and y must be provided together, or omit both to use gravity')
+
+        if x == 0 and y == 0 and width == image.width and height == image.height:
+            return image, mime_type
+
+        max_x = max(0, min(image.width, width + x))
+        max_y = max(0, min(image.height, height + y))
+        min_x = max(0, min(image.width, x))
+        min_y = max(0, min(image.height, y))
+
+        if min_x == image.width or min_y == image.height or max_x <= min_x or max_y <= min_y:
+            raise OperatorError(f'Invalid cropping area: <x={x!r}, y={y!r}, width={width!r}, height={height!r}>')
+
+        return image.crop(box=(min_x, min_y, max_x, max_y)), mime_type
+
+    def _transform_convert(
+        self,
+        image: PIL.Image.Image,
+        current_mime_type: str,
+        *,
+        mime_type: MimeType | str,
+        color_space: str | None = None,
+        depth: int | None = None,
+        data_type: str | None = None,
+    ) -> tuple[PIL.Image.Image, str]:
+        """PIL-level convert transform: update MIME type and optionally convert PIL mode."""
+        target_mime = MimeType(mime_type)
+        mode_lookup = PillowProcessor._PillowProcessor__pillow_mode_to_color_mode  # type: ignore[attr-defined]
+        current_tuple = mode_lookup.get(image.mode, (None, None, None))
+        color_mode = (
+            color_space or current_tuple[0],
+            depth or current_tuple[1],
+            data_type or current_tuple[2],
+        )
+        pil_mode = mode_lookup.inv.get(color_mode)
+        if pil_mode is not None and pil_mode != image.mode:
+            image = image.convert(pil_mode)
+        return image, str(target_mime)
+
     def read(self, file: IO) -> Asset:
         with PIL.Image.open(file) as image:
             mime_type = PillowProcessor.__mime_type_to_pillow_type.inv[image.format]
@@ -395,8 +532,45 @@ class PillowProcessor(Processor):
 
         image_buffer.seek(0)
 
-        asset = self.read(image_buffer)
+        asset = self._buffer_to_asset(image_buffer, image, mime_type)
         return asset
+
+    def _buffer_to_asset(
+        self,
+        image_buffer: io.BytesIO,
+        image: PIL.Image.Image,
+        mime_type: 'MimeType | str',
+    ) -> Asset:
+        """
+        Construct an :class:`Asset` from an already-encoded *image_buffer* using
+        *image* metadata to avoid a second :func:`PIL.Image.open` call.
+
+        For formats where encoding may alter the PIL mode (e.g. GIF palette
+        quantisation), fall back to :meth:`read` to obtain accurate metadata.
+        """
+        mime_type = MimeType(mime_type)
+        # GIF encoding can change mode (RGB→P); use read() for accuracy there.
+        _FALLBACK_FORMATS = frozenset({MimeType('image/gif')})
+        if mime_type in _FALLBACK_FORMATS:
+            asset = self.read(image_buffer)
+            return asset
+
+        mode_map = PillowProcessor._PillowProcessor__pillow_mode_to_color_mode  # type: ignore[attr-defined]
+        color_space, bit_depth, data_type = mode_map.get(image.mode, ('RGB', 8, 'uint'))
+        metadata: dict = dict(
+            mime_type=str(mime_type),
+            width=image.width,
+            height=image.height,
+            color_space=color_space,
+            depth=bit_depth,
+            data_type=data_type,
+        )
+        if getattr(image, 'is_animated', False):
+            metadata['frame_count'] = image.n_frames
+        icc_profile = image.info.get('icc_profile') if hasattr(image, 'info') else None
+        if icc_profile and mime_type in _ICC_PROFILE_FORMATS:
+            metadata['icc_profile'] = icc_profile
+        return Asset(image_buffer, **metadata)
 
     def _rotate(self, asset: Asset, rotation: PIL.Image.Transpose) -> Asset:
         """
