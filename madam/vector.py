@@ -49,6 +49,18 @@ def svg_length_to_px(length: str | None) -> float:
     raise ValueError()
 
 
+def _is_zero_length_line(elem: ET.Element) -> bool:
+    """Return True if a <line> element has zero length (both endpoints are identical)."""
+    try:
+        x1 = svg_length_to_px(elem.get('x1', '0'))
+        y1 = svg_length_to_px(elem.get('y1', '0'))
+        x2 = svg_length_to_px(elem.get('x2', '0'))
+        y2 = svg_length_to_px(elem.get('y2', '0'))
+    except ValueError:
+        return False
+    return x1 == x2 and y1 == y2
+
+
 def _attr_is_zero(value: str | None) -> bool:
     """Return True if the attribute value represents a zero quantity."""
     if value is None:
@@ -191,6 +203,8 @@ class SVGProcessor(Processor):
         SVGProcessor.__remove_elements(root, 'svg:polygon', lambda e: bool(e.get('points', '').strip()))
         # Remove all polylines without points
         SVGProcessor.__remove_elements(root, 'svg:polyline', lambda e: bool(e.get('points', '').strip()))
+        # Remove all zero-length lines
+        SVGProcessor.__remove_elements(root, 'svg:line', lambda e: bool(list(e)) or not _is_zero_length_line(e))
         # Remove all invisible or hidden elements
         SVGProcessor.__remove_elements(
             root,

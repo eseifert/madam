@@ -184,6 +184,28 @@ class TestSVGProcessor:
         shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
         assert shrunk_fragment == ''
 
+    def test_shrink_removes_zero_length_lines(self, processor):
+        asset = create_svg_asset(
+            '<line x1="10" y1="20" x2="10" y2="20" />'
+            '<line x1="0" y1="0" x2="0" y2="0" />'
+            '<line />'
+        )
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
+        assert shrunk_fragment == ''
+
+    def test_shrink_keeps_nonzero_lines(self, processor):
+        asset = create_svg_asset('<line x1="0" y1="0" x2="10" y2="20" />')
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
+        assert shrunk_fragment != ''
+
     def test_shrink_removes_empty_paths(self, processor):
         asset = create_svg_asset('<path d="" /><path d=" " />')
         shrink_operator = processor.shrink()
