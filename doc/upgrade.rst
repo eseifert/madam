@@ -9,6 +9,33 @@ of when upgrading from one release to the next.
    :depth: 2
 
 
+0.25.0 → 0.26.0
+----------------
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+``crop()`` parameters are now keyword-only
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.image.PillowProcessor.crop` and
+:meth:`~madam.ffmpeg.FFmpegProcessor.crop` now require all parameters after
+``asset`` to be passed as keyword arguments.  Positional calls will raise a
+``TypeError``:
+
+.. code-block:: python
+
+   # Before (positional — no longer valid)
+   cropped = processor.crop(asset, 100, 100, 10, 10)
+
+   # After (keyword-only — required)
+   cropped = processor.crop(asset, width=100, height=100, x=10, y=10)
+
+This change makes call sites self-documenting and prevents silent argument
+transposition bugs.  The ``@operator`` decorator already requires users to call
+processor methods with ``**kwargs``, so most existing code is unaffected.
+
+
 0.24.0 → 0.25.0
 ----------------
 
