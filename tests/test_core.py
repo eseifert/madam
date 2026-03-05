@@ -500,6 +500,132 @@ class TestProcessingContext:
             ProcessingContext()
 
 
+class TestPipelineProcessorBoundary:
+    """Regression guard: processor boundary forces materialisation."""
+
+    def test_pillow_context_is_materialised_before_crossing_processor_boundary(self):
+        """A PillowContext must be an Asset by the time the second processor's run starts."""
+        from madam.core import Pipeline, ProcessingContext
+
+        proc_a = _FakeProcessor()
+        proc_b = _FakeProcessor()
+        op_a = proc_a._make_op()
+        op_b = proc_b._make_op()
+
+        received_by_b = []
+        original_execute_run = proc_b.execute_run
+
+        def recording_b(steps, asset_or_context):
+            received_by_b.append(asset_or_context)
+            return original_execute_run(steps, asset_or_context)
+
+        proc_b.execute_run = recording_b
+        pipeline = Pipeline()
+        pipeline.add(op_a)
+        pipeline.add(op_b)
+        asset = Asset(io.BytesIO(b'x'))
+
+        list(pipeline.process(asset))
+
+        assert received_by_b, 'proc_b.execute_run was never called'
+        assert not isinstance(received_by_b[0], ProcessingContext), (
+            'proc_b received a raw ProcessingContext instead of a materialised Asset'
+        )
+
+
+class TestPipelineMetadataMaterialisation:
+    """Untagged (metadata) step must receive a materialised Asset."""
+
+    def test_untagged_step_between_two_pillow_ops_receives_asset_not_context(self):
+        from madam.core import Pipeline, ProcessingContext
+
+        proc = _FakeProcessor()
+        op1 = proc._make_op()
+        op2 = proc._make_op()
+
+        received = []
+
+        def middle_step(asset):
+            received.append(asset)
+            return asset
+
+        pipeline = Pipeline()
+        pipeline.add(op1)
+        pipeline.add(middle_step)
+        pipeline.add(op2)
+        asset = Asset(io.BytesIO(b'x'))
+
+        list(pipeline.process(asset))
+
+        assert len(received) == 1
+        assert isinstance(received[0], Asset)
+        assert not isinstance(received[0], ProcessingContext)
+
+
+class TestPipelineFlush:
+    """Pipeline.flush() forces materialisation between same-processor ops."""
+
+    def test_flush_is_importable_via_pipeline(self):
+        from madam.core import Pipeline
+        assert hasattr(Pipeline, 'flush')
+
+    def test_flush_returns_callable(self):
+        from madam.core import Pipeline
+        flush_step = Pipeline.flush()
+        assert callable(flush_step)
+
+    def test_flush_forces_two_runs_for_same_processor(self):
+        from madam.core import Pipeline
+
+        proc = _FakeProcessor()
+        op1 = proc._make_op()
+        op2 = proc._make_op()
+
+        pipeline = Pipeline()
+        pipeline.add(op1)
+        pipeline.add(Pipeline.flush())
+        pipeline.add(op2)
+        asset = Asset(io.BytesIO(b'x'))
+
+        list(pipeline.process(asset))
+
+        assert len(proc.run_calls) == 2, (
+            f'Expected 2 execute_run calls (one per run), got {len(proc.run_calls)}'
+        )
+
+    def test_flush_without_flush_gives_single_run(self):
+        from madam.core import Pipeline
+
+        proc = _FakeProcessor()
+        op1 = proc._make_op()
+        op2 = proc._make_op()
+
+        pipeline = Pipeline()
+        pipeline.add(op1)
+        pipeline.add(op2)
+        asset = Asset(io.BytesIO(b'x'))
+
+        list(pipeline.process(asset))
+
+        assert len(proc.run_calls) == 1
+
+    def test_flush_passes_asset_through_unchanged(self):
+        from madam.core import Pipeline
+
+        proc = _FakeProcessor()
+        op1 = proc._make_op()
+
+        pipeline = Pipeline()
+        pipeline.add(op1)
+        pipeline.add(Pipeline.flush())
+        asset = Asset(io.BytesIO(b'x'))
+
+        results = list(pipeline.process(asset))
+
+        assert len(results) == 1
+        assert isinstance(results[0], Asset)
+
+
 class TestErrorHierarchy:
     def test_transient_operator_error_is_subclass_of_operator_error(self):
         from madam.core import OperatorError, TransientOperatorError

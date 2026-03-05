@@ -349,9 +349,22 @@ class _WhenStep:
         self.else_ = else_
 
 
+class _FlushStep:
+    """Sentinel that forces materialisation at this point in the pipeline.
+
+    Inserting a :class:`_FlushStep` (via :meth:`Pipeline.flush`) between two
+    operators that belong to the same processor causes the pipeline to end
+    the current run and begin a fresh one, encoding once per run instead of
+    combining them.
+    """
+
+    def __call__(self, asset: 'Asset') -> 'Asset':
+        return asset
+
+
 # A pipeline step is either a plain operator callable or one of the control-flow
-# step objects introduced by Pipeline.branch() and Pipeline.when().
-_PipelineStep = Callable[['Asset'], 'Asset'] | _BranchStep | _WhenStep
+# step objects introduced by Pipeline.branch(), Pipeline.when(), and Pipeline.flush().
+_PipelineStep = Callable[['Asset'], 'Asset'] | _BranchStep | _WhenStep | _FlushStep
 
 
 class Pipeline:
@@ -419,7 +432,7 @@ class Pipeline:
                     j = i + 1
                     while j < len(ops):
                         nxt = ops[j]
-                        if isinstance(nxt, (_BranchStep, _WhenStep)):
+                        if isinstance(nxt, (_BranchStep, _WhenStep, _FlushStep)):
                             break
                         if getattr(nxt, '_processor', None) is not step_proc:
                             break
@@ -472,6 +485,20 @@ class Pipeline:
         :param else_: Operator applied when *predicate* is ``False``; optional
         """
         self.operators.append(_WhenStep(predicate, then, else_))
+
+    @staticmethod
+    def flush() -> _FlushStep:
+        """
+        Return a flush sentinel that forces materialisation at this point.
+
+        Inserting a flush step between two operators that belong to the same
+        processor causes the pipeline to end the current deferred run and
+        begin a fresh one.  Use this when an intermediate encode/decode cycle
+        is required (e.g. to stabilise file size or byte layout).
+
+        :return: A :class:`_FlushStep` sentinel callable
+        """
+        return _FlushStep()
 
 
 class Processor(metaclass=abc.ABCMeta):
