@@ -256,6 +256,15 @@ class TestSVGProcessor:
         shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
         assert shrunk_fragment == ''
 
+    def test_shrink_removes_xml_comments(self, processor):
+        asset = create_svg_asset('<!-- this is a comment --><rect height="100%" width="100%" />')
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        content = shrunk_asset.essence.read().decode('utf-8')
+        assert '<!--' not in content
+
     def test_shrink_removes_empty_defs(self, processor):
         asset = create_svg_asset('<defs></defs>')
         shrink_operator = processor.shrink()
