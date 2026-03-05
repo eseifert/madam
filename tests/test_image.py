@@ -1389,3 +1389,60 @@ class TestPillowIccProfile:
 
         assert resized.metadata.get('icc_profile') is not None
         assert isinstance(resized.metadata.get('icc_profile'), bytes)
+
+
+class TestPillowContext:
+    def test_pillow_context_is_importable(self):
+        from madam.image import PillowContext  # noqa: F401
+
+    def test_pillow_context_holds_image_and_mime_type(self):
+        import PIL.Image
+        from madam.image import PillowContext, PillowProcessor
+
+        proc = PillowProcessor()
+        img = PIL.Image.new('RGB', (10, 8), (255, 0, 0))
+        ctx = PillowContext(proc, img, 'image/png')
+
+        assert ctx.image is img
+        assert ctx.mime_type == 'image/png'
+
+    def test_pillow_context_processor_returns_owning_processor(self):
+        import PIL.Image
+        from madam.image import PillowContext, PillowProcessor
+
+        proc = PillowProcessor()
+        img = PIL.Image.new('RGB', (10, 8))
+        ctx = PillowContext(proc, img, 'image/png')
+
+        assert ctx.processor is proc
+
+    def test_pillow_context_materialize_returns_asset_with_correct_mime_type(self):
+        import PIL.Image
+        from madam.image import PillowContext, PillowProcessor
+
+        proc = PillowProcessor()
+        img = PIL.Image.new('RGB', (10, 8), (0, 128, 0))
+        ctx = PillowContext(proc, img, 'image/png')
+
+        asset = ctx.materialize()
+
+        assert asset.mime_type == 'image/png'
+
+    def test_pillow_context_materialize_returns_asset_with_correct_dimensions(self):
+        import PIL.Image
+        from madam.image import PillowContext, PillowProcessor
+
+        proc = PillowProcessor()
+        img = PIL.Image.new('RGB', (10, 8))
+        ctx = PillowContext(proc, img, 'image/jpeg')
+
+        asset = ctx.materialize()
+
+        assert asset.width == 10
+        assert asset.height == 8
+
+    def test_pillow_context_is_processing_context_subclass(self):
+        from madam.core import ProcessingContext
+        from madam.image import PillowContext
+
+        assert issubclass(PillowContext, ProcessingContext)

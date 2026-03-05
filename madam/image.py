@@ -14,7 +14,7 @@ import PIL.ImageFont
 import PIL.ImageOps
 from bidict import bidict
 
-from madam.core import Asset, OperatorError, Processor, operator
+from madam.core import Asset, OperatorError, ProcessingContext, Processor, operator
 from madam.mime import MimeType
 
 # Formats whose Pillow encoder accepts an explicit icc_profile= keyword.
@@ -102,6 +102,30 @@ class FlipOrientation(Enum):
     HORIZONTAL = 0
     #: Vertical axis
     VERTICAL = 1
+
+
+class PillowContext(ProcessingContext):
+    """
+    Deferred in-memory state for a Pillow processing run.
+
+    Holds a live :class:`PIL.Image.Image` and the target MIME type so that
+    consecutive Pillow operators can be applied to the pixel data without
+    intermediate encode/decode cycles.  Call :meth:`materialize` to produce
+    the final encoded :class:`~madam.core.Asset`.
+    """
+
+    def __init__(self, processor: 'PillowProcessor', image: PIL.Image.Image, mime_type: str) -> None:
+        self._proc = processor
+        self.image = image
+        self.mime_type = mime_type
+
+    @property
+    def processor(self) -> 'PillowProcessor':
+        return self._proc
+
+    def materialize(self) -> Asset:
+        icc_profile = getattr(self.image, 'info', {}).get('icc_profile')
+        return self._proc._image_to_asset(self.image, mime_type=self.mime_type, icc_profile=icc_profile)
 
 
 class PillowProcessor(Processor):
