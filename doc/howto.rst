@@ -654,18 +654,30 @@ metadata:
 How to strip all metadata from a file
 ---------------------------------------
 
-Use the metadata processor's ``strip`` method directly, then read back the
-stripped essence:
+Use :meth:`~madam.core.Madam.strip` to produce a clean copy of any asset.
+It removes all embedded metadata from both the Python metadata dict
+*and* the essence bytes (EXIF, XMP, IPTC, ID3, FFmpeg container tags,
+SVG RDF, …) while preserving structural properties such as ``mime_type``,
+``width``, ``height``, and ``duration``:
 
 .. code-block:: python
 
-   from madam.exif import ExifMetadataProcessor
+   with open('photo.jpg', 'rb') as f:
+       asset = madam.read(f)
 
-   exif_proc = ExifMetadataProcessor()
+   clean = madam.strip(asset)
 
-   with open('photo.jpg', 'rb') as f_in, open('clean.jpg', 'wb') as f_out:
-       stripped = exif_proc.strip(f_in)
-       f_out.write(stripped.read())
+   # Format-specific dicts are gone.
+   assert 'exif' not in clean.metadata
+   assert 'xmp'  not in clean.metadata
+
+   # Structural properties are preserved.
+   assert clean.mime_type == asset.mime_type
+   assert clean.width     == asset.width
+   assert clean.height    == asset.height
+
+   with open('clean.jpg', 'wb') as f:
+       madam.write(clean, f)
 
 
 Pipelines

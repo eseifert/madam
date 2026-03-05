@@ -9,6 +9,93 @@ of when upgrading from one release to the next.
    :depth: 2
 
 
+0.24.0 → 0.25.0
+----------------
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+Zopfli PNG compression is now opt-in
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``zopflipy`` has been moved from a required dependency to the optional
+``optimize`` extra.  The ``zopfli`` configuration key now **defaults to**
+``False`` instead of ``True``.
+
+If you relied on Zopfli compression, install the extra and explicitly
+enable it in your configuration:
+
+.. code-block:: bash
+
+   pip install "madam[optimize]"
+
+.. code-block:: python
+
+   madam = Madam({'image/png': {'zopfli': True}})
+
+Code that sets ``'zopfli': True`` but does *not* install ``madam[optimize]``
+will now raise an ``ImportError`` with a clear installation hint instead of
+silently falling back.
+
+
+New features
+~~~~~~~~~~~~
+
+New: ``Madam.strip()`` removes all metadata
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.core.Madam.strip` is the new canonical way to produce a
+metadata-free copy of any asset.  It strips both the Python-level metadata
+dict *and* the embedded bytes (EXIF APP1, XMP APP1, IPTC APP13, ID3 tags,
+FFmpeg container atoms, SVG RDF, …), then returns a clean asset whose
+structural properties (``mime_type``, ``width``, ``height``, ``duration``,
+…) are preserved:
+
+.. code-block:: python
+
+   with open('photo.jpg', 'rb') as f:
+       asset = madam.read(f)
+
+   clean = madam.strip(asset)
+
+   assert 'exif' not in clean.metadata
+   assert 'xmp'  not in clean.metadata
+   assert clean.width  == asset.width
+   assert clean.height == asset.height
+
+   with open('clean.jpg', 'wb') as f:
+       madam.write(clean, f)
+
+See the :doc:`howto` guide for a worked example.
+
+
+Bug fixes
+~~~~~~~~~
+
+SVG: ``shrink()`` zero-value detection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.vector.SVGProcessor.shrink` previously only recognised the
+exact string ``"0"`` when removing invisible elements (zero-radius circles,
+zero-dimension rectangles, opacity-zero elements, etc.).  Values such as
+``"0.0"`` or ``"0px"`` were missed and those elements were left in the
+output.  All zero-value checks now use the unit-aware ``svg_length_to_px``
+converter.
+
+SVG: ``shrink()`` removes zero-length ``<line>`` elements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``<line>`` elements where both endpoints are identical (``x1 == x2`` and
+``y1 == y2``) are now removed by :meth:`~madam.vector.SVGProcessor.shrink`.
+
+SVG: ``shrink()`` no longer crashes on deeply nested documents
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The internal whitespace-removal pass was recursive and raised
+``RecursionError`` on SVG files with a nesting depth exceeding Python's
+call-stack limit (~1000 levels).  The implementation is now iterative.
+
+
 0.23.0 → 0.24.0
 ----------------
 
