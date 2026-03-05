@@ -7,9 +7,9 @@ from xml.etree import ElementTree as ET
 
 from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError, operator
 
-_INCH_TO_MM = 1 / 25.4
+_MM_TO_INCH = 1 / 25.4
 _PX_PER_INCH = 90
-_PT_PER_INCH = 1 / 72
+_INCH_PER_PT = 1 / 72
 _FONT_SIZE_PT = 12
 _X_HEIGHT = 0.7
 
@@ -29,24 +29,34 @@ def svg_length_to_px(length: str | None) -> float:
         unit = length[-unit_len:]
 
     if unit == 'em':
-        return value * _PX_PER_INCH * _FONT_SIZE_PT * _PT_PER_INCH
+        return value * _PX_PER_INCH * _FONT_SIZE_PT * _INCH_PER_PT
     elif unit == 'ex':
-        return value * _PX_PER_INCH * _X_HEIGHT * _FONT_SIZE_PT * _PT_PER_INCH
+        return value * _PX_PER_INCH * _X_HEIGHT * _FONT_SIZE_PT * _INCH_PER_PT
     elif unit == 'px':
         return value
     elif unit == 'in':
         return value * _PX_PER_INCH
     elif unit == 'cm':
-        return value * _PX_PER_INCH * _INCH_TO_MM * 10
+        return value * _PX_PER_INCH * _MM_TO_INCH * 10
     elif unit == 'mm':
-        return value * _PX_PER_INCH * _INCH_TO_MM
+        return value * _PX_PER_INCH * _MM_TO_INCH
     elif unit == 'pt':
-        return value * _PX_PER_INCH * _PT_PER_INCH
+        return value * _PX_PER_INCH * _INCH_PER_PT
     elif unit == 'pc':
-        return value * _PX_PER_INCH * _PT_PER_INCH * 12
+        return value * _PX_PER_INCH * _INCH_PER_PT * 12
     elif unit == '%':
         return value
     raise ValueError()
+
+
+def _attr_is_zero(value: str | None) -> bool:
+    """Return True if the attribute value represents a zero quantity."""
+    if value is None:
+        return False
+    try:
+        return svg_length_to_px(value) == 0.0
+    except ValueError:
+        return False
 
 
 XML_NS = dict(
@@ -154,19 +164,27 @@ class SVGProcessor(Processor):
         # Remove empty texts
         SVGProcessor.__remove_elements(root, 'svg:text', lambda e: bool(e.text and e.text.strip() or list(e)))
         # Remove all empty circles with radius 0
-        SVGProcessor.__remove_elements(root, 'svg:circle', lambda e: bool(list(e) or e.get('r') != '0'))
+        SVGProcessor.__remove_elements(root, 'svg:circle', lambda e: bool(list(e)) or not _attr_is_zero(e.get('r')))
         # Remove all empty ellipses with x-axis or y-axis radius 0
         SVGProcessor.__remove_elements(
-            root, 'svg:ellipse', lambda e: bool(list(e) or e.get('rx') != '0' and e.get('ry') != '0')
+            root, 'svg:ellipse',
+            lambda e: bool(list(e)) or not (_attr_is_zero(e.get('rx')) or _attr_is_zero(e.get('ry')))
         )
         # Remove all empty rectangles with width or height 0
         SVGProcessor.__remove_elements(
-            root, 'svg:rect', lambda e: bool(list(e) or e.get('width') != '0' and e.get('height') != '0')
+            root, 'svg:rect',
+            lambda e: bool(list(e)) or not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
         )
         # Remove all patterns with width or height 0
-        SVGProcessor.__remove_elements(root, 'svg:pattern', lambda e: e.get('width') != '0' and e.get('height') != '0')
+        SVGProcessor.__remove_elements(
+            root, 'svg:pattern',
+            lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
+        )
         # Remove all images with width or height 0
-        SVGProcessor.__remove_elements(root, 'svg:image', lambda e: e.get('width') != '0' and e.get('height') != '0')
+        SVGProcessor.__remove_elements(
+            root, 'svg:image',
+            lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
+        )
         # Remove all paths without coordinates
         SVGProcessor.__remove_elements(root, 'svg:path', lambda e: bool(e.get('d', '').strip()))
         # Remove all polygons without points
@@ -177,7 +195,7 @@ class SVGProcessor(Processor):
         SVGProcessor.__remove_elements(
             root,
             '*',
-            lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and e.get('opacity') != '0',
+            lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and not _attr_is_zero(e.get('opacity')),
         )
         # Remove empty groups
         SVGProcessor.__remove_elements(root, 'svg:g', lambda e: bool(list(e)))

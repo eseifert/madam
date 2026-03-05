@@ -117,6 +117,15 @@ class TestSVGProcessor:
         shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
         assert shrunk_fragment == ''
 
+    def test_shrink_removes_circles_with_radius_zero_float(self, processor):
+        asset = create_svg_asset('<circle r="0.0" />')
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
+        assert shrunk_fragment == ''
+
     def test_shrink_removes_ellipses_with_radius_zero(self, processor):
         asset = create_svg_asset('<ellipse rx="0" ry="1" /><ellipse rx="1" ry="0" />')
         shrink_operator = processor.shrink()
@@ -126,8 +135,26 @@ class TestSVGProcessor:
         shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
         assert shrunk_fragment == ''
 
+    def test_shrink_removes_ellipses_with_radius_zero_float(self, processor):
+        asset = create_svg_asset('<ellipse rx="0.0" ry="1" /><ellipse rx="1" ry="0.0" />')
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
+        assert shrunk_fragment == ''
+
     def test_shrink_removes_rectangles_with_width_or_height_zero(self, processor):
         asset = create_svg_asset('<rect height="0" width="1" /><rect height="1" width="0" />')
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
+        assert shrunk_fragment == ''
+
+    def test_shrink_removes_rectangles_with_width_or_height_zero_float(self, processor):
+        asset = create_svg_asset('<rect height="0.0" width="1" /><rect height="1" width="0.0" />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
@@ -189,6 +216,7 @@ class TestSVGProcessor:
             '<text visibility="hidden">Hidden</text>'
             '<text display="none">Invisible</text>'
             '<text opacity="0">Transparent</text>'
+            '<text opacity="0.0">Transparent float</text>'
         )
         shrink_operator = processor.shrink()
 
