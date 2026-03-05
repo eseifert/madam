@@ -359,6 +359,35 @@ class TestPipeline:
         assert len(pipeline.operators) == 1
 
 
+class TestOperatorTagging:
+    def test_operator_has_processor_attribute(self):
+        from madam.image import PillowProcessor
+
+        proc = PillowProcessor()
+        op = proc.resize(width=10, height=10)
+
+        assert hasattr(op, '_processor')
+
+    def test_operator_processor_attribute_points_to_owning_processor(self):
+        from madam.image import PillowProcessor
+
+        proc = PillowProcessor()
+        op = proc.resize(width=10, height=10)
+
+        assert op._processor is proc
+
+    def test_different_processor_instances_tag_separately(self):
+        from madam.image import PillowProcessor
+
+        proc_a = PillowProcessor()
+        proc_b = PillowProcessor()
+        op_a = proc_a.resize(width=10, height=10)
+        op_b = proc_b.resize(width=10, height=10)
+
+        assert op_a._processor is proc_a
+        assert op_b._processor is proc_b
+
+
 class TestProcessingContext:
     def test_processing_context_is_importable(self):
         from madam.core import ProcessingContext  # noqa: F401

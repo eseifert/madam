@@ -322,6 +322,7 @@ def operator(
     @functools.wraps(function)
     def wrapper(self: Any, **kwargs: _P.kwargs) -> Callable[['Asset'], 'Asset']:
         configured_operator = functools.partial(function, self, **kwargs)
+        configured_operator._processor = self
         return configured_operator
 
     return wrapper
