@@ -299,6 +299,30 @@ class AudioCodec:
     NONE = None  # discard audio stream (-an)
 
 
+class FFmpegContext(ProcessingContext):
+    """
+    Deferred in-memory state for an FFmpeg processing run.
+
+    Holds the original input :class:`~madam.core.Asset` and an
+    :class:`FFmpegFilterGraph` that accumulates the filter chain built up by
+    consecutive FFmpegProcessor operators.  Call :meth:`materialize` to execute
+    a single ``ffmpeg`` subprocess that applies all accumulated filters at once.
+    """
+
+    def __init__(self, processor: 'FFmpegProcessor', asset: Asset, graph: FFmpegFilterGraph) -> None:
+        self._proc = processor
+        self.asset = asset
+        self.graph = graph
+
+    @property
+    def processor(self) -> 'FFmpegProcessor':
+        return self._proc
+
+    def materialize(self) -> Asset:
+        """Run one ``ffmpeg`` subprocess from the accumulated filter graph."""
+        return self._proc._materialize_context(self)
+
+
 class FFmpegProcessor(Processor):
     """
     Represents a processor that uses FFmpeg to read audio and video data.
@@ -651,6 +675,133 @@ class FFmpegProcessor(Processor):
     def _threads(self) -> int:
         """Resolved thread count, evaluated fresh each call to respect container CPU limits."""
         return self._configured_threads if self._configured_threads > 0 else multiprocessing.cpu_count()
+
+    # ------------------------------------------------------------------
+    # Deferred execution support
+    # ------------------------------------------------------------------
+
+    def execute_run(self, steps: list, asset_or_context: 'Asset | FFmpegContext') -> 'Asset | FFmpegContext':
+        """
+        Group consecutive FFmpegProcessor operators into a single subprocess.
+
+        Each step's ``_accumulate_*`` method appends to the
+        :class:`FFmpegFilterGraph`.  Operators without an accumulation method
+        fall back to direct sequential execution (which may spawn a subprocess).
+        The accumulated context is returned for the pipeline to materialise at
+        the next processor boundary or pipeline end.
+        """
+        if isinstance(asset_or_context, FFmpegContext):
+            graph = asset_or_context.graph
+            asset = asset_or_context.asset
+        else:
+            asset = asset_or_context
+            graph = FFmpegFilterGraph()
+            graph.set_output_format(str(asset.mime_type))
+
+        for step in steps:
+            op_name = getattr(getattr(step, 'func', None), '__name__', None)
+            accumulate = getattr(self, f'_accumulate_{op_name}', None) if op_name else None
+            if accumulate is not None:
+                asset = accumulate(graph, asset, **step.keywords)
+            else:
+                # Fallback: materialise current context, apply step directly.
+                if isinstance(asset_or_context, FFmpegContext):
+                    ctx = FFmpegContext(self, asset, graph)
+                    asset = ctx.materialize()
+                    graph = FFmpegFilterGraph()
+                    graph.set_output_format(str(asset.mime_type))
+                asset = step(asset)
+
+        return FFmpegContext(self, asset, graph)
+
+    def _materialize_context(self, ctx: 'FFmpegContext') -> Asset:
+        """
+        Execute a single ``ffmpeg`` subprocess from an accumulated
+        :class:`FFmpegFilterGraph` and return the resulting :class:`Asset`.
+        """
+        asset = ctx.asset
+        graph = ctx.graph
+        mime_type = MimeType(graph.output_mime_type or str(asset.mime_type))
+        encoder_name = self._FFmpegProcessor__mime_type_to_encoder.get(mime_type)  # type: ignore[attr-defined]
+        if not encoder_name:
+            raise UnsupportedFormatError(f'Unsupported output format: {mime_type}')
+
+        result = io.BytesIO()
+        with _FFmpegContext(asset.essence, result) as ffctx:
+            command = ['ffmpeg', '-loglevel', 'error']
+            command += graph.extra_input_args
+            command += ['-i', ffctx.input_path]
+            command += graph.extra_output_args
+
+            vf = graph.video_filter_string
+            af = graph.audio_filter_string
+            if vf:
+                command += ['-filter:v', vf]
+            if af:
+                command += ['-filter:a', af]
+
+            for key, val in graph.codec_options.items():
+                command += [f'-{key}', str(val)]
+
+            command += ['-threads', str(self._threads), '-f', encoder_name, '-y', ffctx.output_path]
+
+            try:
+                subprocess.run(command, stderr=subprocess.PIPE, check=True)
+            except subprocess.CalledProcessError as err:
+                raise OperatorError(_ffmpeg_error_message(err, 'deferred ffmpeg run'))
+
+        # Re-probe to get accurate metadata for the encoded result.
+        result.seek(0)
+        return self.read(result)
+
+    def _accumulate_resize(
+        self,
+        graph: FFmpegFilterGraph,
+        asset: Asset,
+        *,
+        width: int,
+        height: int,
+    ) -> Asset:
+        """Accumulate an FFmpeg scale filter for the resize operator."""
+        mime_type = MimeType(asset.mime_type)
+        if mime_type.type not in ('image', 'video'):
+            raise OperatorError(f'Cannot resize asset of type {mime_type}')
+        if width < 1 or height < 1:
+            raise ValueError(f'Invalid dimensions: {width:d}x{height:d}')
+        graph.add_video_filter('scale', w=width, h=height)
+        # Return an updated "virtual" asset with new dimensions for subsequent operators.
+        metadata = dict(asset.metadata)
+        metadata['width'] = width
+        metadata['height'] = height
+        return Asset(asset.essence, **metadata)
+
+    def _accumulate_crop(
+        self,
+        graph: FFmpegFilterGraph,
+        asset: Asset,
+        *,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+    ) -> Asset:
+        """Accumulate an FFmpeg crop filter for the crop operator."""
+        mime_type = MimeType(asset.mime_type)
+        if mime_type.type != 'video':
+            raise UnsupportedFormatError(f'Unsupported source asset type: {mime_type}')
+
+        max_x = max(0, min(asset.width or width, width + x))
+        max_y = max(0, min(asset.height or height, height + y))
+        min_x = max(0, min(asset.width or width, x))
+        min_y = max(0, min(asset.height or height, y))
+        actual_w = max_x - min_x
+        actual_h = max_y - min_y
+
+        graph.add_video_filter('crop', w=actual_w, h=actual_h, x=min_x, y=min_y)
+        metadata = dict(asset.metadata)
+        metadata['width'] = actual_w
+        metadata['height'] = actual_h
+        return Asset(asset.essence, **metadata)
 
     def can_read(self, file: IO) -> bool:
         try:
