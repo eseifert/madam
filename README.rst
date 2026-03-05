@@ -32,10 +32,11 @@ After you have installed these, MADAM can be installed from PyPI::
 
 Optional extras enable additional format support::
 
+    pip install "madam[analysis]"  # SSIMULACRA2 quality optimization
     pip install "madam[heif]"      # HEIC/HEIF images (requires pillow-heif)
+    pip install "madam[optimize]"  # Zopfli PNG compression
     pip install "madam[pdf]"       # PDF rasterization (requires poppler)
     pip install "madam[raw]"       # Raw camera formats (requires LibRaw)
-    pip install "madam[analysis]"  # SSIMULACRA2 quality optimization
     pip install "madam[all]"       # All of the above
 
 

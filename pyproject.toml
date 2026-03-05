@@ -36,7 +36,6 @@ dependencies = [
     "frozendict",
     "piexif",
     "pillow>=9.1.0",
-    "zopflipy>=1.1",
 ]
 
 [project.optional-dependencies]
@@ -55,8 +54,11 @@ raw = [
 analysis = [
     "ssimulacra2>=0.3.0",
 ]
+optimize = [
+    "zopflipy>=1.1",
+]
 all = [
-    "madam[heif,pdf,raw,analysis]",
+    "madam[heif,pdf,raw,analysis,optimize]",
 ]
 
 [tool.setuptools_scm]

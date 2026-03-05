@@ -330,7 +330,10 @@ class PillowProcessor(Processor):
         if mime_type == MimeType('image/png') and image.mode != 'P':
             use_zopfli = format_config.get('zopfli', False)
             if use_zopfli:
-                import zopfli
+                try:
+                    import zopfli
+                except ImportError:
+                    raise ImportError("zopfli PNG optimization requires the 'optimize' extra: pip install madam[optimize]") from None
 
                 zopfli_png = zopfli.ZopfliPNG()
                 # Convert 16-bit per channel images to 8-bit per channel

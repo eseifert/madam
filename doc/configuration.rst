@@ -85,9 +85,9 @@ PNG (image/png)
 ---------------
 zopfli
     Boolean that defines whether Zopfli should be used to further compress PNG
-    images.
+    images. Requires the ``optimize`` extra (``pip install "madam[optimize]"``).
 
-    Defaults to True.
+    Defaults to False.
 
     .. warning::
 

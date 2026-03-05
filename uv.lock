@@ -302,7 +302,6 @@ dependencies = [
     { name = "frozendict" },
     { name = "piexif" },
     { name = "pillow" },
-    { name = "zopflipy" },
 ]
 
 [package.optional-dependencies]
@@ -312,6 +311,7 @@ all = [
     { name = "pypdf" },
     { name = "rawpy" },
     { name = "ssimulacra2" },
+    { name = "zopflipy" },
 ]
 analysis = [
     { name = "ssimulacra2" },
@@ -333,6 +333,9 @@ doc = [
 heif = [
     { name = "pillow-heif" },
 ]
+optimize = [
+    { name = "zopflipy" },
+]
 pdf = [
     { name = "pdf2image" },
     { name = "pypdf" },
@@ -346,7 +349,7 @@ requires-dist = [
     { name = "bidict" },
     { name = "coverage", marker = "extra == 'dev'" },
     { name = "frozendict" },
-    { name = "madam", extras = ["analysis", "heif", "pdf", "raw"], marker = "extra == 'all'" },
+    { name = "madam", extras = ["analysis", "heif", "optimize", "pdf", "raw"], marker = "extra == 'all'" },
     { name = "mutagen", marker = "extra == 'dev'" },
     { name = "pdf2image", marker = "extra == 'pdf'", specifier = ">=1.17.0" },
     { name = "piexif" },
@@ -362,9 +365,9 @@ requires-dist = [
     { name = "sphinx-rtd-theme", marker = "extra == 'doc'" },
     { name = "ssimulacra2", marker = "extra == 'analysis'", specifier = ">=0.3.0" },
     { name = "ty", marker = "extra == 'dev'" },
-    { name = "zopflipy", specifier = ">=1.1" },
+    { name = "zopflipy", marker = "extra == 'optimize'", specifier = ">=1.1" },
 ]
-provides-extras = ["dev", "doc", "heif", "pdf", "raw", "analysis", "all"]
+provides-extras = ["dev", "doc", "heif", "pdf", "raw", "analysis", "optimize", "all"]
 
 [[package]]
 name = "markupsafe"
