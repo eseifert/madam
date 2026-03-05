@@ -273,6 +273,29 @@ class UnsupportedFormatError(PermanentOperatorError):
 _P = ParamSpec('_P')
 
 
+class ProcessingContext(abc.ABC):
+    """
+    Represents the deferred in-memory state of an asset being processed.
+
+    Consecutive operators that share the same :class:`Processor` are grouped
+    into a *run* by :class:`Pipeline`.  The processor accumulates each
+    operator's effect on the context object and only encodes the result once
+    when :meth:`materialize` is called — either at a processor boundary or at
+    the end of the pipeline.
+    """
+
+    @property
+    @abc.abstractmethod
+    def processor(self) -> 'Processor':
+        """The :class:`Processor` that owns this context."""
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def materialize(self) -> 'Asset':
+        """Encode and return the final :class:`Asset`."""
+        raise NotImplementedError()
+
+
 def operator(
     function: Callable[Concatenate[Any, 'Asset', _P], 'Asset'],
 ) -> Callable[Concatenate[Any, _P], Callable[['Asset'], 'Asset']]:

@@ -359,6 +359,33 @@ class TestPipeline:
         assert len(pipeline.operators) == 1
 
 
+class TestProcessingContext:
+    def test_processing_context_is_importable(self):
+        from madam.core import ProcessingContext  # noqa: F401
+
+    def test_processing_context_is_abstract(self):
+        import abc
+        from madam.core import ProcessingContext
+
+        assert issubclass(ProcessingContext, abc.ABC)
+
+    def test_processing_context_has_abstract_processor_property(self):
+        from madam.core import ProcessingContext
+
+        assert 'processor' in ProcessingContext.__abstractmethods__
+
+    def test_processing_context_has_abstract_materialize_method(self):
+        from madam.core import ProcessingContext
+
+        assert 'materialize' in ProcessingContext.__abstractmethods__
+
+    def test_processing_context_cannot_be_instantiated_directly(self):
+        from madam.core import ProcessingContext
+
+        with pytest.raises(TypeError):
+            ProcessingContext()
+
+
 class TestErrorHierarchy:
     def test_transient_operator_error_is_subclass_of_operator_error(self):
         from madam.core import OperatorError, TransientOperatorError
