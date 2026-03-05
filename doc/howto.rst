@@ -557,6 +557,99 @@ Both methods accept optional ``video`` and ``audio`` dicts with ``codec`` and
 ``bitrate`` keys to customise the encoding.
 
 
+Vector graphics
+================
+
+How to read and write an SVG file
+-----------------------------------
+
+SVG is handled by :class:`~madam.vector.SVGProcessor`, which is registered in
+the default :class:`~madam.core.Madam` registry.  Use the familiar
+:meth:`~madam.core.Madam.read` / :meth:`~madam.core.Madam.write` entry points:
+
+.. code-block:: python
+
+   from madam import Madam
+
+   madam = Madam()
+
+   with open('diagram.svg', 'rb') as f:
+       asset = madam.read(f)
+
+   print(asset.mime_type)   # 'image/svg+xml'
+   print(asset.width)       # float, in px (if the root element has a width attribute)
+   print(asset.height)      # float, in px (if the root element has a height attribute)
+
+   with open('output.svg', 'wb') as f:
+       madam.write(asset, f)
+
+
+How to optimise an SVG file
+-----------------------------
+
+:meth:`~madam.vector.SVGProcessor.shrink` removes invisible and redundant
+elements without changing the rendered appearance:
+
+.. code-block:: python
+
+   processor = madam.get_processor(asset)
+   shrink = processor.shrink()
+   small = shrink(asset)
+
+The operator removes:
+
+* XML whitespace (minification)
+* Empty texts, groups, and ``<defs>`` sections
+* Degenerate shapes: circles with ``r=0``, rectangles with ``width=0`` or
+  ``height=0``, ellipses with a zero axis, paths without ``d``, polygons and
+  polylines without ``points``, zero-length ``<line>`` elements
+* Elements with ``display:none``, ``visibility:hidden``, or ``opacity:0``
+* Empty ``<pattern>`` and ``<image>`` elements
+
+All SVG length units (``px``, ``pt``, ``mm``, ``cm``, ``in``, ``em``, ``ex``,
+``pc``, ``%``) are understood by the zero-value detection logic.
+
+.. note::
+
+   ``shrink()`` does not perform path simplification, coordinate rounding, or
+   any lossy optimisation.  For aggressive size reduction, pass the result to an
+   external tool such as ``svgo``.
+
+
+How to read SVG metadata (RDF/DC)
+-----------------------------------
+
+:class:`~madam.vector.SVGMetadataProcessor` extracts the ``<svg:metadata>``
+block, which typically contains RDF/Dublin Core markup:
+
+.. code-block:: python
+
+   from madam.vector import SVGMetadataProcessor
+
+   meta_proc = SVGMetadataProcessor()
+
+   with open('diagram.svg', 'rb') as f:
+       metadata = meta_proc.read(f)
+
+   # metadata['rdf']['xml'] contains the raw XML string of the metadata element.
+   print(metadata['rdf'].get('xml'))
+
+To strip the metadata block entirely:
+
+.. code-block:: python
+
+   with open('diagram.svg', 'rb') as f:
+       clean = meta_proc.strip(f)   # returns a file-like object
+
+   # Or use the high-level helper that chains all metadata processors:
+   stripped = madam.strip(asset)
+
+.. note::
+
+   SVG metadata is also stripped automatically by :meth:`~madam.core.Madam.read`,
+   so ``asset.essence`` never contains embedded metadata after a normal read.
+
+
 Metadata
 ========
 
@@ -901,6 +994,40 @@ Install the optional PDF dependencies (requires Poppler on the system)::
    registry.  Instantiate it directly as shown above.
 
 
+How to rasterize all pages of a PDF
+--------------------------------------
+
+Iterate over the ``page_count`` metadata attribute to convert every page:
+
+.. code-block:: python
+
+   from madam.pdf import PDFProcessor
+
+   pdf_proc = PDFProcessor()
+
+   with open('document.pdf', 'rb') as f:
+       pdf_asset = pdf_proc.read(f)
+
+   for page_index in range(pdf_asset.page_count):
+       rasterize = pdf_proc.rasterize(page=page_index, dpi=150, mime_type='image/png')
+       image = rasterize(pdf_asset)
+       with open(f'page_{page_index + 1:04d}.png', 'wb') as f:
+           f.write(image.essence.read())
+
+You can feed the resulting image assets into any standard image pipeline:
+
+.. code-block:: python
+
+   # After rasterizing, use the Madam registry for further processing.
+   image_processor = madam.get_processor(image)
+   thumbnail = image_processor.resize(width=800, height=600)(image)
+
+.. note::
+
+   Supported output formats for rasterization are those accepted by
+   ``pdf2image`` / Poppler: ``image/png``, ``image/jpeg``, ``image/tiff``.
+
+
 How to decode a raw camera file (DNG, CR2, NEF, …)
 ----------------------------------------------------
 
@@ -938,6 +1065,55 @@ Install the optional ``rawpy`` library (requires LibRaw on the system)::
 Error handling
 ==============
 
+MADAM uses a small exception hierarchy rooted at
+:class:`~madam.core.OperatorError`::
+
+   OperatorError
+   ├── UnsupportedFormatError   # format not recognised or not supported
+   ├── TransientOperatorError   # failure may go away on retry
+   └── PermanentOperatorError   # failure is unrecoverable
+
+
+How to handle read errors
+--------------------------
+
+:meth:`~madam.core.Madam.read` raises :class:`~madam.core.UnsupportedFormatError`
+when no registered processor recognises the file:
+
+.. code-block:: python
+
+   from madam.core import UnsupportedFormatError
+
+   try:
+       asset = madam.read(f)
+   except UnsupportedFormatError as e:
+       log.warning('Cannot read file: %s', e)
+       # Handle unsupported input — skip, quarantine, or raise to caller.
+
+This can happen for genuinely unsupported formats, truncated files, or files
+with incorrect content (e.g. a ``.jpg`` extension on a ZIP archive).
+
+
+How to handle format detection errors
+---------------------------------------
+
+:meth:`~madam.core.Madam.get_processor` also raises
+:class:`~madam.core.UnsupportedFormatError` when no processor can handle the
+given asset, MIME type string, or file object:
+
+.. code-block:: python
+
+   from madam.core import UnsupportedFormatError
+
+   try:
+       processor = madam.get_processor(asset)
+   except UnsupportedFormatError:
+       log.warning('No processor for MIME type: %s', asset.mime_type)
+
+``get_processor()`` never returns ``None`` — it either returns a usable
+processor or raises.
+
+
 How to handle operator errors
 --------------------------------
 
@@ -968,3 +1144,46 @@ hierarchy.  Use :class:`~madam.core.TransientOperatorError` vs
    except OperatorError:
        # Catch-all for unexpected operator errors.
        log.error('Operator failed', exc_info=True)
+
+
+How to implement a robust batch processing loop
+-------------------------------------------------
+
+Combine the error classes to build a resilient pipeline that skips bad files,
+retries transient failures, and dead-letters permanent failures:
+
+.. code-block:: python
+
+   import logging
+   from madam.core import (
+       UnsupportedFormatError,
+       TransientOperatorError,
+       PermanentOperatorError,
+       OperatorError,
+   )
+
+   log = logging.getLogger(__name__)
+
+   def process_file(path, max_retries=3):
+       for attempt in range(1, max_retries + 1):
+           try:
+               with open(path, 'rb') as f:
+                   asset = madam.read(f)
+               processor = madam.get_processor(asset)
+               result = processor.convert(mime_type='image/webp')(asset)
+               return result
+           except UnsupportedFormatError:
+               log.warning('Skipping unsupported file: %s', path)
+               return None
+           except PermanentOperatorError:
+               log.error('Permanent failure, dead-lettering: %s', path)
+               dead_letter_queue.append(path)
+               return None
+           except TransientOperatorError:
+               if attempt == max_retries:
+                   log.error('Giving up after %d retries: %s', max_retries, path)
+                   return None
+               log.warning('Transient failure, retrying (%d/%d): %s', attempt, max_retries, path)
+           except OperatorError as e:
+               log.error('Unexpected operator error: %s — %s', path, e, exc_info=True)
+               return None

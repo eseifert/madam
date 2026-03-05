@@ -247,6 +247,128 @@ If no processor accepts the file, :meth:`~madam.core.Madam.read` raises
 :class:`~madam.core.UnsupportedFormatError`.
 
 
+Processor operator reference
+============================
+
+The table below shows which operators are available on each processor and
+highlights the key parameter differences.  All operators follow the same
+two-step pattern: ``op = processor.method(**config); result = op(asset)``.
+
+.. list-table:: Operator availability by processor
+   :header-rows: 1
+   :widths: 20 20 20 40
+
+   * - Operator
+     - :class:`~madam.image.PillowProcessor`
+     - :class:`~madam.ffmpeg.FFmpegProcessor`
+     - Notes
+   * - ``resize``
+     - Yes
+     - Yes
+     - Pillow: ``width``, ``height``, ``mode`` (:class:`~madam.image.ResizeMode`), ``gravity``.
+       FFmpeg: ``width``, ``height``, ``mode``, ``gravity`` (same signature).
+   * - ``crop``
+     - Yes
+     - Yes
+     - All parameters are keyword-only (after ``*``).
+       Pillow: ``width``, ``height``, ``x``/``y`` (optional), ``gravity`` (default ``'north_west'``).
+       FFmpeg: ``x``, ``y``, ``width``, ``height`` (all required).
+   * - ``convert``
+     - Yes
+     - Yes
+     - ``mime_type`` selects the output container/codec.
+       Pillow handles raster image formats; FFmpeg handles audio/video.
+   * - ``rotate``
+     - Yes
+     - Yes
+     - ``angle`` in degrees, counter-clockwise.
+   * - ``flip``
+     - Yes (``'horizontal'`` / ``'vertical'``)
+     - Yes (same)
+     -
+   * - ``shrink``
+     - No
+     - No
+     - SVG-only: :meth:`~madam.vector.SVGProcessor.shrink` on
+       :class:`~madam.vector.SVGProcessor`.
+   * - ``trim``
+     - No
+     - Yes
+     - ``start`` (seconds), ``duration`` (seconds).  Audio and video only.
+   * - ``set_speed``
+     - No
+     - Yes
+     - ``factor``: values < 1 slow down, > 1 speed up.
+   * - ``normalize_audio``
+     - No
+     - Yes
+     - EBU R128 two-pass loudness normalisation.  ``target_lufs`` (default −23).
+   * - ``overlay``
+     - Yes
+     - Yes
+     - Composite a second asset on top.  Parameters differ slightly:
+       Pillow uses ``asset``/``composition_mode``; FFmpeg uses ``overlay_asset``,
+       ``gravity``, ``from_seconds``/``to_seconds``.
+   * - ``auto_orient``
+     - Yes
+     - No
+     - Applies EXIF ``Orientation`` tag and strips it.
+   * - ``adjust_brightness`` / ``adjust_contrast`` / ``adjust_sharpness`` / ``adjust_saturation``
+     - Yes
+     - No
+     - Tonal and sharpness operators on raster images.
+   * - ``blur`` / ``sharpen``
+     - Yes
+     - No
+     - ``radius`` parameter.
+   * - ``add_alpha_channel``
+     - Yes
+     - No
+     - Adds an alpha channel to opaque images.
+   * - ``apply_alpha_mask``
+     - Yes
+     - No
+     - Multiplies the alpha channel with a grayscale mask asset.
+   * - ``flatten``
+     - Yes
+     - No
+     - Composites the image onto a solid background colour.
+   * - ``draw_text``
+     - Yes
+     - No
+     - Renders a text string onto the image.  Requires a TrueType font path.
+   * - ``auto_contrast``
+     - Yes
+     - No
+     - Stretches the tonal range to fill 0–255.
+   * - ``extract_dominant_colors``
+     - Yes
+     - No
+     - Returns a list of dominant colour values from the image.
+   * - ``thumbnail_sprite``
+     - No
+     - Yes
+     - Generates a sprite sheet of video frame thumbnails.
+   * - ``overlay`` (video watermark)
+     - No
+     - Yes
+     - Composites a static image onto a video stream.
+   * - ``concatenate``
+     - No
+     - Yes (module-level function)
+     - Joins clips end-to-end.  See :func:`madam.video.concatenate`.
+   * - ``rasterize``
+     - No
+     - No
+     - PDF-only: :meth:`~madam.pdf.PDFProcessor.rasterize` on
+       :class:`~madam.pdf.PDFProcessor` (not registered in ``Madam``).
+   * - ``decode``
+     - No
+     - No
+     - Raw-image-only: :meth:`~madam.raw.RawImageProcessor.decode` on
+       :class:`~madam.raw.RawImageProcessor` (not registered in ``Madam``).
+
+
 Processors and metadata processors
 ====================================
 
