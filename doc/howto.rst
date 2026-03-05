@@ -855,6 +855,62 @@ a predicate:
    )
 
 
+How deferred execution avoids quality loss
+-------------------------------------------
+
+When consecutive operators belong to the same processor, the pipeline groups
+them into a **run** and encodes the result exactly once — not once per
+operator.  For lossy formats (JPEG, AVIF, WebP, MP3, AAC, …) this prevents
+cumulative quality degradation from multiple encode/decode cycles.  For
+FFmpeg-based operations it also avoids spawning a subprocess per operator.
+
+The behaviour is automatic — no API changes are needed:
+
+.. code-block:: python
+
+   from madam.core import Pipeline
+
+   # All three operators share the same PillowProcessor, so Pillow decodes
+   # the image once and encodes it once at the end.
+   pipeline = Pipeline()
+   pipeline.add(processor.resize(width=1200, height=900))
+   pipeline.add(processor.crop(width=800, height=600, x=200, y=150))
+   pipeline.add(processor.convert(mime_type='image/webp'))
+
+   for result in pipeline.process(asset):
+       ...
+
+Materialisation (encoding to bytes) occurs automatically at:
+
+* A **processor boundary** — when consecutive operators switch to a different
+  processor.
+* An **untagged step** — a plain function or lambda inserted in the pipeline.
+* A **flush marker** (see below).
+
+
+How to force an intermediate encode with ``Pipeline.flush()``
+--------------------------------------------------------------
+
+Sometimes you need stable intermediate bytes — for example to measure file
+size after resizing before deciding whether to sharpen.  Insert
+:meth:`~madam.core.Pipeline.flush` to force materialisation at that point:
+
+.. code-block:: python
+
+   from madam.core import Pipeline
+
+   pipeline = Pipeline()
+   pipeline.add(processor.resize(width=1200, height=900))
+   pipeline.add(Pipeline.flush())   # encode to bytes here
+   pipeline.add(processor.sharpen(radius=1, percent=80))
+
+   for result in pipeline.process(asset):
+       ...
+
+Without the flush, ``resize`` and ``sharpen`` would be combined into a single
+encode cycle.  With the flush, two separate encode/decode cycles occur.
+
+
 Storage
 =======
 
