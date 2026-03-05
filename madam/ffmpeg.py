@@ -15,9 +15,84 @@ from typing import IO, Any, Self
 import PIL.Image
 from bidict import bidict
 
-from madam.core import Asset, MetadataProcessor, OperatorError, Processor, UnsupportedFormatError, operator
+from madam.core import Asset, MetadataProcessor, OperatorError, ProcessingContext, Processor, UnsupportedFormatError, operator
 from madam.mime import MimeType
 from madam.streaming import MultiFileOutput
+
+
+class FFmpegFilterGraph:
+    """
+    Accumulates FFmpeg video and audio filters for a single deferred run.
+
+    Operators call :meth:`add_video_filter` / :meth:`add_audio_filter` to
+    append their filter effects, and :meth:`set_output_format` /
+    :meth:`set_codec_options` to configure the output.  When the run is
+    materialised, all accumulated filters are emitted as a single ``ffmpeg``
+    command.
+    """
+
+    def __init__(self) -> None:
+        self._video_filters: list[str] = []
+        self._audio_filters: list[str] = []
+        self.output_mime_type: str | None = None
+        self.codec_options: dict[str, Any] = {}
+        self.extra_input_args: list[str] = []
+        self.extra_output_args: list[str] = []
+
+    # ------------------------------------------------------------------
+    # Filter accumulation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _format_filter(name: str, **params: Any) -> str:
+        if not params:
+            return name
+        param_str = ':'.join(f'{k}={v}' for k, v in params.items())
+        return f'{name}={param_str}'
+
+    def add_video_filter(self, name: str, **params: Any) -> None:
+        """Append a video filter (e.g. ``scale``, ``crop``) to the chain."""
+        self._video_filters.append(self._format_filter(name, **params))
+
+    def add_audio_filter(self, name: str, **params: Any) -> None:
+        """Append an audio filter (e.g. ``volume``, ``atrim``) to the chain."""
+        self._audio_filters.append(self._format_filter(name, **params))
+
+    # ------------------------------------------------------------------
+    # Output configuration
+    # ------------------------------------------------------------------
+
+    def set_output_format(self, mime_type: str) -> None:
+        """Set the target output MIME type for this run."""
+        self.output_mime_type = str(mime_type)
+
+    def set_codec_options(self, **opts: Any) -> None:
+        """
+        Merge codec options into the accumulated options dict.
+
+        :raises ValueError: if the same key already has a different value.
+        """
+        for key, value in opts.items():
+            if key in self.codec_options and self.codec_options[key] != value:
+                raise ValueError(
+                    f'Conflicting codec option {key!r}: '
+                    f'{self.codec_options[key]!r} vs {value!r}'
+                )
+            self.codec_options[key] = value
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+
+    @property
+    def video_filter_string(self) -> str:
+        """Comma-joined FFmpeg ``-vf`` filter string, or empty string."""
+        return ','.join(self._video_filters)
+
+    @property
+    def audio_filter_string(self) -> str:
+        """Comma-joined FFmpeg ``-af`` filter string, or empty string."""
+        return ','.join(self._audio_filters)
 
 
 def _parse_version(version_str: str) -> tuple[int, ...]:
