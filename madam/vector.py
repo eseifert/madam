@@ -144,12 +144,11 @@ class SVGProcessor(Processor):
 
     @staticmethod
     def __remove_xml_whitespace(elem: ET.Element) -> None:
-        if elem.text:
-            elem.text = elem.text.strip()
-        if elem.tail:
-            elem.tail = elem.tail.strip()
-        for child in elem:
-            SVGProcessor.__remove_xml_whitespace(child)
+        for node in elem.iter():
+            if node.text:
+                node.text = node.text.strip()
+            if node.tail:
+                node.tail = node.tail.strip()
 
     @staticmethod
     def __remove_elements(root: ET.Element, qname: str, keep_func: Callable[[ET.Element], bool]) -> None:
@@ -213,7 +212,7 @@ class SVGProcessor(Processor):
         )
         # Remove empty groups
         SVGProcessor.__remove_elements(root, 'svg:g', lambda e: bool(list(e)))
-        # Remove all invisible or hidden elements
+        # Remove empty defs
         SVGProcessor.__remove_elements(root, 'svg:defs', lambda e: bool(list(e)))
 
         essence = _write_svg(tree)

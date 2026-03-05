@@ -256,6 +256,20 @@ class TestSVGProcessor:
         shrunk_fragment = shrunk_asset.essence.read().decode('utf-8')[len(SVG_START) : -len(SVG_END)]
         assert shrunk_fragment == ''
 
+    def test_shrink_handles_deeply_nested_svg(self, processor):
+        # Regression test: __remove_xml_whitespace was recursive and crashed on deep trees
+        depth = 200
+        inner = '<text> Hello </text>'
+        for _ in range(depth):
+            inner = f'<g>{inner}</g>'
+        asset = create_svg_asset(inner)
+        shrink_operator = processor.shrink()
+
+        shrunk_asset = shrink_operator(asset)
+
+        tree = ET.parse(shrunk_asset.essence)
+        assert tree.getroot() is not None
+
     def test_shrink_removes_xml_comments(self, processor):
         asset = create_svg_asset('<!-- this is a comment --><rect height="100%" width="100%" />')
         shrink_operator = processor.shrink()
