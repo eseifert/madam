@@ -397,3 +397,81 @@ class TestSVGMetadataProcessor:
 
         with pytest.raises(ValueError):
             processor.combine(svg_vector_asset.essence, metadata)
+
+
+SVG_SIMPLE = (
+    '<svg height="12px" version="1.1" width="24px" xmlns="http://www.w3.org/2000/svg">'
+    '<rect width="24px" height="12px"/>'
+    '</svg>'
+).encode('utf-8')
+
+
+class TestSVGContext:
+    def test_svg_context_is_importable(self):
+        from madam.vector import SVGContext  # noqa: F401
+
+    def test_svg_context_holds_tree_and_processor(self):
+        import io
+        from xml.etree import ElementTree as ET
+        from madam.vector import SVGContext
+
+        proc = SVGProcessor()
+        tree = ET.ElementTree(ET.fromstring('<svg xmlns="http://www.w3.org/2000/svg"/>'))
+        ctx = SVGContext(proc, tree)
+
+        assert ctx.tree is tree
+        assert ctx.processor is proc
+
+    def test_svg_context_is_processing_context_subclass(self):
+        from madam.core import ProcessingContext
+        from madam.vector import SVGContext
+
+        assert issubclass(SVGContext, ProcessingContext)
+
+    def test_svg_context_materialize_returns_svg_asset(self):
+        import io
+        from madam.vector import SVGContext
+
+        proc = SVGProcessor()
+        asset = proc.read(io.BytesIO(SVG_SIMPLE))
+        ctx = SVGContext(proc, proc._parse_tree(asset.essence))
+
+        result = ctx.materialize()
+
+        assert result.mime_type == 'image/svg+xml'
+        assert result.width == pytest.approx(24, abs=1e-5)
+        assert result.height == pytest.approx(12, abs=1e-5)
+
+
+class TestSVGDeferredExecution:
+    def test_shrink_twice_parses_svg_only_once(self):
+        """Two shrink operators in a Pipeline must parse the SVG only once."""
+        import io
+        import unittest.mock
+        from madam.core import Pipeline
+
+        proc = SVGProcessor()
+        asset = proc.read(io.BytesIO(SVG_SIMPLE))
+
+        shrink1 = proc.shrink()
+        shrink2 = proc.shrink()
+        pipeline = Pipeline()
+        pipeline.add(shrink1)
+        pipeline.add(shrink2)
+
+        parse_calls = []
+        original_parse = proc._parse_tree
+
+        def counting_parse(file):
+            parse_calls.append(1)
+            return original_parse(file)
+
+        proc._parse_tree = counting_parse
+
+        try:
+            result = list(pipeline.process(asset))
+        finally:
+            proc._parse_tree = original_parse
+
+        assert len(parse_calls) == 1, f'Expected 1 parse call, got {len(parse_calls)}'
+        assert result[0].mime_type == 'image/svg+xml'

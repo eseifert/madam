@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable, Mapping
 from typing import IO, Any
 from xml.etree import ElementTree as ET
 
-from madam.core import Asset, MetadataProcessor, Processor, UnsupportedFormatError, operator
+from madam.core import Asset, MetadataProcessor, ProcessingContext, Processor, UnsupportedFormatError, operator
 
 _MM_TO_INCH = 1 / 25.4
 _PX_PER_INCH = 90
@@ -105,6 +105,29 @@ def _write_svg(tree: ET.ElementTree[ET.Element]) -> IO:
     return file
 
 
+class SVGContext(ProcessingContext):
+    """
+    Deferred in-memory state for an SVG processing run.
+
+    Holds a live :class:`xml.etree.ElementTree.ElementTree` so that
+    consecutive SVG operators can transform the document without
+    intermediate serialise/parse cycles.  Call :meth:`materialize` to
+    produce the final encoded :class:`~madam.core.Asset`.
+    """
+
+    def __init__(self, processor: 'SVGProcessor', tree: ET.ElementTree[ET.Element]) -> None:
+        self._proc = processor
+        self.tree = tree
+
+    @property
+    def processor(self) -> 'SVGProcessor':
+        return self._proc
+
+    def materialize(self) -> Asset:
+        essence = _write_svg(self.tree)
+        return self._proc.read(essence)
+
+
 class SVGProcessor(Processor):
     """
     Represents a processor that handles *Scalable Vector Graphics* (SVG) data.
@@ -129,6 +152,82 @@ class SVGProcessor(Processor):
             return True
         except UnsupportedFormatError:
             return False
+
+    def _parse_tree(self, file: IO) -> ET.ElementTree[ET.Element]:
+        """Parse *file* into an :class:`ET.ElementTree` (one parse per deferred run)."""
+        tree, _ = _parse_svg(file)
+        return tree
+
+    def execute_run(self, steps: list, asset_or_context: 'Asset | SVGContext') -> 'Asset | SVGContext':
+        """
+        Apply a group of consecutive SVG operators in a single parse/serialise cycle.
+
+        The input :class:`~madam.core.Asset` (or incoming :class:`SVGContext` from
+        a prior run) is parsed once.  Each step's XML transform is applied in
+        memory via a ``_transform_*`` method.  The result is returned as an
+        :class:`SVGContext` for the pipeline to serialise at the processor
+        boundary or pipeline end.
+        """
+        if isinstance(asset_or_context, SVGContext):
+            tree = asset_or_context.tree
+        else:
+            tree = self._parse_tree(asset_or_context.essence)
+
+        for step in steps:
+            op_name = getattr(getattr(step, 'func', None), '__name__', None)
+            transform = getattr(self, f'_transform_{op_name}', None) if op_name else None
+            if transform is not None:
+                tree = transform(tree, **step.keywords)
+            else:
+                # Fallback: materialise current context, apply step, re-parse.
+                tmp_ctx = SVGContext(self, tree)
+                tmp_asset = tmp_ctx.materialize()
+                result = step(tmp_asset)
+                if isinstance(result, SVGContext):
+                    tree = result.tree
+                else:
+                    tree = self._parse_tree(result.essence)
+
+        return SVGContext(self, tree)
+
+    def _transform_shrink(
+        self,
+        tree: ET.ElementTree[ET.Element],
+    ) -> ET.ElementTree[ET.Element]:
+        """Apply shrink transforms directly to the ElementTree (no parse/serialise)."""
+        root = tree.getroot()
+        # Reuse the existing shrink logic by applying it to the in-memory tree.
+        SVGProcessor.__remove_xml_whitespace(root)  # type: ignore[attr-defined]
+        SVGProcessor.__remove_elements(root, 'svg:text', lambda e: bool(e.text and e.text.strip() or list(e)))  # type: ignore[attr-defined]
+        SVGProcessor.__remove_elements(root, 'svg:circle', lambda e: bool(list(e)) or not _attr_is_zero(e.get('r')))  # type: ignore[attr-defined]
+        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
+            root, 'svg:ellipse',
+            lambda e: bool(list(e)) or not (_attr_is_zero(e.get('rx')) or _attr_is_zero(e.get('ry')))
+        )
+        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
+            root, 'svg:rect',
+            lambda e: bool(list(e)) or not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
+        )
+        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
+            root, 'svg:pattern',
+            lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
+        )
+        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
+            root, 'svg:image',
+            lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
+        )
+        SVGProcessor.__remove_elements(root, 'svg:path', lambda e: bool(e.get('d', '').strip()))  # type: ignore[attr-defined]
+        SVGProcessor.__remove_elements(root, 'svg:polygon', lambda e: bool(e.get('points', '').strip()))  # type: ignore[attr-defined]
+        SVGProcessor.__remove_elements(root, 'svg:polyline', lambda e: bool(e.get('points', '').strip()))  # type: ignore[attr-defined]
+        SVGProcessor.__remove_elements(root, 'svg:line', lambda e: bool(list(e)) or not _is_zero_length_line(e))  # type: ignore[attr-defined]
+        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
+            root,
+            '*',
+            lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and not _attr_is_zero(e.get('opacity')),
+        )
+        SVGProcessor.__remove_elements(root, 'svg:g', lambda e: bool(list(e)))  # type: ignore[attr-defined]
+        SVGProcessor.__remove_elements(root, 'svg:defs', lambda e: bool(list(e)))  # type: ignore[attr-defined]
+        return tree
 
     def read(self, file: IO) -> Asset:
         _, root = _parse_svg(file)
