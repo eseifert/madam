@@ -745,6 +745,32 @@ class Madam:
             asset_metadata.update(additional_metadata)
         return Asset._from_bytes(stripped.read(), **asset_metadata)
 
+    def strip(self, asset: Asset) -> Asset:
+        """
+        Returns a copy of the asset with all embedded metadata removed from
+        both the essence bytes and the metadata dict.
+
+        Structural properties such as ``mime_type``, ``width``, ``height``,
+        and ``duration`` are preserved.  Format-specific metadata
+        (``exif``, ``xmp``, ``iptc``, ``ffmetadata``, ``rdf``, …) and the
+        derived ``created_at`` key are dropped.
+
+        :param asset: Asset to strip
+        :type asset: Asset
+        :return: New asset without metadata
+        :rtype: Asset
+        :raises UnsupportedFormatError: if the asset format is not supported
+        """
+        processor = self.get_processor(asset)
+        stripped: IO = asset.essence
+        for metadata_processor in self._metadata_processors:
+            try:
+                stripped = metadata_processor.strip(stripped)
+            except UnsupportedFormatError:
+                stripped.seek(0)
+        stripped.seek(0)
+        return processor.read(stripped)
+
     def write(self, asset: Asset, file: IO) -> None:
         r"""
         Write the :class:`~madam.core.Asset` object to the specified file.

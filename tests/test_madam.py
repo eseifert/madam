@@ -316,3 +316,51 @@ class TestMadam:
         asset = manager.read(png_image_asset.essence)
 
         assert not hasattr(asset, 'created_at')
+
+    def test_strip_returns_asset(self, manager, jpeg_data_with_exif):
+        asset = manager.read(jpeg_data_with_exif)
+
+        stripped = manager.strip(asset)
+
+        assert isinstance(stripped, Asset)
+
+    def test_strip_removes_metadata_format_keys(self, manager, jpeg_data_with_exif):
+        asset = manager.read(jpeg_data_with_exif)
+        assert 'exif' in asset.metadata
+
+        stripped = manager.strip(asset)
+
+        assert 'exif' not in stripped.metadata
+
+    def test_strip_removes_created_at(self):
+        manager = Madam()
+        with open('tests/resources/image_with_exif.jpg', 'rb') as f:
+            asset = manager.read(f)
+        assert hasattr(asset, 'created_at')
+
+        stripped = manager.strip(asset)
+
+        assert not hasattr(stripped, 'created_at')
+
+    def test_strip_preserves_structural_metadata(self, manager, jpeg_image_asset):
+        asset = manager.read(jpeg_image_asset.essence)
+
+        stripped = manager.strip(asset)
+
+        assert stripped.mime_type == asset.mime_type
+        assert stripped.width == asset.width
+        assert stripped.height == asset.height
+
+    def test_strip_removes_embedded_metadata_from_essence(self, manager, jpeg_data_with_exif, tmpdir):
+        asset = manager.read(jpeg_data_with_exif)
+
+        stripped = manager.strip(asset)
+
+        essence_file = tmpdir.join('stripped.jpg')
+        essence_file.write(stripped.essence.read(), 'wb')
+        metadata = piexif.load(str(essence_file))
+        assert not any(metadata.values())
+
+    def test_strip_raises_for_unsupported_format(self, manager, unknown_asset):
+        with pytest.raises(UnsupportedFormatError):
+            manager.strip(unknown_asset)
