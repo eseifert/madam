@@ -936,7 +936,7 @@ class FFmpegProcessor(Processor):
         return Asset(essence=result, **metadata)
 
     @operator
-    def crop(self, asset: Asset, x: int, y: int, width: int, height: int) -> Asset:
+    def crop(self, asset: Asset, *, x: int, y: int, width: int, height: int) -> Asset:
         """
         Creates a cropped video asset whose essence is cropped to the specified
         rectangular area.

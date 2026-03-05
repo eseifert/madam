@@ -508,6 +508,7 @@ class PillowProcessor(Processor):
     def crop(
         self,
         asset: Asset,
+        *,
         width: int,
         height: int,
         x: int | None = None,
