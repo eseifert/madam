@@ -2,10 +2,12 @@ Advanced use cases
 ##################
 
 This chapter covers patterns that go beyond the basic read-transform-write
-workflow: deferring I/O with :class:`~madam.core.LazyAsset`, distributing
-work across processes with Celery, getting the most out of the
-:class:`~madam.core.Pipeline` execution model, and integrating adaptive
-streaming output.
+workflow documented in :doc:`howto`.  Each section focuses on something the
+how-to guides either don't cover at all or only mention in passing:
+deferring I/O with :class:`~madam.core.LazyAsset`, distributing work across
+processes with Celery, content-addressed deduplication, custom streaming
+backends, real-time progress reporting, fine-tuning encoder settings, and
+writing your own :class:`~madam.core.Processor`.
 
 .. contents::
    :local:
@@ -225,120 +227,6 @@ For multi-step processing, build the pipeline once and share it across tasks:
               raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
-Advanced Pipeline patterns
-===========================
-
-Fan-out with branch()
----------------------
-
-:meth:`~madam.core.Pipeline.branch` sends each source asset through multiple
-sub-pipelines in sequence and yields all results.  Use it to produce several
-renditions from one pass:
-
-.. code-block:: python
-
-   from madam import Madam
-   from madam.core import Pipeline
-   from madam.image import ResizeMode
-
-   madam = Madam()
-   proc = madam.get_processor('image/jpeg')
-
-   thumb_pipe = Pipeline()
-   thumb_pipe.add(proc.resize(width=150, height=150, mode=ResizeMode.FILL))
-   thumb_pipe.add(proc.convert(mime_type='image/webp'))
-
-   preview_pipe = Pipeline()
-   preview_pipe.add(proc.resize(width=1200, height=900, mode=ResizeMode.FIT))
-   preview_pipe.add(proc.convert(mime_type='image/jpeg'))
-
-   main_pipe = Pipeline()
-   main_pipe.branch(thumb_pipe, preview_pipe)
-
-   with open('photo.jpg', 'rb') as f:
-       source = madam.read(f)
-
-   # Yields: thumbnail, preview (2 results per source asset)
-   thumb, preview = main_pipe.process(source)
-
-Conditional logic with when()
-------------------------------
-
-:meth:`~madam.core.Pipeline.when` applies an operator only when a predicate
-is true.  An optional ``else_`` operator is applied when the predicate is
-false:
-
-.. code-block:: python
-
-   pipeline = Pipeline()
-
-   # Convert oversized images to WebP; keep small images as-is
-   pipeline.when(
-       predicate=lambda a: a.width > 1920 or a.height > 1080,
-       then=proc.resize(width=1920, height=1080, mode=ResizeMode.FIT),
-   )
-
-   # Different output format for PNG vs everything else
-   pipeline.when(
-       predicate=lambda a: str(a.mime_type) == 'image/png',
-       then=proc.convert(mime_type='image/png'),
-       else_=proc.convert(mime_type='image/jpeg'),
-   )
-
-Forcing an intermediate encode with flush()
---------------------------------------------
-
-MADAM groups consecutive operators from the same processor into a *run* and
-applies them without intermediate encode/decode cycles.  For lossy formats
-this avoids quality loss, but sometimes you need an explicit encode at a
-specific point — for example, to apply a sharpening filter *after* a lossy
-resize has already committed its artefacts:
-
-.. code-block:: python
-
-   pipeline = Pipeline()
-   pipeline.add(proc.resize(width=1200, height=900))
-   pipeline.add(Pipeline.flush())       # encode to JPEG here
-   pipeline.add(proc.sharpen(radius=1, percent=80))   # new encode cycle
-
-Without the flush, resize and sharpen would share a single Pillow operation
-and the sharpen kernel would run on lossless in-memory data.  With the flush,
-sharpen sees the already-compressed pixel values — matching what a user would
-see after opening and re-saving the file.
-
-Processing multiple assets at once
-------------------------------------
-
-:meth:`~madam.core.Pipeline.process` accepts any number of source assets and
-yields results in the same order:
-
-.. code-block:: python
-
-   sources = [madam.read(open(p, 'rb')) for p in image_paths]
-   for result in pipeline.process(*sources):
-       storage[result.content_id] = (result, set())
-
-Deferred execution and the processing context
-----------------------------------------------
-
-Under the hood, consecutive operators from the same processor share a live
-*processing context* rather than re-encoding between steps:
-
-- **Images** (:class:`~madam.image.PillowContext`) — holds a ``PIL.Image``
-  object; encodes once at the end of the run.
-- **Video/audio** (:class:`~madam.ffmpeg.FFmpegContext`) — accumulates an
-  ``FFmpegFilterGraph`` and runs a single ``ffmpeg`` subprocess.
-- **SVG** (:class:`~madam.vector.SVGContext`) — holds a live ``ElementTree``;
-  serialises once per run.
-
-This means three consecutive resize operations on an image result in **one
-Pillow encode**, not three, eliminating cumulative JPEG artefacts.
-
-The pipeline automatically inserts a materialisation step whenever the
-processor changes.  Use :meth:`~madam.core.Pipeline.flush` to force an
-early materialisation within a single-processor run.
-
-
 Content-addressed storage and deduplication
 ============================================
 
@@ -377,78 +265,18 @@ access and cached; subsequent calls are O(1):
    cid2 = lazy.content_id  # returns cached value — no fetch
 
 
-Fast tag-based filtering with InMemoryStorage
-==============================================
+Custom streaming output backends
+==================================
 
-:class:`~madam.core.InMemoryStorage` maintains an inverted index over all
-scalar metadata values.  This makes :meth:`~madam.core.AssetStorage.filter`
-calls O(k) where *k* is the number of matching assets rather than O(n) over
-all stored assets:
+The how-to guide shows how to write HLS/DASH segments to a local directory
+with :class:`~madam.streaming.DirectoryOutput`.  This section covers the two
+other built-in backends and how to implement your own.
 
-.. code-block:: python
-
-   from madam.core import InMemoryStorage
-
-   storage = InMemoryStorage()
-   storage['hero']   = (hero_asset,   {'homepage', 'featured'})
-   storage['banner'] = (banner_asset, {'homepage'})
-   storage['thumb']  = (thumb_asset,  {'thumbnail'})
-
-   # O(k) index lookup — does not scan all assets
-   homepage_assets = list(storage.filter(tags={'homepage'}))
-
-   # Filter by metadata value
-   jpegs = list(storage.filter(mime_type='image/jpeg'))
-
-   # Filter by multiple tags at once (subset test)
-   featured_homepage = list(storage.filter_by_tags({'featured', 'homepage'}))
-
-Use :class:`~madam.core.ShelveStorage` or
-:class:`~madam.core.FileSystemAssetStorage` for persistent storage across
-process restarts:
-
-.. code-block:: python
-
-   from madam.core import FileSystemAssetStorage
-
-   # Atomic writes: safe for multiple workers writing concurrently
-   storage = FileSystemAssetStorage('/data/processed')
-   storage['my-key'] = (asset, {'processed', 'webp'})
-
-
-Adaptive streaming output (HLS and MPEG-DASH)
-===============================================
-
-:class:`~madam.ffmpeg.FFmpegProcessor` can produce HTTP Live Streaming (HLS)
-and MPEG-DASH manifests with their associated segments.  Both methods write
-output through a :class:`~madam.streaming.MultiFileOutput` backend so the
-destination (directory, zip archive, object storage …) is decoupled from the
-encoding step.
-
-Write to a directory
---------------------
-
-.. code-block:: python
-
-   from madam import Madam
-   from madam.streaming import DirectoryOutput
-
-   madam = Madam()
-   with open('video.mp4', 'rb') as f:
-       asset = madam.read(f)
-
-   proc = madam.get_processor(asset)
-   output = DirectoryOutput('/var/www/hls/video1')
-   proc.to_hls(asset, output=output, segment_duration=6)
-   # Creates: /var/www/hls/video1/index.m3u8
-   #          /var/www/hls/video1/segment_000.ts
-   #          /var/www/hls/video1/segment_001.ts  …
-
-Write to a zip archive (in-memory)
------------------------------------
+Writing to a zip archive (in-memory)
+--------------------------------------
 
 Useful for testing, for download APIs that stream the archive, or for
-uploading all segments to object storage as a batch:
+uploading all segments to object storage as a single atomic batch:
 
 .. code-block:: python
 
@@ -465,11 +293,11 @@ uploading all segments to object storage as a batch:
    with zipfile.ZipFile(buf) as zf:
        print(zf.namelist())   # ['index.m3u8', 'segment_000.ts', …]
 
-Write to object storage
-------------------------
+Writing to object storage
+--------------------------
 
 Implement :class:`~madam.streaming.MultiFileOutput` to write directly to any
-backend:
+backend.  The interface requires only a single ``write`` method:
 
 .. code-block:: python
 
@@ -493,18 +321,10 @@ MPEG-DASH works the same way — replace ``to_hls`` with ``to_dash``:
 
 .. code-block:: python
 
-   from madam.streaming import DirectoryOutput
-
-   proc.to_dash(asset, output=DirectoryOutput('/var/www/dash/video1'),
+   proc.to_dash(asset, output=S3Output('my-bucket', 'dash/video1'),
                 segment_duration=4)
-   # Creates: /var/www/dash/video1/manifest.mpd
-   #          /var/www/dash/video1/init-stream0.mp4
-   #          /var/www/dash/video1/chunk-stream0-00001.m4s  …
 
-Custom codec options
---------------------
-
-Both methods accept ``video`` and ``audio`` keyword arguments that mirror the
+Both methods accept optional ``video`` and ``audio`` dicts that mirror the
 ``convert()`` operator options:
 
 .. code-block:: python
@@ -514,7 +334,7 @@ Both methods accept ``video`` and ``audio`` keyword arguments that mirror the
 
    proc.to_hls(
        asset,
-       output=DirectoryOutput('/var/www/hls/video1'),
+       output=output,
        segment_duration=6,
        video={'codec': VideoCodec.H264, 'bitrate': 2000},
        audio={'codec': AudioCodec.AAC,  'bitrate': 128},
@@ -579,43 +399,205 @@ through the result backend:
        return s3_upload(result, 'my-bucket', uri.split('/')[-1])
 
 
-Format-agnostic batch processing
-==================================
+Fine-tuning encoder settings
+==============================
 
-Because :meth:`~madam.core.Madam.get_processor` accepts an asset, a MIME
-type string, or a raw file, you can write a single processing loop that works
-across images, audio, and video without any format checks in application code:
+Pass a configuration mapping to :class:`~madam.core.Madam` to control
+encoder defaults.  Keys are MIME type strings (or short names); values are
+dicts of options:
 
 .. code-block:: python
 
-   import pathlib
    from madam import Madam
-   from madam.core import UnsupportedFormatError, OperatorError
 
-   madam = Madam({'image/jpeg': {'quality': 80}, 'image/webp': {'quality': 80}})
+   madam = Madam({
+       'image/jpeg': {'quality': 85, 'progressive': True},
+       'image/png':  {'optimize': True, 'zopfli': True},
+       'image/webp': {'quality': 80, 'method': 6},
+       'image/avif': {'quality': 70, 'speed': 4},
+       'image/gif':  {'optimize': True},
+       'image/tiff': {'compression': 'tiff_lzw'},
+       'ffmpeg':     {'threads': 8},
+       'video':      {'keyframe_interval': 60},
+   })
 
-   def batch_convert(input_dir: str, output_dir: str, target_mime: str) -> None:
-       out = pathlib.Path(output_dir)
-       out.mkdir(parents=True, exist_ok=True)
+Image options
+--------------
 
-       for path in pathlib.Path(input_dir).iterdir():
-           if not path.is_file():
-               continue
-           try:
-               with open(path, 'rb') as f:
-                   asset = madam.read(f)
-               processor = madam.get_processor(asset)
-               result = processor.convert(mime_type=target_mime)(asset)
-           except UnsupportedFormatError:
-               print(f'Skipping unsupported file: {path.name}')
-               continue
-           except OperatorError as exc:
-               print(f'Failed to convert {path.name}: {exc}')
-               continue
+.. list-table::
+   :header-rows: 1
+   :widths: 20 35 45
 
-           out_path = out / path.with_suffix('').name
-           with open(out_path, 'wb') as f:
-               madam.write(result, f)
-           print(f'Converted {path.name} → {out_path.name}')
+   * - MIME type
+     - Key
+     - Values / meaning
+   * - ``image/jpeg``
+     - ``quality``
+     - Integer 1–95 (Pillow default 75)
+   * - ``image/jpeg``
+     - ``progressive``
+     - ``True`` for progressive JPEG encoding
+   * - ``image/png``
+     - ``optimize``
+     - ``True`` to enable Pillow's optimizer pass
+   * - ``image/png``
+     - ``zopfli`` / ``zopfli_strategies``
+     - Enable Zopfli compression (requires ``madam[optimize]``)
+   * - ``image/webp``
+     - ``quality``
+     - Integer 1–100
+   * - ``image/webp``
+     - ``method``
+     - 0 (fastest) – 6 (best compression)
+   * - ``image/avif``
+     - ``quality``
+     - Integer 0–100 (higher = better quality, larger file)
+   * - ``image/avif``
+     - ``speed``
+     - 0 (slowest/best) – 10 (fastest/worst)
+   * - ``image/tiff``
+     - ``compression``
+     - ``'tiff_lzw'``, ``'tiff_deflate'``, ``'jpeg'``, ``'raw'``
+   * - ``image/gif``
+     - ``optimize``
+     - ``True`` to merge duplicate palette entries
 
-   batch_convert('/data/raw', '/data/converted', 'image/webp')
+Video / FFmpeg options
+-----------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Key
+     - Effect
+   * - ``'ffmpeg': {'threads': N}``
+     - Number of FFmpeg threads (default: CPU count)
+   * - ``'video': {'keyframe_interval': N}``
+     - Keyframe interval in frames (default 100)
+   * - ``'video/quicktime': {'faststart': False}``
+     - Disable ``-movflags +faststart`` (enabled by default for MP4/QuickTime)
+
+Per-codec CRF overrides are set with a ``'codec/<libname>'`` key:
+
+.. code-block:: python
+
+   madam = Madam({
+       'codec/libx264':    {'crf': 23},   # H.264 (default 23)
+       'codec/libvpx-vp9': {'crf': 33},   # VP9
+       'codec/libx265':    {'crf': 28},   # H.265
+   })
+
+.. note::
+
+   The ``Madam()`` constructor does not validate configuration keys.
+   Unrecognised keys under image MIME types emit a :class:`UserWarning`;
+   FFmpeg keys are silently ignored.
+
+
+Writing a custom Processor
+============================
+
+To add support for a new file format, subclass :class:`~madam.core.Processor`
+and override the two abstract methods plus the ``supported_mime_types``
+property.  Register the new processor with :class:`~madam.core.Madam` so that
+:meth:`~madam.core.Madam.get_processor` finds it automatically.
+
+Minimal example
+----------------
+
+.. code-block:: python
+
+   import io
+   from madam.core import Asset, Processor, UnsupportedFormatError, operator
+
+   class NetpbmProcessor(Processor):
+       """Read/write Netpbm PBM/PGM/PPM files."""
+
+       MAGIC = {b'P1': 'image/x-portable-bitmap',
+                b'P2': 'image/x-portable-graymap',
+                b'P3': 'image/x-portable-pixmap',
+                b'P4': 'image/x-portable-bitmap',
+                b'P5': 'image/x-portable-graymap',
+                b'P6': 'image/x-portable-pixmap'}
+
+       @property
+       def supported_mime_types(self) -> frozenset:
+           return frozenset(self.MAGIC.values())
+
+       def can_read(self, file: io.IOBase) -> bool:
+           magic = file.read(2)
+           file.seek(0)
+           return magic in self.MAGIC
+
+       def read(self, file: io.IOBase) -> Asset:
+           data = file.read()
+           magic = data[:2]
+           if magic not in self.MAGIC:
+               raise UnsupportedFormatError('Not a Netpbm file')
+           mime_type = self.MAGIC[magic]
+           # Parse dimensions from the header (simplified)
+           lines = data.split(b'\n')
+           w, h = map(int, lines[1].split())
+           return Asset._from_bytes(data, mime_type=mime_type, width=w, height=h)
+
+Adding operators with ``@operator``
+-------------------------------------
+
+Use the :func:`~madam.core.operator` decorator to create lazy, reusable
+operators.  Calling the method returns a configured callable
+(``Asset → Asset``), not the result directly:
+
+.. code-block:: python
+
+   from madam.core import operator
+
+   class NetpbmProcessor(Processor):
+       ...
+
+       @operator
+       def invert(self, asset: Asset) -> Asset:
+           """Return a new asset with all pixel values inverted."""
+           import PIL.Image
+           img = PIL.Image.open(asset.essence).convert('RGB')
+           inverted = PIL.Image.eval(img, lambda v: 255 - v)
+           buf = io.BytesIO()
+           inverted.save(buf, format='PPM')
+           buf.seek(0)
+           return Asset(essence=buf, mime_type=asset.mime_type,
+                        width=asset.width, height=asset.height)
+
+   proc = NetpbmProcessor()
+   invert_op = proc.invert()          # returns a callable (not the result)
+   result = invert_op(ppm_asset)      # apply to an asset
+
+Operators returned by ``@operator`` can be stored in a
+:class:`~madam.core.Pipeline` and applied in sequence:
+
+.. code-block:: python
+
+   from madam.core import Pipeline
+
+   pipeline = Pipeline()
+   pipeline.add(proc.invert())
+   pipeline.add(proc.invert())   # double invert → original
+   (result,) = pipeline.process(ppm_asset)
+
+Registering with Madam
+------------------------
+
+.. code-block:: python
+
+   from madam import Madam
+
+   madam = Madam()
+   madam.processors.append(NetpbmProcessor())
+   # madam.get_processor('image/x-portable-pixmap') now returns your processor
+
+.. note::
+
+   Madam builds its internal MIME-type index at ``__init__`` time.  If you
+   register a processor after construction, call
+   ``madam._rebuild_mime_index()`` (or simply construct a fresh ``Madam()``
+   with the processor already appended to the processor list) to keep the
+   O(1) lookup accurate.
