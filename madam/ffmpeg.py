@@ -2169,7 +2169,12 @@ def combine(
             for path in input_paths:
                 fh.write(f"file '{path}'\n")
                 fh.write(f'duration {frame_duration:.6f}\n')
+            # Repeat the last entry without a duration line.  This is the
+            # canonical FFmpeg concat-demuxer workaround that ensures the
+            # last frame's duration is counted across all FFmpeg versions.
+            fh.write(f"file '{input_paths[-1]}'\n")
 
+        n_frames = len(input_paths)
         output_path = os.path.join(tmpdir, 'output_file')
         command = [
             'ffmpeg',
@@ -2181,12 +2186,14 @@ def combine(
             '0',
             '-i',
             list_path,
+            # -r sets the output frame rate; -vframes caps the encoded frame
+            # count to exactly n_frames so the repeated last entry does not add
+            # an extra second to the output duration.
+            '-r',
+            str(fps),
+            '-vframes',
+            str(n_frames),
         ]
-
-        # Force the output to be encoded at the requested frame rate.  This
-        # ensures the concat-demuxer timestamps from the 'duration' lines are
-        # honoured correctly even for still-image inputs.
-        command.extend(['-vf', f'fps={fps}'])
 
         if video:
             if 'codec' in video:
