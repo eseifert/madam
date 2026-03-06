@@ -2,7 +2,7 @@ import io
 import math
 import warnings
 from collections.abc import Callable, Mapping
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import IO, Any
 
 import PIL.ExifTags
@@ -43,16 +43,15 @@ def _resolve_gravity(
     canvas_height: int,
     source_width: int,
     source_height: int,
-    gravity: str,
+    gravity: 'Gravity | str',
 ) -> tuple[int, int]:
     """
     Return the ``(x, y)`` top-left offset at which to place a source image of
     ``(source_width, source_height)`` inside a canvas of
     ``(canvas_width, canvas_height)`` according to *gravity*.
 
-    Valid gravity values: ``'north_west'``, ``'north'``, ``'north_east'``,
-    ``'west'``, ``'center'``, ``'east'``, ``'south_west'``, ``'south'``,
-    ``'south_east'``.
+    *gravity* may be a :class:`Gravity` member or a plain string with the
+    same value (e.g. ``'center'``).
     """
     h_offsets = {
         'west': 0,
@@ -102,6 +101,59 @@ class FlipOrientation(Enum):
     HORIZONTAL = 0
     #: Vertical axis
     VERTICAL = 1
+
+
+class Gravity(StrEnum):
+    """
+    Named anchor positions for operators that place or crop images.
+
+    Because :class:`Gravity` is a :class:`~enum.StrEnum`, each member
+    compares equal to its string value and can be passed wherever a plain
+    gravity string is accepted:
+
+    .. code-block:: python
+
+        from madam.image import Gravity
+
+        crop = processor.crop(width=800, height=600, gravity=Gravity.CENTER)
+        # equivalent to: processor.crop(width=800, height=600, gravity='center')
+
+    Members and their string values:
+
+    +-----------------+------------------+
+    | Member          | String value     |
+    +=================+==================+
+    | ``NORTH_WEST``  | ``'north_west'`` |
+    +-----------------+------------------+
+    | ``NORTH``       | ``'north'``      |
+    +-----------------+------------------+
+    | ``NORTH_EAST``  | ``'north_east'`` |
+    +-----------------+------------------+
+    | ``WEST``        | ``'west'``       |
+    +-----------------+------------------+
+    | ``CENTER``      | ``'center'``     |
+    +-----------------+------------------+
+    | ``EAST``        | ``'east'``       |
+    +-----------------+------------------+
+    | ``SOUTH_WEST``  | ``'south_west'`` |
+    +-----------------+------------------+
+    | ``SOUTH``       | ``'south'``      |
+    +-----------------+------------------+
+    | ``SOUTH_EAST``  | ``'south_east'`` |
+    +-----------------+------------------+
+
+    .. versionadded:: 1.0
+    """
+
+    NORTH_WEST = 'north_west'
+    NORTH = 'north'
+    NORTH_EAST = 'north_east'
+    WEST = 'west'
+    CENTER = 'center'
+    EAST = 'east'
+    SOUTH_WEST = 'south_west'
+    SOUTH = 'south'
+    SOUTH_EAST = 'south_east'
 
 
 class PillowContext(ProcessingContext):
@@ -284,7 +336,7 @@ class PillowProcessor(Processor):
         width: int,
         height: int,
         mode: ResizeMode = ResizeMode.EXACT,
-        gravity: str = 'center',
+        gravity: Gravity | str = 'center',
     ) -> tuple[PIL.Image.Image, str]:
         """PIL-level resize transform (no encode/decode)."""
         if mode == ResizeMode.EXACT:
@@ -323,7 +375,7 @@ class PillowProcessor(Processor):
         height: int,
         x: int | None = None,
         y: int | None = None,
-        gravity: str = 'north_west',
+        gravity: Gravity | str = 'north_west',
     ) -> tuple[PIL.Image.Image, str]:
         """PIL-level crop transform (no encode/decode)."""
         if x is None and y is None:
@@ -405,7 +457,7 @@ class PillowProcessor(Processor):
         width: int,
         height: int,
         mode: ResizeMode = ResizeMode.EXACT,
-        gravity: str = 'center',
+        gravity: Gravity | str = 'center',
     ) -> Asset:
         """
         Creates a new Asset whose essence is resized according to the specified
@@ -416,9 +468,8 @@ class PillowProcessor(Processor):
         parameter controls which part of the scaled image is kept; it has no
         effect in ``EXACT`` or ``FIT`` mode.
 
-        Valid gravity values: ``'north_west'``, ``'north'``, ``'north_east'``,
-        ``'west'``, ``'center'``, ``'east'``, ``'south_west'``, ``'south'``,
-        ``'south_east'``.
+        *gravity* may be a :class:`Gravity` member or the equivalent
+        plain string (see :class:`Gravity` for the full list of values).
 
         :param asset: Asset to be resized
         :type asset: Asset
@@ -429,7 +480,7 @@ class PillowProcessor(Processor):
         :param mode: Resize behavior
         :type mode: ResizeMode
         :param gravity: Crop anchor used in ``FILL`` mode
-        :type gravity: str
+        :type gravity: Gravity or str
         :return: Asset with resized essence
         :rtype: Asset
         """
@@ -726,7 +777,7 @@ class PillowProcessor(Processor):
         height: int,
         x: int | None = None,
         y: int | None = None,
-        gravity: str = 'north_west',
+        gravity: Gravity | str = 'north_west',
     ) -> Asset:
         """
         Creates a new asset whose essence is cropped to the specified
@@ -736,9 +787,8 @@ class PillowProcessor(Processor):
         is positioned using ``gravity``.  When either coordinate is supplied
         explicitly, both must be provided and ``gravity`` is ignored.
 
-        Valid gravity values: ``'north_west'``, ``'north'``, ``'north_east'``,
-        ``'west'``, ``'center'``, ``'east'``, ``'south_west'``, ``'south'``,
-        ``'south_east'``.
+        *gravity* may be a :class:`Gravity` member or the equivalent
+        plain string (see :class:`Gravity` for the full list of values).
 
         :param asset: Asset whose contents will be cropped
         :type asset: Asset
@@ -754,7 +804,7 @@ class PillowProcessor(Processor):
         :type y: int or None
         :param gravity: Anchor position used when ``x`` and ``y`` are not
             specified
-        :type gravity: str
+        :type gravity: Gravity or str
         :return: New asset with cropped essence
         :rtype: Asset
         """
@@ -788,7 +838,7 @@ class PillowProcessor(Processor):
         overlay_asset: Asset,
         x: int = 0,
         y: int = 0,
-        gravity: str = 'north_west',
+        gravity: Gravity | str = 'north_west',
         opacity: float = 1.0,
     ) -> Asset:
         """
@@ -811,7 +861,7 @@ class PillowProcessor(Processor):
             valid values are ``'north_west'``, ``'north'``, ``'north_east'``,
             ``'west'``, ``'center'``, ``'east'``, ``'south_west'``,
             ``'south'``, ``'south_east'``
-        :type gravity: str
+        :type gravity: Gravity or str
         :param opacity: Overlay opacity in the range ``[0.0, 1.0]``
         :type opacity: float
         :return: Asset with overlay composited onto the base
@@ -877,7 +927,7 @@ class PillowProcessor(Processor):
         width: int,
         height: int,
         color: tuple[int, int, int] | tuple[int, int, int, int] = (0, 0, 0, 0),
-        gravity: str = 'center',
+        gravity: Gravity | str = 'center',
     ) -> Asset:
         """
         Creates a new asset whose essence is placed on a larger canvas.
@@ -886,9 +936,8 @@ class PillowProcessor(Processor):
         filled with ``color``. The position on the canvas is determined by
         ``gravity``.
 
-        Valid gravity values: ``'north_west'``, ``'north'``, ``'north_east'``,
-        ``'west'``, ``'center'``, ``'east'``, ``'south_west'``, ``'south'``,
-        ``'south_east'``.
+        *gravity* may be a :class:`Gravity` member or the equivalent
+        plain string (see :class:`Gravity` for the full list of values).
 
         :param asset: Asset whose essence will be padded
         :type asset: Asset
@@ -899,7 +948,7 @@ class PillowProcessor(Processor):
         :param color: Fill color for the added area as an RGB or RGBA tuple
         :type color: tuple
         :param gravity: Anchor position of the source image on the canvas
-        :type gravity: str
+        :type gravity: Gravity or str
         :return: Asset with padded essence
         :rtype: Asset
         :raises OperatorError: If the canvas is smaller than the source image

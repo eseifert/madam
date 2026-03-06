@@ -38,6 +38,40 @@ def is_equal_in_black_white_space(result_image, expected_image):
     return PIL.ImageChops.difference(result_image_bw, expected_image_bw).getbbox() is None
 
 
+class TestGravity:
+    def test_gravity_is_importable(self):
+        from madam.image import Gravity  # noqa: F401
+
+    def test_gravity_is_str_enum(self):
+        from enum import StrEnum
+        from madam.image import Gravity
+        assert issubclass(Gravity, StrEnum)
+
+    def test_gravity_has_nine_values(self):
+        from madam.image import Gravity
+        assert len(Gravity) == 9
+
+    def test_gravity_values_equal_strings(self):
+        from madam.image import Gravity
+        assert Gravity.NORTH_WEST == 'north_west'
+        assert Gravity.NORTH == 'north'
+        assert Gravity.NORTH_EAST == 'north_east'
+        assert Gravity.WEST == 'west'
+        assert Gravity.CENTER == 'center'
+        assert Gravity.EAST == 'east'
+        assert Gravity.SOUTH_WEST == 'south_west'
+        assert Gravity.SOUTH == 'south'
+        assert Gravity.SOUTH_EAST == 'south_east'
+
+    def test_gravity_enum_works_as_operator_parameter(self):
+        from madam.image import Gravity, PillowProcessor
+        processor = PillowProcessor()
+        asset = _solid_png_asset((100, 100, 100), width=20, height=20)
+        result = processor.crop(width=10, height=10, gravity=Gravity.CENTER)(asset)
+        assert result.width == 10
+        assert result.height == 10
+
+
 class TestPillowProcessor:
     @pytest.fixture(name='processor', scope='class')
     def pillow_processor(self):
