@@ -135,8 +135,9 @@ class TestCombine:
 
     def test_combine_wide_image_letterboxed(self, png_image_asset_rgb):
         pytest.importorskip('pdf2image')
-        from madam.pdf import combine
         import pdf2image
+
+        from madam.pdf import combine
 
         # Use a tall page so the wide image must be letterboxed (whitespace top/bottom)
         result = combine([png_image_asset_rgb], page_width=400, page_height=400)
@@ -147,10 +148,11 @@ class TestCombine:
 
     def test_combine_tall_image_pillarboxed(self):
         pytest.importorskip('pdf2image')
-        from madam.pdf import combine
         import io
+
         import pdf2image
-        import PIL.Image
+
+        from madam.pdf import combine
 
         # Create a tall narrow image
         tall_img = PIL.Image.new('RGB', (50, 400), color=(255, 0, 0))
@@ -259,3 +261,27 @@ class TestPDFRasterize:
 
         with pytest.raises(madam.core.OperatorError):
             rasterize(pdf_asset)
+
+    def test_rasterize_raises_for_unsupported_mime_type(self, pdf_processor, pdf_asset):
+        pytest.importorskip('pdf2image')
+        rasterize = pdf_processor.rasterize(page=0, dpi=72, mime_type='image/bmp')
+
+        with pytest.raises(madam.core.OperatorError):
+            rasterize(pdf_asset)
+
+
+class TestCombinePAMode:
+    """Additional coverage for _fit_image_on_page with palette+alpha (PA) mode."""
+
+    def test_combine_palette_alpha_image(self):
+        from madam.pdf import _fit_image_on_page
+
+        # Build a PA-mode image directly (palette with alpha channel)
+        p_img = PIL.Image.new('P', (16, 16), 0)
+        pa_img = p_img.convert('PA')
+
+        # _fit_image_on_page must handle PA mode without error
+        result = _fit_image_on_page(pa_img, 100, 100)
+
+        assert result.mode == 'RGB'
+        assert result.size == (100, 100)

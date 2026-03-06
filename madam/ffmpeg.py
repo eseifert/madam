@@ -14,7 +14,15 @@ from typing import IO, Any, Self
 import PIL.Image
 from bidict import bidict
 
-from madam.core import Asset, MetadataProcessor, OperatorError, ProcessingContext, Processor, UnsupportedFormatError, operator
+from madam.core import (
+    Asset,
+    MetadataProcessor,
+    OperatorError,
+    ProcessingContext,
+    Processor,
+    UnsupportedFormatError,
+    operator,
+)
 from madam.mime import MimeType
 from madam.streaming import MultiFileOutput
 
@@ -242,6 +250,7 @@ def _run_ffmpeg_with_progress(command: list[str], progress_callback: Callable[[d
         stderr=subprocess.PIPE,
     ) as proc:
         current_block: dict[str, str] = {}
+        assert proc.stdout is not None
         for raw_line in proc.stdout:
             line = raw_line.decode('utf-8', errors='replace').strip()
             if '=' in line:
@@ -253,6 +262,7 @@ def _run_ffmpeg_with_progress(command: list[str], progress_callback: Callable[[d
                 current_block = {}
         proc.wait()
         if proc.returncode != 0:
+            assert proc.stderr is not None
             stderr_bytes = proc.stderr.read()
             stderr_text = stderr_bytes.decode('utf-8', errors='replace') if stderr_bytes else ''
             last_line = next(
@@ -726,7 +736,7 @@ class FFmpegProcessor(Processor):
     # Deferred execution support
     # ------------------------------------------------------------------
 
-    def execute_run(self, steps: list, asset_or_context: 'Asset | FFmpegContext') -> 'Asset | FFmpegContext':
+    def execute_run(self, steps: list[Callable], asset_or_context: 'Asset | FFmpegContext') -> 'Asset | FFmpegContext':  # type: ignore[override]
         """
         Group consecutive FFmpegProcessor operators into a single subprocess.
 
@@ -748,7 +758,7 @@ class FFmpegProcessor(Processor):
             op_name = getattr(getattr(step, 'func', None), '__name__', None)
             accumulate = getattr(self, f'_accumulate_{op_name}', None) if op_name else None
             if accumulate is not None:
-                asset = accumulate(graph, asset, **step.keywords)
+                asset = accumulate(graph, asset, **step.keywords)  # type: ignore[attr-defined]
             else:
                 # Fallback: materialise current context, apply step directly.
                 if isinstance(asset_or_context, FFmpegContext):

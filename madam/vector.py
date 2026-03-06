@@ -161,7 +161,9 @@ def _shrink_svg(root: ET.Element) -> None:
     _remove_elements(
         root,
         '*',
-        lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and not _attr_is_zero(e.get('opacity')),
+        lambda e: e.get('display') != 'none'
+        and e.get('visibility') != 'hidden'
+        and not _attr_is_zero(e.get('opacity')),
     )
     # Remove empty groups
     _remove_elements(root, 'svg:g', lambda e: bool(list(e)))
@@ -234,7 +236,7 @@ class SVGProcessor(Processor):
         tree, _ = _parse_svg(file)
         return tree
 
-    def execute_run(self, steps: list, asset_or_context: 'Asset | SVGContext') -> 'Asset | SVGContext':
+    def execute_run(self, steps: list[Callable], asset_or_context: 'Asset | SVGContext') -> 'Asset | SVGContext':  # type: ignore[override]
         """
         Apply a group of consecutive SVG operators in a single parse/serialise cycle.
 
@@ -253,7 +255,7 @@ class SVGProcessor(Processor):
             op_name = getattr(getattr(step, 'func', None), '__name__', None)
             transform = getattr(self, f'_transform_{op_name}', None) if op_name else None
             if transform is not None:
-                tree = transform(tree, **step.keywords)
+                tree = transform(tree, **step.keywords)  # type: ignore[attr-defined]
             else:
                 # Fallback: materialise current context, apply step, re-parse.
                 tmp_ctx = SVGContext(self, tree)

@@ -69,31 +69,6 @@ def _build_app13(iptc_records: bytes) -> bytes:
     return b'\xff\xed' + struct.pack('>H', length) + photoshop
 
 
-def _iter_jpeg_markers(data: bytes):
-    """
-    Yield ``(marker_bytes, payload_bytes)`` tuples for each marker in *data*.
-
-    *marker_bytes* is the 2-byte marker code (e.g. ``b'\\xff\\xd8'``).
-    *payload_bytes* is the raw segment data without the marker or length field,
-    or ``None`` for stand-alone markers (SOI, EOI, RST*).
-    """
-    pos = 0
-    length = len(data)
-    while pos < length:
-        if data[pos] != 0xFF:
-            break
-        marker = data[pos : pos + 2]
-        marker_byte = data[pos + 1]
-        pos += 2
-        # Stand-alone markers: SOI (D8), EOI (D9), RST0-RST7 (D0-D7), TEM (01)
-        if marker_byte in (0xD8, 0xD9, 0x01) or 0xD0 <= marker_byte <= 0xD7:
-            yield marker, None
-        else:
-            seg_length = struct.unpack('>H', data[pos : pos + 2])[0]
-            payload = data[pos + 2 : pos + seg_length]
-            yield marker, payload
-            pos += seg_length
-
 
 class IPTCMetadataProcessor(MetadataProcessor):
     """
@@ -174,7 +149,8 @@ class IPTCMetadataProcessor(MetadataProcessor):
                     iptc['keywords'] = [value.decode('latin-1')]
             elif dataset in _DATASET_TO_KEY:
                 key = _DATASET_TO_KEY[dataset]
-                iptc[key] = value.decode('latin-1')
+                raw_bytes = value if isinstance(value, bytes) else value[0]
+                iptc[key] = raw_bytes.decode('latin-1')
 
         if not iptc:
             return {}

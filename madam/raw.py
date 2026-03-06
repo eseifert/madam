@@ -59,7 +59,7 @@ class RawImageProcessor(Processor):
         try:
             with rawpy.imread(io.BytesIO(data)):
                 return True
-        except rawpy.LibRawError:
+        except rawpy.LibRawError:  # type: ignore[attr-defined]
             return False
 
     def read(self, file: IO) -> Asset:

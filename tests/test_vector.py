@@ -185,11 +185,7 @@ class TestSVGProcessor:
         assert shrunk_fragment == ''
 
     def test_shrink_removes_zero_length_lines(self, processor):
-        asset = create_svg_asset(
-            '<line x1="10" y1="20" x2="10" y2="20" />'
-            '<line x1="0" y1="0" x2="0" y2="0" />'
-            '<line />'
-        )
+        asset = create_svg_asset('<line x1="10" y1="20" x2="10" y2="20" /><line x1="0" y1="0" x2="0" y2="0" /><line />')
         shrink_operator = processor.shrink()
 
         shrunk_asset = shrink_operator(asset)
@@ -411,8 +407,8 @@ class TestSVGContext:
         from madam.vector import SVGContext  # noqa: F401
 
     def test_svg_context_holds_tree_and_processor(self):
-        import io
         from xml.etree import ElementTree as ET
+
         from madam.vector import SVGContext
 
         proc = SVGProcessor()
@@ -430,6 +426,7 @@ class TestSVGContext:
 
     def test_svg_context_materialize_returns_svg_asset(self):
         import io
+
         from madam.vector import SVGContext
 
         proc = SVGProcessor()
@@ -447,7 +444,7 @@ class TestSVGDeferredExecution:
     def test_shrink_twice_parses_svg_only_once(self):
         """Two shrink operators in a Pipeline must parse the SVG only once."""
         import io
-        import unittest.mock
+
         from madam.core import Pipeline
 
         proc = SVGProcessor()
@@ -475,3 +472,79 @@ class TestSVGDeferredExecution:
 
         assert len(parse_calls) == 1, f'Expected 1 parse call, got {len(parse_calls)}'
         assert result[0].mime_type == 'image/svg+xml'
+
+
+def test_svg_length_to_px_raises_for_unknown_unit():
+    with pytest.raises(ValueError):
+        svg_length_to_px('42vw')
+
+
+def test_is_zero_length_line_returns_false_for_invalid_lengths():
+    from madam.vector import _is_zero_length_line
+
+    elem = ET.Element('line')
+    elem.set('x1', 'invalid')
+    # Must not raise; returns False when conversion fails.
+    assert _is_zero_length_line(elem) is False
+
+
+def test_attr_is_zero_returns_false_for_invalid_value():
+    from madam.vector import _attr_is_zero
+
+    assert _attr_is_zero('invalid_unit_xyz') is False
+
+
+class TestSVGDeferredFallback:
+    """execute_run fallback: operator without a _transform_* method."""
+
+    def test_execute_run_with_unknown_operator_uses_fallback(self):
+        import functools
+
+
+        proc = SVGProcessor()
+        asset = proc.read(io.BytesIO(SVG_SIMPLE))
+
+        # Build a step whose func.__name__ has no matching _transform_* on SVGProcessor.
+        # The step returns an Asset, triggering the re-parse branch (line 267).
+        def identity_asset(proc_instance: SVGProcessor, a: Asset) -> Asset:
+            return a
+
+        step = functools.partial(identity_asset, proc)
+        step._processor = proc  # type: ignore[attr-defined]
+
+        result_ctx = proc.execute_run([step], asset)
+        assert result_ctx.materialize().mime_type == 'image/svg+xml'
+
+    def test_execute_run_fallback_step_returning_svg_context(self):
+        import functools
+
+        from madam.vector import SVGContext
+
+        proc = SVGProcessor()
+        asset = proc.read(io.BytesIO(SVG_SIMPLE))
+
+        # Step returns an SVGContext (not an Asset), triggering line 265.
+        def identity_ctx(proc_instance: SVGProcessor, a: Asset) -> SVGContext:
+            tree = proc._parse_tree(a.essence)
+            return SVGContext(proc, tree)
+
+        step = functools.partial(identity_ctx, proc)
+        step._processor = proc  # type: ignore[attr-defined]
+
+        result_ctx = proc.execute_run([step], asset)
+        assert result_ctx.materialize().mime_type == 'image/svg+xml'
+
+    def test_execute_run_accepts_svg_context_as_input(self):
+        from madam.vector import SVGContext
+
+        proc = SVGProcessor()
+        asset = proc.read(io.BytesIO(SVG_SIMPLE))
+
+        # First call: asset → SVGContext
+        ctx = proc.execute_run([], asset)
+        assert isinstance(ctx, SVGContext)
+
+        # Second call: SVGContext → SVGContext (hits line 250)
+        ctx2 = proc.execute_run([], ctx)
+        assert isinstance(ctx2, SVGContext)
+        assert ctx2.materialize().mime_type == 'image/svg+xml'

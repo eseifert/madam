@@ -1,4 +1,5 @@
 import io
+import unittest.mock
 
 import PIL.Image
 import pytest
@@ -136,3 +137,49 @@ class TestIPTCMetadataProcessor:
 
         for key, value in expected.items():
             assert metadata['iptc'][key] == value
+
+    def test_read_corrupt_jpeg_raises_unsupported_format_error(self, iptc_processor):
+        # Starts with JPEG SOI magic but is otherwise truncated/corrupt.
+        buf = io.BytesIO(b'\xff\xd8\xff\xe0' + b'\x00' * 4)
+
+        with pytest.raises(UnsupportedFormatError):
+            iptc_processor.read(buf)
+
+    def test_combine_unknown_metadata_format_raises(self, iptc_processor, iptc_asset_bytes):
+        buf = io.BytesIO(iptc_asset_bytes)
+
+        with pytest.raises(UnsupportedFormatError):
+            iptc_processor.combine(buf, {'unknown_format': {}})
+
+    def test_combine_empty_iptc_dict_returns_valid_jpeg(self, iptc_processor, iptc_asset_bytes):
+        stripped = iptc_processor.strip(io.BytesIO(iptc_asset_bytes))
+        stripped.seek(0)
+
+        result = iptc_processor.combine(stripped, {'iptc': {}})
+
+        result.seek(0)
+        with PIL.Image.open(result) as img:
+            assert img.format == 'JPEG'
+
+    def test_strip_non_jpeg_raises_unsupported_format_error(self, iptc_processor):
+        buf = io.BytesIO(b'\x89PNG\r\n\x1a\nrest')
+
+        with pytest.raises(UnsupportedFormatError):
+            iptc_processor.strip(buf)
+
+    def test_read_skips_non_record2_iptc(self, iptc_processor, iptc_asset_bytes):
+        # Record 1 (envelope) entries must be skipped; result is empty if no record-2 fields.
+        with unittest.mock.patch('PIL.IptcImagePlugin.getiptcinfo', return_value={(1, 0): b'envelope'}):
+            result = iptc_processor.read(io.BytesIO(iptc_asset_bytes))
+
+        assert result == {}
+
+    def test_read_single_keyword_as_bytes(self, iptc_processor, iptc_asset_bytes):
+        # When PIL returns a single bytes value for a repeatable field, wrap it in a list.
+        with unittest.mock.patch(
+            'PIL.IptcImagePlugin.getiptcinfo',
+            return_value={(2, 25): b'single_keyword'},
+        ):
+            result = iptc_processor.read(io.BytesIO(iptc_asset_bytes))
+
+        assert result['iptc']['keywords'] == ['single_keyword']

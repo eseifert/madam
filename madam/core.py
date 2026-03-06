@@ -336,7 +336,7 @@ def operator(
     @functools.wraps(function)
     def wrapper(self: Any, **kwargs: _P.kwargs) -> Callable[['Asset'], 'Asset']:
         configured_operator = functools.partial(function, self, **kwargs)
-        configured_operator._processor = self
+        configured_operator._processor = self  # type: ignore[attr-defined]
         return configured_operator
 
     return wrapper
@@ -597,7 +597,7 @@ class Processor(metaclass=abc.ABCMeta):
         """
         result: Asset | ProcessingContext = asset_or_context
         for step in steps:
-            result = step(result)  # type: ignore[arg-type]
+            result = step(result)
         return result
 
 

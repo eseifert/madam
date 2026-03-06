@@ -219,7 +219,7 @@ class PillowProcessor(Processor):
     # image/heic and image/heif map to the same 'HEIF' Pillow format, but
     # bidict requires bijective mappings so only one entry is registered here.
     try:
-        import pillow_heif as _pillow_heif
+        import pillow_heif as _pillow_heif  # type: ignore[import-unresolved]
 
         _pillow_heif.register_heif_opener()
         __mime_type_to_pillow_type[MimeType('image/heic')] = 'HEIF'
@@ -292,8 +292,6 @@ class PillowProcessor(Processor):
         The result is returned as a :class:`PillowContext`; :class:`~madam.core.Pipeline`
         encodes it only when a processor boundary or pipeline end is reached.
         """
-        from collections.abc import Callable as _Callable
-
         if isinstance(asset_or_context, PillowContext):
             image = asset_or_context.image
             mime_type = str(asset_or_context.mime_type)
@@ -433,7 +431,7 @@ class PillowProcessor(Processor):
                 data_type=data_type,
             )
             if getattr(image, 'is_animated', False):
-                metadata['frame_count'] = image.n_frames
+                metadata['frame_count'] = getattr(image, 'n_frames', 0)
             icc_profile = image.info.get('icc_profile')
             if icc_profile:
                 metadata['icc_profile'] = icc_profile
@@ -558,9 +556,11 @@ class PillowProcessor(Processor):
             use_zopfli = format_config.get('zopfli', False)
             if use_zopfli:
                 try:
-                    import zopfli
+                    import zopfli  # type: ignore[import-unresolved]
                 except ImportError:
-                    raise ImportError("zopfli PNG optimization requires the 'optimize' extra: pip install madam[optimize]") from None
+                    raise ImportError(
+                        "zopfli PNG optimization requires the 'optimize' extra: pip install madam[optimize]"
+                    ) from None
 
                 zopfli_png = zopfli.ZopfliPNG()
                 # Convert 16-bit per channel images to 8-bit per channel
@@ -632,7 +632,7 @@ class PillowProcessor(Processor):
             data_type=data_type,
         )
         if getattr(image, 'is_animated', False):
-            metadata['frame_count'] = image.n_frames
+            metadata['frame_count'] = getattr(image, 'n_frames', 0)
         icc_profile = image.info.get('icc_profile') if hasattr(image, 'info') else None
         if icc_profile and mime_type in _ICC_PROFILE_FORMATS:
             metadata['icc_profile'] = icc_profile
@@ -1398,7 +1398,7 @@ class PillowProcessor(Processor):
             quality-based compression, or if ssimulacra2 is not installed
         """
         try:
-            import ssimulacra2 as _s2_check  # noqa: F401
+            import ssimulacra2 as _s2_check  # type: ignore[import-unresolved]  # noqa: F401
         except ImportError as exc:
             raise OperatorError('optimize_quality requires ssimulacra2: pip install "madam[analysis]"') from exc
 
@@ -1457,7 +1457,7 @@ def _ssimulacra2_score(img_a: PIL.Image.Image, img_b: PIL.Image.Image) -> float:
     :raises ImportError: if ssimulacra2 is not installed
     """
     import numpy as np
-    from ssimulacra2.ssimulacra2 import (
+    from ssimulacra2.ssimulacra2 import (  # type: ignore[import-unresolved]
         Msssim,
         MsssimScale,
         blur_image,
@@ -1519,8 +1519,10 @@ def extract_palette(asset: Asset, count: int = 5) -> list[tuple[int, int, int]]:
 
     quantized = rgb.quantize(colors=count)
     palette = quantized.getpalette()  # flat [r, g, b, r, g, b, …] for 256 slots
+    if palette is None:
+        return []
 
-    pixel_counts: Counter[int] = Counter(quantized.get_flattened_data())
+    pixel_counts: Counter[int] = Counter(quantized.get_flattened_data())  # type: ignore[arg-type]
 
     # Sort palette indices by descending frequency, then map to RGB tuples.
     sorted_indices = sorted(pixel_counts, key=lambda i: pixel_counts[i], reverse=True)
@@ -1574,8 +1576,8 @@ def render_text(
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
 
-    canvas_width = text_width + 2 * padding
-    canvas_height = text_height + 2 * padding
+    canvas_width = int(text_width + 2 * padding)
+    canvas_height = int(text_height + 2 * padding)
     image = PIL.Image.new('RGBA', (max(1, canvas_width), max(1, canvas_height)), background)
     draw = PIL.ImageDraw.Draw(image)
     draw.text((padding - bbox[0], padding - bbox[1]), text, font=font, fill=color + (255,))
