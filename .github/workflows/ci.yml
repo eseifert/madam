@@ -29,12 +29,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python dependencies
-        run: uv sync --extra dev
+        run: uv sync --extra dev --extra all
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install ffmpeg
+          sudo apt-get install ffmpeg poppler-utils
           ffprobe -formats
           ffprobe -codecs
           ffprobe -pix_fmts
