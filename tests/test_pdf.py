@@ -285,3 +285,25 @@ class TestCombinePAMode:
 
         assert result.mode == 'RGB'
         assert result.size == (100, 100)
+
+
+class TestCombineEdgeCases:
+    def test_combine_corrupt_image_bytes_raises_operator_error(self):
+        """combine() must raise OperatorError when PIL cannot decode the asset."""
+        from madam.pdf import combine
+
+        corrupt = madam.core.Asset(io.BytesIO(b'\xff\xd8corrupt'), mime_type='image/jpeg')
+
+        with pytest.raises(madam.core.OperatorError):
+            combine([corrupt], page_width=200.0, page_height=200.0)
+
+    def test_rasterize_no_output_raises_operator_error(self, pdf_processor, pdf_asset, monkeypatch):
+        """rasterize() must raise OperatorError when pdf2image returns an empty list."""
+        pdf2image = pytest.importorskip('pdf2image')
+
+        monkeypatch.setattr(pdf2image, 'convert_from_bytes', lambda *a, **kw: [])
+
+        rasterize = pdf_processor.rasterize(page=0, dpi=72)
+
+        with pytest.raises(madam.core.OperatorError):
+            rasterize(pdf_asset)

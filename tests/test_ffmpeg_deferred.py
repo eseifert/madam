@@ -1,4 +1,5 @@
 """Tests for deferred FFmpeg pipeline execution."""
+
 import io
 import json
 import subprocess
@@ -77,13 +78,23 @@ class TestFFmpegFilterGraph:
         with pytest.raises(ValueError):
             g.set_codec_options(vcodec='libvpx')
 
+    def test_add_video_filter_no_params_returns_plain_name(self):
+        from madam.ffmpeg import FFmpegFilterGraph
+
+        g = FFmpegFilterGraph()
+        g.add_video_filter('yadif')
+
+        assert g.video_filter_string == 'yadif'
+
 
 def _make_mock_processor(monkeypatch):
     """Return a real FFmpegProcessor with subprocess.run mocked."""
-    probe_json = json.dumps({
-        'format': {'format_name': 'matroska,webm', 'duration': '5.0'},
-        'streams': [{'codec_type': 'video', 'codec_name': 'h264', 'width': 64, 'height': 64}],
-    }).encode()
+    probe_json = json.dumps(
+        {
+            'format': {'format_name': 'matroska,webm', 'duration': '5.0'},
+            'streams': [{'codec_type': 'video', 'codec_name': 'h264', 'width': 64, 'height': 64}],
+        }
+    ).encode()
 
     def fake_run(cmd, *args, **kwargs):
         result = unittest.mock.MagicMock()
@@ -151,6 +162,7 @@ class TestFFmpegContext:
 
 def _make_ffmpeg_fake_run(call_log: list[list[str]], probe_json: bytes):
     """Helper: build a fake subprocess.run that logs calls and returns sensible results."""
+
     def fake_run(cmd, *args, **kwargs):
         call_log.append(list(cmd))
         result = unittest.mock.MagicMock()
@@ -163,14 +175,17 @@ def _make_ffmpeg_fake_run(call_log: list[list[str]], probe_json: bytes):
         else:
             result.stdout = probe_json
         return result
+
     return fake_run
 
 
 class TestFFmpegDeferredExecution:
-    _probe_json = json.dumps({
-        'format': {'format_name': 'matroska,webm', 'duration': '5.0'},
-        'streams': [{'codec_type': 'video', 'codec_name': 'h264', 'width': 64, 'height': 64}],
-    }).encode()
+    _probe_json = json.dumps(
+        {
+            'format': {'format_name': 'matroska,webm', 'duration': '5.0'},
+            'streams': [{'codec_type': 'video', 'codec_name': 'h264', 'width': 64, 'height': 64}],
+        }
+    ).encode()
 
     def test_two_video_ops_spawn_single_subprocess(self, monkeypatch):
         """resize then crop in a Pipeline must spawn exactly one ffmpeg process."""
@@ -194,9 +209,7 @@ class TestFFmpegDeferredExecution:
 
         # Count ffmpeg (not ffprobe) subprocess calls
         ffmpeg_calls = [c for c in call_log if c and c[0] == 'ffmpeg']
-        assert len(ffmpeg_calls) == 1, (
-            f'Expected 1 ffmpeg subprocess, got {len(ffmpeg_calls)}: {ffmpeg_calls}'
-        )
+        assert len(ffmpeg_calls) == 1, f'Expected 1 ffmpeg subprocess, got {len(ffmpeg_calls)}: {ffmpeg_calls}'
 
     def test_single_ffmpeg_call_contains_both_filters(self, monkeypatch):
         """The combined ffmpeg call must include both the scale and crop filters."""
@@ -226,10 +239,12 @@ class TestFFmpegDeferredExecution:
 
 
 class TestFFmpegAudioDeferredExecution:
-    _probe_json = json.dumps({
-        'format': {'format_name': 'ogg', 'duration': '5.0'},
-        'streams': [{'codec_type': 'audio', 'codec_name': 'opus'}],
-    }).encode()
+    _probe_json = json.dumps(
+        {
+            'format': {'format_name': 'ogg', 'duration': '5.0'},
+            'streams': [{'codec_type': 'audio', 'codec_name': 'opus'}],
+        }
+    ).encode()
 
     def test_two_audio_ops_accumulate_in_filter_graph(self, monkeypatch):
         """Audio operators must add to the audio filter chain, not run separate subprocesses."""
@@ -238,7 +253,6 @@ class TestFFmpegAudioDeferredExecution:
         call_log: list[list[str]] = []
         monkeypatch.setattr(subprocess, 'run', _make_ffmpeg_fake_run(call_log, self._probe_json))
 
-        proc = madam.ffmpeg.FFmpegProcessor()
         graph = FFmpegFilterGraph()
         graph.set_output_format('audio/ogg')
         graph.add_audio_filter('volume', volume=0.5)
@@ -262,10 +276,12 @@ class TestFFmpegAudioDeferredExecution:
 
 
 class TestFFmpegConvertInteraction:
-    _probe_json = json.dumps({
-        'format': {'format_name': 'matroska,webm', 'duration': '5.0'},
-        'streams': [{'codec_type': 'video', 'codec_name': 'h264', 'width': 64, 'height': 64}],
-    }).encode()
+    _probe_json = json.dumps(
+        {
+            'format': {'format_name': 'matroska,webm', 'duration': '5.0'},
+            'streams': [{'codec_type': 'video', 'codec_name': 'h264', 'width': 64, 'height': 64}],
+        }
+    ).encode()
 
     def test_set_output_format_conflict_raises(self):
         from madam.ffmpeg import FFmpegFilterGraph
@@ -275,3 +291,34 @@ class TestFFmpegConvertInteraction:
 
         with pytest.raises(ValueError):
             g.set_codec_options(vcodec='libvpx')
+
+
+class TestFFmpegExecuteRunWithContext:
+    """execute_run called directly with an FFmpegContext as input."""
+
+    _probe_json = json.dumps(
+        {
+            'format': {'format_name': 'matroska,webm', 'duration': '5.0'},
+            'streams': [{'codec_type': 'video', 'codec_name': 'h264', 'width': 64, 'height': 64}],
+        }
+    ).encode()
+
+    def test_execute_run_accepts_ffmpeg_context_as_input(self, monkeypatch):
+        from madam.ffmpeg import FFmpegContext, FFmpegFilterGraph
+
+        monkeypatch.setattr(
+            'subprocess.run',
+            _make_ffmpeg_fake_run([], self._probe_json),
+        )
+        proc = madam.ffmpeg.FFmpegProcessor()
+        asset = _make_video_asset()
+
+        graph = FFmpegFilterGraph()
+        graph.set_output_format(asset.mime_type)
+        ctx = FFmpegContext(proc, asset, graph)
+
+        # Passing an FFmpegContext hits lines 750-751 in execute_run.
+        result_ctx = proc.execute_run([], ctx)
+
+        assert isinstance(result_ctx, FFmpegContext)
+        assert result_ctx.asset is asset

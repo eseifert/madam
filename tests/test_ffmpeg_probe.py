@@ -1,4 +1,5 @@
 """Tests for the _probe() internal function in madam.ffmpeg."""
+
 import io
 import json
 import subprocess
@@ -7,15 +8,19 @@ import unittest.mock
 
 from madam.ffmpeg import _probe
 
-STDIN_PROBE_RESULT_WITH_DURATION = json.dumps({
-    'format': {'format_name': 'ogg', 'duration': '0.2'},
-    'streams': [{'codec_type': 'audio', 'codec_name': 'opus'}],
-}).encode()
+STDIN_PROBE_RESULT_WITH_DURATION = json.dumps(
+    {
+        'format': {'format_name': 'ogg', 'duration': '0.2'},
+        'streams': [{'codec_type': 'audio', 'codec_name': 'opus'}],
+    }
+).encode()
 
-STDIN_PROBE_RESULT_WITHOUT_DURATION = json.dumps({
-    'format': {'format_name': 'ogg'},
-    'streams': [{'codec_type': 'audio', 'codec_name': 'opus'}],
-}).encode()
+STDIN_PROBE_RESULT_WITHOUT_DURATION = json.dumps(
+    {
+        'format': {'format_name': 'ogg'},
+        'streams': [{'codec_type': 'audio', 'codec_name': 'opus'}],
+    }
+).encode()
 
 
 class TestProbeContract:
@@ -65,8 +70,7 @@ class TestProbeContract:
             result = _probe(file)
 
         assert created_temp_files == [], (
-            'No NamedTemporaryFile should be created when stdin probe includes duration; '
-            f'created: {created_temp_files}'
+            f'No NamedTemporaryFile should be created when stdin probe includes duration; created: {created_temp_files}'
         )
         assert result['format']['duration'] == '0.2'
 
@@ -83,10 +87,12 @@ class TestProbeContract:
             return tmp
 
         # First call (stdin) omits duration; second call (temp file) provides it.
-        fallback_result = json.dumps({
-            'format': {'format_name': 'ogg', 'duration': '0.2'},
-            'streams': [],
-        }).encode()
+        fallback_result = json.dumps(
+            {
+                'format': {'format_name': 'ogg', 'duration': '0.2'},
+                'streams': [],
+            }
+        ).encode()
         side_effects = [
             unittest.mock.MagicMock(stdout=STDIN_PROBE_RESULT_WITHOUT_DURATION),
             unittest.mock.MagicMock(stdout=fallback_result),
@@ -98,9 +104,7 @@ class TestProbeContract:
         ):
             result = _probe(file)
 
-        assert len(created_temp_files) == 1, (
-            f'Expected exactly one fallback temp file; got: {created_temp_files}'
-        )
+        assert len(created_temp_files) == 1, f'Expected exactly one fallback temp file; got: {created_temp_files}'
         assert result['format']['duration'] == '0.2'
 
     def test_probe_returns_correct_metadata_for_mp3(self):
@@ -123,3 +127,13 @@ class TestProbeContract:
         _probe(file)
 
         assert file.tell() == 0
+
+
+def test_get_decoder_and_stream_type_empty_streams():
+    """_get_decoder_and_stream_type must return '' for stream_type when no streams match."""
+    from madam.ffmpeg import _get_decoder_and_stream_type
+
+    probe_data = {'format': {'format_name': 'data'}, 'streams': [{'codec_type': 'data'}]}
+    _, stream_type = _get_decoder_and_stream_type(probe_data)
+
+    assert stream_type == ''

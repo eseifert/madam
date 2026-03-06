@@ -1,6 +1,6 @@
 """Tests for FFmpeg progress callback support."""
+
 import io
-import subprocess
 import unittest.mock
 
 import pytest
@@ -59,12 +59,14 @@ class TestFFmpegProgressCallback:
         processor = FFmpegProcessor()
         received = []
 
-        FakePopen = _make_fake_popen([
-            'frame=10',
-            'fps=25.0',
-            'bitrate=128.0kbits/s',
-            'out_time=00:00:00.400000',
-        ])
+        FakePopen = _make_fake_popen(
+            [
+                'frame=10',
+                'fps=25.0',
+                'bitrate=128.0kbits/s',
+                'out_time=00:00:00.400000',
+            ]
+        )
         monkeypatch.setattr('subprocess.Popen', FakePopen)
 
         # Also patch the read-back so the Asset can be constructed from result
@@ -81,11 +83,13 @@ class TestFFmpegProgressCallback:
         processor = FFmpegProcessor()
         received = []
 
-        FakePopen = _make_fake_popen([
-            'frame=42',
-            'fps=30.0',
-            'out_time=00:00:01.400000',
-        ])
+        FakePopen = _make_fake_popen(
+            [
+                'frame=42',
+                'fps=30.0',
+                'out_time=00:00:01.400000',
+            ]
+        )
         monkeypatch.setattr('subprocess.Popen', FakePopen)
 
         fake_asset = Asset(io.BytesIO(b'result'), mime_type='audio/ogg')
@@ -108,7 +112,6 @@ class TestFFmpegProgressCallback:
         monkeypatch.setattr('subprocess.Popen', fake_popen)
 
         run_called = []
-        original_run = subprocess.run
 
         def fake_run(cmd, **kw):
             run_called.append(cmd)
@@ -131,3 +134,17 @@ class TestFFmpegProgressCallback:
             pass  # May fail due to missing file paths, we only care about popen_called
 
         assert not popen_called
+
+    def test_progress_callback_raises_operator_error_on_ffmpeg_failure(self, monkeypatch, ffmpeg_version_ok):
+        processor = FFmpegProcessor()
+
+        FakePopen = _make_fake_popen([], returncode=1)
+        monkeypatch.setattr('subprocess.Popen', FakePopen)
+
+        asset = Asset(io.BytesIO(b'input'), mime_type='audio/ogg', duration=1.0)
+        op = processor.convert(mime_type='audio/ogg', progress_callback=lambda d: None)
+
+        from madam.core import OperatorError
+
+        with pytest.raises(OperatorError):
+            op(asset)
