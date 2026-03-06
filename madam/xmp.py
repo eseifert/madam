@@ -158,6 +158,8 @@ class XMPMetadataProcessor(MetadataProcessor):
     * ``creator`` — dc:creator, first item of RDF Seq
     * ``create_date`` — xmp:CreateDate (ISO 8601 string)
     * ``modify_date`` — xmp:ModifyDate (ISO 8601 string)
+
+    .. versionadded:: 0.24
     """
 
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:

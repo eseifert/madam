@@ -33,6 +33,8 @@ class RawImageProcessor(Processor):
     Install the optional ``raw`` extra to get both dependencies::
 
         pip install madam[raw]
+
+    .. versionadded:: 0.24
     """
 
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:

@@ -121,6 +121,8 @@ class IPTCMetadataProcessor(MetadataProcessor):
     * ``source`` — Source (dataset 115)
     * ``copyright`` — Copyright Notice (dataset 116)
     * ``caption`` — Caption/Abstract (dataset 120)
+
+    .. versionadded:: 0.24
     """
 
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:

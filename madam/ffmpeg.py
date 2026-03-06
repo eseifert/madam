@@ -29,8 +29,6 @@ class FFmpegFilterGraph:
     operator implementations can also receive one via :attr:`FFmpegContext.graph`
     and call its mutation methods.
 
-    **Stable public API since 1.0.**
-
     Mutation interface — call these from operator implementations:
 
     * :meth:`add_video_filter` — append a video filter (e.g. ``scale``, ``crop``).
@@ -59,6 +57,8 @@ class FFmpegFilterGraph:
         flags.  Use for output-side options that are not expressible as filters,
         such as ``['-t', '30']`` to limit duration.
     :vartype extra_output_args: list[str]
+
+    .. versionadded:: 1.0
     """
 
     def __init__(self) -> None:
@@ -296,6 +296,8 @@ class VideoCodec:
     Use these instead of raw FFmpeg codec names to avoid depending on FFmpeg internals::
 
         processor.convert(mime_type='video/mp4', video={'codec': VideoCodec.H264})
+
+    .. versionadded:: 0.23
     """
 
     H264 = 'libx264'
@@ -313,6 +315,8 @@ class AudioCodec:
     Use these instead of raw FFmpeg codec names to avoid depending on FFmpeg internals::
 
         processor.convert(mime_type='audio/mpeg', audio={'codec': AudioCodec.MP3})
+
+    .. versionadded:: 0.23
     """
 
     AAC = 'aac'
@@ -334,8 +338,6 @@ class FFmpegContext(ProcessingContext):
     to execute a single ``ffmpeg`` subprocess that applies all accumulated
     filters at once.
 
-    **Stable public API since 1.0.**
-
     Instances are created by :class:`FFmpegProcessor` and passed to
     :meth:`~madam.core.Processor.execute_run`.  Custom operator
     implementations can inspect or extend the accumulated state before
@@ -349,6 +351,8 @@ class FFmpegContext(ProcessingContext):
         additional filters or set codec options by calling the mutation
         methods on this object.
     :vartype graph: FFmpegFilterGraph
+
+    .. versionadded:: 1.0
     """
 
     def __init__(self, processor: 'FFmpegProcessor', asset: Asset, graph: FFmpegFilterGraph) -> None:
@@ -1982,6 +1986,8 @@ def concatenate(
     :return: New asset with concatenated essence
     :rtype: Asset
     :raises ValueError: If *assets* is empty
+
+    .. versionadded:: 0.24
     :raises UnsupportedFormatError: If *mime_type* is not supported
     """
     asset_list = list(assets)

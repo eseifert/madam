@@ -113,8 +113,6 @@ class PillowContext(ProcessingContext):
     intermediate encode/decode cycles.  Call :meth:`materialize` to produce
     the final encoded :class:`~madam.core.Asset`.
 
-    **Stable public API since 1.0.**
-
     Instances are created by :class:`PillowProcessor` and passed to
     :meth:`~madam.core.Processor.execute_run`.  Custom operator
     implementations can inspect or mutate :attr:`image` and :attr:`mime_type`
@@ -127,6 +125,8 @@ class PillowContext(ProcessingContext):
         :meth:`materialize` encodes the image.  Changing this attribute is
         equivalent to inserting a :meth:`~PillowProcessor.convert` step.
     :vartype mime_type: str
+
+    .. versionadded:: 1.0
     """
 
     def __init__(self, processor: 'PillowProcessor', image: PIL.Image.Image, mime_type: str) -> None:
@@ -1460,6 +1460,8 @@ def extract_palette(asset: Asset, count: int = 5) -> list[tuple[int, int, int]]:
     :param asset: Source image asset (any format readable by Pillow)
     :param count: Maximum number of colors to return (default 5)
     :return: List of ``(r, g, b)`` tuples sorted by pixel frequency, descending
+
+    .. versionadded:: 0.24
     """
     from collections import Counter
 
@@ -1508,6 +1510,8 @@ def render_text(
     :type padding: int
     :return: RGBA PNG Asset containing the rendered text
     :rtype: Asset
+
+    .. versionadded:: 0.24
     """
     if font_path is not None:
         font = PIL.ImageFont.truetype(font_path, size=font_size)

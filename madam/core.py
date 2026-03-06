@@ -133,6 +133,8 @@ class Asset:
         independent of metadata.  Two assets with identical bytes always have the
         same ``content_id``, making it suitable as an object-store key or
         deduplication handle.
+
+        .. versionadded:: 0.23
         """
         return hashlib.sha256(self._essence_data).hexdigest()
 
@@ -171,6 +173,8 @@ class LazyAsset(Asset):
                    stream for the given URI.  May be ``None`` to create a
                    detached asset that will raise on essence access.
     :param \\**metadata: Metadata describing the asset.
+
+    .. versionadded:: 0.23
     """
 
     def __init__(self, uri: str, loader: Callable[[str], IO] | None, **metadata: Any) -> None:
@@ -247,6 +251,8 @@ class TransientOperatorError(OperatorError):
     """
     Raised when an operator fails due to a temporary condition (e.g. OOM,
     disk full) that may succeed on retry.
+
+    .. versionadded:: 0.23
     """
 
 
@@ -254,6 +260,8 @@ class PermanentOperatorError(OperatorError):
     """
     Raised when an operator fails due to a permanent condition (e.g. invalid
     codec, corrupt input) that will never succeed on retry.
+
+    .. versionadded:: 0.23
     """
 
 
@@ -282,6 +290,12 @@ class ProcessingContext(abc.ABC):
     operator's effect on the context object and only encodes the result once
     when :meth:`materialize` is called — either at a processor boundary or at
     the end of the pipeline.
+
+    Subclass this to implement deferred execution for a custom
+    :class:`Processor`.  Override :meth:`~Processor.execute_run` on the
+    processor to build and return an instance of your subclass.
+
+    .. versionadded:: 1.0
     """
 
     @property
@@ -466,6 +480,8 @@ class Pipeline:
         sub-pipeline, yielding one output asset per sub-pipeline per input.
 
         :param \\*pipelines: Sub-pipelines to fan out into
+
+        .. versionadded:: 0.24
         """
         self.operators.append(_BranchStep(pipelines))
 
@@ -483,6 +499,8 @@ class Pipeline:
         :param predicate: Callable that receives an asset and returns a bool
         :param then: Operator applied when *predicate* is ``True``
         :param else_: Operator applied when *predicate* is ``False``; optional
+
+        .. versionadded:: 0.24
         """
         self.operators.append(_WhenStep(predicate, then, else_))
 
@@ -497,6 +515,8 @@ class Pipeline:
         is required (e.g. to stabilise file size or byte layout).
 
         :return: A :class:`_FlushStep` sentinel callable
+
+        .. versionadded:: 1.0
         """
         return _FlushStep()
 
@@ -521,7 +541,10 @@ class Processor(metaclass=abc.ABCMeta):
 
     @property
     def supported_mime_types(self) -> frozenset:
-        """MIME types this processor can handle (used to build the Madam index)."""
+        """MIME types this processor can handle (used to build the Madam index).
+
+        .. versionadded:: 0.24
+        """
         return frozenset()
 
     @abc.abstractmethod
@@ -569,6 +592,8 @@ class Processor(metaclass=abc.ABCMeta):
         :param asset_or_context: Input asset (or live context from a preceding
             run of the same processor).
         :return: Processed :class:`Asset` or a live :class:`ProcessingContext`.
+
+        .. versionadded:: 1.0
         """
         result: Asset | ProcessingContext = asset_or_context
         for step in steps:
@@ -873,6 +898,8 @@ class Madam:
         :return: New asset without metadata
         :rtype: Asset
         :raises UnsupportedFormatError: if the asset format is not supported
+
+        .. versionadded:: 0.25
         """
         processor = self.get_processor(asset)
         stripped: IO = asset.essence
@@ -994,6 +1021,8 @@ class IndexedAssetStorage(AssetStorage[AssetKey]):
 
     Subclasses must call :meth:`_index_asset` in ``__setitem__`` and
     :meth:`_deindex_asset` in ``__delitem__``.
+
+    .. versionadded:: 0.23
     """
 
     def __init__(self) -> None:
@@ -1246,6 +1275,8 @@ class FileSystemAssetStorage(AssetStorage[str]):
     Because files are written atomically (write to a temp file then rename),
     the storage is safe for concurrent writes from multiple Celery workers
     on a shared file system.
+
+    .. versionadded:: 0.23
     """
 
     def __init__(self, path: Path | str) -> None:

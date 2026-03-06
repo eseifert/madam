@@ -27,6 +27,8 @@ class PDFProcessor(Processor):
     Reading requires `pypdf <https://pypdf.readthedocs.io/>`_.  Rasterization
     additionally requires `pdf2image <https://github.com/Belval/pdf2image>`_
     and a system-wide installation of *poppler*.
+
+    .. versionadded:: 0.24
     """
 
     def __init__(self, config: Mapping[str, Any] | None = None) -> None:

@@ -9,6 +9,100 @@ of when upgrading from one release to the next.
    :depth: 2
 
 
+0.26.0 → 1.0.0
+---------------
+
+All changes in this release are new features.  There are no breaking changes.
+
+
+New features
+~~~~~~~~~~~~
+
+New: Deferred pipeline execution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.core.Pipeline` now groups consecutive operators that share the
+same :class:`~madam.core.Processor` into a single *run* and dispatches them
+via the new :meth:`~madam.core.Processor.execute_run` hook.  Built-in
+processors (:class:`~madam.image.PillowProcessor`,
+:class:`~madam.ffmpeg.FFmpegProcessor`, :class:`~madam.vector.SVGProcessor`)
+exploit this to avoid intermediate encode/decode cycles — all chained operators
+of the same type are fused into a single pass, preserving full pixel fidelity.
+
+No changes are needed for existing pipelines.  The optimisation is transparent:
+
+.. code-block:: python
+
+   from madam.core import Pipeline
+
+   pipeline = Pipeline()
+   pipeline.add(processor.resize(width=1920, height=1080))
+   pipeline.add(processor.crop(width=1280, height=720, x=0, y=0))
+   pipeline.add(processor.convert(mime_type='image/webp'))
+
+   # All three operators are now applied in a single Pillow pass — no
+   # intermediate JPEG/PNG encode between resize and crop.
+   for result in pipeline.process(asset):
+       ...
+
+
+New: ``Pipeline.flush()``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:meth:`~madam.core.Pipeline.flush` returns a sentinel step that forces an
+intermediate encode/decode cycle between two operators that would otherwise
+be deferred together.  Insert it when the intermediate byte layout matters
+(e.g. to measure file size between two encode steps):
+
+.. code-block:: python
+
+   pipeline = Pipeline()
+   pipeline.add(processor.resize(width=800, height=600))
+   pipeline.add(Pipeline.flush())   # force encode/decode here
+   pipeline.add(processor.convert(mime_type='image/webp'))
+
+
+New: ``ProcessingContext`` ABC
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.core.ProcessingContext` is the abstract base class for deferred
+in-memory state.  Implement it alongside a :meth:`~madam.core.Processor.execute_run`
+override to add deferred execution to a custom processor.
+
+
+New: ``PillowContext``, ``FFmpegContext``, ``SVGContext``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Three concrete :class:`~madam.core.ProcessingContext` subclasses are now part
+of the stable public API, documented with their full attribute contracts:
+
+* :class:`~madam.image.PillowContext` — exposes the live
+  :class:`PIL.Image.Image` (``image``) and target format (``mime_type``).
+* :class:`~madam.ffmpeg.FFmpegContext` — exposes the source
+  :class:`~madam.core.Asset` (``asset``) and the accumulating
+  :class:`~madam.ffmpeg.FFmpegFilterGraph` (``graph``).
+* :class:`~madam.vector.SVGContext` — exposes the live
+  :class:`xml.etree.ElementTree.ElementTree` (``tree``).
+
+Custom operator implementations may inspect or extend these objects before
+the pipeline materialises the result.
+
+
+New: ``FFmpegFilterGraph``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.ffmpeg.FFmpegFilterGraph` accumulates FFmpeg video/audio
+filters and codec options for a single deferred run.  It is now part of the
+stable public API.  Custom FFmpeg operators can receive one via
+:attr:`~madam.ffmpeg.FFmpegContext.graph` and call
+:meth:`~madam.ffmpeg.FFmpegFilterGraph.add_video_filter`,
+:meth:`~madam.ffmpeg.FFmpegFilterGraph.add_audio_filter`,
+:meth:`~madam.ffmpeg.FFmpegFilterGraph.set_codec_options`, etc.
+
+
+----
+
+
 0.25.0 → 0.26.0
 ----------------
 
