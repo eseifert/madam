@@ -2068,6 +2068,154 @@ def concatenate(
     return processor.read(result)
 
 
+# Video-only MIME types supported by combine().
+_COMBINE_VIDEO_MIME_TYPES: frozenset[MimeType] = frozenset(
+    {
+        MimeType('video/mp4'),
+        MimeType('video/webm'),
+        MimeType('video/x-matroska'),
+        MimeType('video/quicktime'),
+        MimeType('video/x-msvideo'),
+        MimeType('video/mp2t'),
+        MimeType('video/x-nut'),
+        MimeType('video/ogg'),
+    }
+)
+
+# Default video codec per output container for combine().
+_COMBINE_DEFAULT_VIDEO_CODEC: dict[MimeType, str] = {
+    MimeType('video/mp4'): VideoCodec.H264,
+    MimeType('video/quicktime'): VideoCodec.H264,
+    MimeType('video/webm'): VideoCodec.VP9,
+    MimeType('video/x-matroska'): VideoCodec.VP9,
+    MimeType('video/x-msvideo'): VideoCodec.H264,
+    MimeType('video/mp2t'): VideoCodec.H264,
+    MimeType('video/x-nut'): VideoCodec.H264,
+    MimeType('video/ogg'): VideoCodec.VP8,
+}
+
+
+def combine(
+    assets: Iterable[Asset],
+    mime_type: MimeType | str,
+    *,
+    fps: float = 24.0,
+    video: Mapping[str, Any] | None = None,
+    audio: Mapping[str, Any] | None = None,
+) -> Asset:
+    """
+    Assembles a sequence of image (or video) assets into a video by treating
+    each asset as one frame at a fixed frame rate.
+
+    Each asset's essence is written to a temporary file and listed in an FFmpeg
+    concat-demuxer playlist.  The ``duration`` of each entry is computed from
+    *fps* so that the resulting clip plays at the specified frame rate.
+
+    :param assets: Iterable of assets to use as frames; must be non-empty
+    :type assets: Iterable[Asset]
+    :param mime_type: MIME type of the output video container
+    :type mime_type: MimeType or str
+    :param fps: Frames per second (must be positive; default 24.0)
+    :type fps: float
+    :param video: Optional video stream options (same keys as
+        :meth:`FFmpegProcessor.convert`; e.g. ``{'codec': VideoCodec.H264}``)
+    :type video: dict or None
+    :param audio: Optional audio stream options
+    :type audio: dict or None
+    :return: New video asset
+    :rtype: Asset
+    :raises ValueError: If *assets* is empty or *fps* ≤ 0
+    :raises UnsupportedFormatError: If *mime_type* is not a supported video format
+    :raises OperatorError: If FFmpeg fails
+
+    .. versionadded:: 1.0
+    """
+    asset_list = list(assets)
+    if not asset_list:
+        raise ValueError('Cannot combine an empty sequence of assets')
+    if fps <= 0:
+        raise ValueError(f'fps must be positive, got {fps!r}')
+
+    mime_type = MimeType(mime_type)
+    if mime_type not in _COMBINE_VIDEO_MIME_TYPES:
+        raise UnsupportedFormatError(f'Unsupported video output type: {mime_type}')
+
+    processor = FFmpegProcessor()
+    encoder_name = processor._FFmpegProcessor__mime_type_to_encoder.get(mime_type)  # type: ignore[attr-defined]
+
+    frame_duration = 1.0 / fps
+
+    with tempfile.TemporaryDirectory(prefix='madam_combine') as tmpdir:
+        input_paths: list[str] = []
+        for idx, asset in enumerate(asset_list):
+            path = os.path.join(tmpdir, f'input_{idx:04d}')
+            with open(path, 'wb') as fh:
+                shutil.copyfileobj(asset.essence, fh)
+                asset.essence.seek(0)
+            input_paths.append(path)
+
+        list_path = os.path.join(tmpdir, 'concat.txt')
+        with open(list_path, 'w') as fh:
+            for path in input_paths:
+                fh.write(f"file '{path}'\n")
+                fh.write(f'duration {frame_duration:.6f}\n')
+
+        output_path = os.path.join(tmpdir, 'output_file')
+        command = [
+            'ffmpeg',
+            '-loglevel',
+            'error',
+            '-f',
+            'concat',
+            '-safe',
+            '0',
+            '-i',
+            list_path,
+        ]
+
+        # Force the output to be encoded at the requested frame rate.  This
+        # ensures the concat-demuxer timestamps from the 'duration' lines are
+        # honoured correctly even for still-image inputs.
+        command.extend(['-vf', f'fps={fps}'])
+
+        if video:
+            if 'codec' in video:
+                if video['codec']:
+                    command.extend(['-c:v', video['codec']])
+                else:
+                    command.extend(['-vn'])
+            if video.get('bitrate'):
+                command.extend(['-b:v', f'{video["bitrate"]:d}k'])
+        else:
+            default_codec = _COMBINE_DEFAULT_VIDEO_CODEC.get(mime_type, VideoCodec.H264)
+            command.extend(['-c:v', default_codec])
+
+        if audio:
+            if 'codec' in audio:
+                if audio['codec']:
+                    command.extend(['-c:a', audio['codec']])
+                else:
+                    command.extend(['-an'])
+            if audio.get('bitrate'):
+                command.extend(['-b:a', f'{audio["bitrate"]:d}k'])
+        else:
+            command.extend(['-an'])
+
+        command.extend(['-f', encoder_name, '-y', output_path])
+
+        try:
+            subprocess.run(command, stderr=subprocess.PIPE, check=True)
+        except subprocess.CalledProcessError as ffmpeg_error:
+            raise OperatorError(_ffmpeg_error_message(ffmpeg_error, 'combine assets'))
+
+        result = io.BytesIO()
+        with open(output_path, 'rb') as fh:
+            shutil.copyfileobj(fh, result)
+        result.seek(0)
+
+    return processor.read(result)
+
+
 class FFmpegMetadataProcessor(MetadataProcessor):
     """
     Represents a metadata processor that uses FFmpeg.
