@@ -21,13 +21,44 @@ from madam.streaming import MultiFileOutput
 
 class FFmpegFilterGraph:
     """
-    Accumulates FFmpeg video and audio filters for a single deferred run.
+    Accumulates FFmpeg video and audio filters for a single deferred pipeline run.
 
-    Operators call :meth:`add_video_filter` / :meth:`add_audio_filter` to
-    append their filter effects, and :meth:`set_output_format` /
-    :meth:`set_codec_options` to configure the output.  When the run is
-    materialised, all accumulated filters are emitted as a single ``ffmpeg``
-    command.
+    An :class:`FFmpegFilterGraph` is created automatically by
+    :class:`FFmpegProcessor` when a group of consecutive FFmpeg operators is
+    gathered by :class:`~madam.core.Pipeline` for deferred execution.  Custom
+    operator implementations can also receive one via :attr:`FFmpegContext.graph`
+    and call its mutation methods.
+
+    **Stable public API since 1.0.**
+
+    Mutation interface — call these from operator implementations:
+
+    * :meth:`add_video_filter` — append a video filter (e.g. ``scale``, ``crop``).
+    * :meth:`add_audio_filter` — append an audio filter (e.g. ``volume``, ``atrim``).
+    * :meth:`set_output_format` — set the target MIME type for the encoded output.
+    * :meth:`set_codec_options` — merge codec/muxer options; raises on conflict.
+
+    Read-only views — inspect after accumulation:
+
+    * :attr:`video_filter_string` — comma-joined ``-vf`` filter string.
+    * :attr:`audio_filter_string` — comma-joined ``-af`` filter string.
+
+    :ivar output_mime_type: MIME type string set by :meth:`set_output_format`,
+        or ``None`` if not yet set.
+    :vartype output_mime_type: str | None
+    :ivar codec_options: Codec and muxer options accumulated by
+        :meth:`set_codec_options`.  Keys are ``ffmpeg`` option names (e.g.
+        ``'vcodec'``, ``'acodec'``); values are their settings.
+    :vartype codec_options: dict[str, Any]
+    :ivar extra_input_args: Additional raw ``ffmpeg`` CLI arguments inserted
+        immediately *before* the ``-i <input>`` flag.  Use for input-side options
+        such as ``['-ss', '00:00:10']`` to seek before decoding.
+    :vartype extra_input_args: list[str]
+    :ivar extra_output_args: Additional raw ``ffmpeg`` CLI arguments inserted
+        immediately *after* the ``-i <input>`` flag, before filter and codec
+        flags.  Use for output-side options that are not expressible as filters,
+        such as ``['-t', '30']`` to limit duration.
+    :vartype extra_output_args: list[str]
     """
 
     def __init__(self) -> None:
@@ -299,8 +330,25 @@ class FFmpegContext(ProcessingContext):
 
     Holds the original input :class:`~madam.core.Asset` and an
     :class:`FFmpegFilterGraph` that accumulates the filter chain built up by
-    consecutive FFmpegProcessor operators.  Call :meth:`materialize` to execute
-    a single ``ffmpeg`` subprocess that applies all accumulated filters at once.
+    consecutive :class:`FFmpegProcessor` operators.  Call :meth:`materialize`
+    to execute a single ``ffmpeg`` subprocess that applies all accumulated
+    filters at once.
+
+    **Stable public API since 1.0.**
+
+    Instances are created by :class:`FFmpegProcessor` and passed to
+    :meth:`~madam.core.Processor.execute_run`.  Custom operator
+    implementations can inspect or extend the accumulated state before
+    materialisation.
+
+    :ivar asset: The original input asset whose essence will be passed as the
+        ``ffmpeg`` input file.  Do not replace this attribute; append filters
+        to :attr:`graph` instead.
+    :vartype asset: Asset
+    :ivar graph: The filter graph being built up for this run.  Append
+        additional filters or set codec options by calling the mutation
+        methods on this object.
+    :vartype graph: FFmpegFilterGraph
     """
 
     def __init__(self, processor: 'FFmpegProcessor', asset: Asset, graph: FFmpegFilterGraph) -> None:

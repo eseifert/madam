@@ -177,6 +177,18 @@ class SVGContext(ProcessingContext):
     consecutive SVG operators can transform the document without
     intermediate serialise/parse cycles.  Call :meth:`materialize` to
     produce the final encoded :class:`~madam.core.Asset`.
+
+    **Stable public API since 1.0.**
+
+    Instances are created by :class:`SVGProcessor` and passed to
+    :meth:`~madam.core.Processor.execute_run`.  Custom operator
+    implementations can traverse or mutate :attr:`tree` in place before
+    the result is serialised.
+
+    :ivar tree: The live element tree being transformed.  Operators may
+        modify its nodes in place or replace child elements.  The root
+        element must remain a valid ``<svg>`` element.
+    :vartype tree: xml.etree.ElementTree.ElementTree
     """
 
     def __init__(self, processor: 'SVGProcessor', tree: ET.ElementTree[ET.Element]) -> None:

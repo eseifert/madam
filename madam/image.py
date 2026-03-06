@@ -112,6 +112,21 @@ class PillowContext(ProcessingContext):
     consecutive Pillow operators can be applied to the pixel data without
     intermediate encode/decode cycles.  Call :meth:`materialize` to produce
     the final encoded :class:`~madam.core.Asset`.
+
+    **Stable public API since 1.0.**
+
+    Instances are created by :class:`PillowProcessor` and passed to
+    :meth:`~madam.core.Processor.execute_run`.  Custom operator
+    implementations can inspect or mutate :attr:`image` and :attr:`mime_type`
+    before the result is materialised.
+
+    :ivar image: The live Pillow image being transformed.  Operators may
+        replace this attribute with a new :class:`PIL.Image.Image` object.
+    :vartype image: PIL.Image.Image
+    :ivar mime_type: MIME type string that controls the output format when
+        :meth:`materialize` encodes the image.  Changing this attribute is
+        equivalent to inserting a :meth:`~PillowProcessor.convert` step.
+    :vartype mime_type: str
     """
 
     def __init__(self, processor: 'PillowProcessor', image: PIL.Image.Image, mime_type: str) -> None:
