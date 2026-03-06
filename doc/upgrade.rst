@@ -75,6 +75,66 @@ No changes are needed for existing pipelines.  The optimisation is transparent:
        ...
 
 
+New: ``madam.pdf.combine()`` — images to multi-page PDF
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:func:`~madam.pdf.combine` assembles a sequence of image assets into a
+multi-page PDF using Pillow (no external PDF library required for this
+function):
+
+.. code-block:: python
+
+   from madam.pdf import combine, PAGE_SIZES
+
+   pdf = combine([cover_asset, figure_asset], **PAGE_SIZES['a4'])
+   # → Asset(mime_type='application/pdf', page_count=2)
+
+Named page sizes (in PDF points) are available via
+:data:`~madam.pdf.PAGE_SIZES`: ``'a4'``, ``'letter'``, ``'a3'``, ``'legal'``.
+Pass custom dimensions as ``page_width=`` / ``page_height=`` keyword arguments.
+
+
+New: ``madam.image.combine()`` — frames to animated GIF or WebP
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:func:`~madam.image.combine` assembles a list of image assets into an animated
+GIF or WebP:
+
+.. code-block:: python
+
+   from madam.image import combine
+
+   gif  = combine([frame1, frame2, frame3], 'image/gif',  duration=200, loop=0)
+   webp = combine([frame1, frame2],         'image/webp', duration=100)
+
+``duration`` is the per-frame delay in milliseconds (default ``100``).
+``loop=0`` means infinite looping.  :class:`~madam.core.UnsupportedFormatError`
+is raised for any MIME type other than ``'image/gif'`` and ``'image/webp'``.
+
+
+New: ``madam.ffmpeg.combine()`` — images to video
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:func:`~madam.ffmpeg.combine` converts a sequence of image (or video) assets
+into a video, treating each asset as one frame at a fixed frame rate:
+
+.. code-block:: python
+
+   from madam.ffmpeg import combine
+   from madam.video import VideoCodec
+
+   video = combine(
+       [img1, img2, img3],
+       'video/mp4',
+       fps=2.0,
+       video={'codec': VideoCodec.H264},
+   )
+
+A default codec is selected per container when ``video`` is omitted.
+:class:`~madam.core.UnsupportedFormatError` is raised for non-video MIME types
+(audio, image).
+
+
 New: ``Pipeline.flush()``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 

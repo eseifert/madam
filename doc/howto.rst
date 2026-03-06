@@ -316,6 +316,29 @@ Extract a single frame as a static image:
    first_frame = get_frame(animated)
 
 
+How to create an animated GIF or WebP
+--------------------------------------
+
+:func:`~madam.image.combine` assembles a list of image assets into a single
+animated GIF or WebP.  It is a module-level function — no ``Madam`` instance
+or processor is needed:
+
+.. code-block:: python
+
+   from madam.image import combine
+
+   gif = combine([frame1, frame2, frame3], 'image/gif', duration=200, loop=0)
+   webp = combine([frame1, frame2], 'image/webp', duration=100)
+
+``duration`` is the per-frame delay in milliseconds (default ``100``).
+``loop=0`` means infinite looping (default).
+
+Supported output formats are ``'image/gif'`` and ``'image/webp'``.
+:class:`~madam.core.UnsupportedFormatError` is raised for any other MIME type.
+
+.. versionadded:: 1.0
+
+
 How to render text as an image
 --------------------------------
 
@@ -530,6 +553,38 @@ individual frames.  Use :meth:`~madam.ffmpeg.FFmpegProcessor.thumbnail_sprite`:
 
    with open('sprite.jpg', 'wb') as f:
        f.write(sheet.essence.read())
+
+
+How to create a video from images
+-----------------------------------
+
+:func:`~madam.ffmpeg.combine` converts a sequence of image (or video) assets
+into a video by treating each asset as one frame at a fixed frame rate.
+A default video codec is chosen automatically for the requested container;
+you can override it with the ``video`` argument:
+
+.. code-block:: python
+
+   from madam.ffmpeg import combine
+   from madam.video import VideoCodec
+
+   # 3 frames at 2 fps → 1.5 second MP4 (H.264)
+   video = combine(
+       [img1, img2, img3],
+       'video/mp4',
+       fps=2.0,
+       video={'codec': VideoCodec.H264},
+   )
+
+   # WebM / VP9 at 24 fps (default)
+   webm = combine([img1, img2, img3], 'video/webm')
+
+Supported output containers: ``video/mp4``, ``video/webm``,
+``video/x-matroska``, ``video/quicktime``, ``video/x-msvideo``, and others.
+:class:`~madam.core.UnsupportedFormatError` is raised for audio or image MIME
+types.  :class:`~madam.core.OperatorError` is raised if FFmpeg fails.
+
+.. versionadded:: 1.0
 
 
 How to package a video for adaptive HTTP streaming
@@ -1017,6 +1072,35 @@ All standard image operators work on the resulting asset:
    jpeg = convert(asset)
 
 .. note:: Writing back to HEIC is not supported by the plugin.
+
+
+How to combine images into a PDF
+----------------------------------
+
+:func:`~madam.pdf.combine` assembles a sequence of image assets into a
+multi-page PDF.  It requires no external libraries beyond Pillow (which is
+always installed).  The ``page_width`` and ``page_height`` parameters are in
+PDF points (1 pt = 1/72 inch; at 72 DPI one point equals one pixel).
+
+The :data:`~madam.pdf.PAGE_SIZES` dictionary provides common paper sizes::
+
+   pip install "madam[pdf]"   # only needed if you also want to rasterize PDFs
+
+.. code-block:: python
+
+   from madam.pdf import combine, PAGE_SIZES
+
+   # Combine two images into an A4 PDF (portrait).
+   pdf = combine([cover_asset, figure_asset], **PAGE_SIZES['a4'])
+
+   with open('document.pdf', 'wb') as f:
+       f.write(pdf.essence.read())
+
+Each image is scaled to fit its page (preserving aspect ratio) and centred on
+a white background.  The output always has ``mime_type='application/pdf'`` and
+a ``page_count`` metadata attribute.
+
+.. versionadded:: 1.0
 
 
 How to rasterize a PDF page
