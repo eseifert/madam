@@ -6,7 +6,6 @@ import re
 import shutil
 import subprocess
 import tempfile
-from collections import namedtuple
 from collections.abc import Callable, Iterable, Mapping
 from math import ceil, cos, isfinite, pi, radians, sin
 from types import TracebackType
@@ -156,11 +155,6 @@ def _combine_metadata(asset, *cloned_keys: str, **additional_metadata: Any) -> d
     metadata = {key: asset.metadata[key] for key in cloned_keys if key in asset.metadata}
     metadata.update(additional_metadata)
     return metadata
-
-
-_FFmpegMode = namedtuple(
-    '_FFmpegMode', 'name, component_count, bits_per_pixel, readable, writeable, hw_accelerated, paletted, bitstream'
-)
 
 
 def _get_decoder_and_stream_type(probe_data: Mapping[str, Any]) -> tuple[str, str]:
