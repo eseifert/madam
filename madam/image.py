@@ -1,7 +1,7 @@
 import io
 import math
 import warnings
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from enum import Enum, StrEnum
 from typing import IO, Any
 
@@ -14,7 +14,7 @@ import PIL.ImageFont
 import PIL.ImageOps
 from bidict import bidict
 
-from madam.core import Asset, OperatorError, ProcessingContext, Processor, operator
+from madam.core import Asset, OperatorError, ProcessingContext, Processor, UnsupportedFormatError, operator
 from madam.mime import MimeType
 
 # Formats whose Pillow encoder accepts an explicit icc_profile= keyword.
@@ -1592,3 +1592,78 @@ def render_text(
         depth=8,
         data_type='uint',
     )
+
+
+_ANIMATED_MIME_TYPES: frozenset[str] = frozenset({'image/gif', 'image/webp'})
+_MIME_TYPE_TO_PIL_FORMAT: dict[str, str] = {
+    'image/gif': 'GIF',
+    'image/webp': 'WEBP',
+}
+
+
+def combine(
+    assets: Iterable[Asset],
+    mime_type: str,
+    *,
+    duration: int = 100,
+    loop: int = 0,
+) -> Asset:
+    """
+    Assembles a sequence of image assets into an animated GIF or WebP.
+
+    :param assets: Iterable of image assets to use as frames; must be non-empty
+    :type assets: Iterable[Asset]
+    :param mime_type: Output format: ``'image/gif'`` or ``'image/webp'``
+    :type mime_type: str
+    :param duration: Per-frame delay in milliseconds (default 100)
+    :type duration: int
+    :param loop: Number of animation loops; 0 means infinite (default 0)
+    :type loop: int
+    :return: Animated image asset
+    :rtype: Asset
+    :raises ValueError: If *assets* is empty
+    :raises UnsupportedFormatError: If *mime_type* is not ``'image/gif'`` or ``'image/webp'``
+    :raises OperatorError: If Pillow cannot decode an asset
+
+    .. versionadded:: 1.0
+    """
+    asset_list = list(assets)
+    if not asset_list:
+        raise ValueError('Cannot combine an empty sequence of assets')
+
+    if mime_type not in _ANIMATED_MIME_TYPES:
+        raise UnsupportedFormatError(
+            f'Unsupported animated format: {mime_type!r}. '
+            f'Supported formats: {sorted(_ANIMATED_MIME_TYPES)}'
+        )
+
+    pil_format = _MIME_TYPE_TO_PIL_FORMAT[mime_type]
+    frames: list[PIL.Image.Image] = []
+    for asset in asset_list:
+        try:
+            img = PIL.Image.open(asset.essence)
+            img.load()
+            asset.essence.seek(0)
+        except Exception as exc:
+            raise OperatorError(f'Cannot decode image asset: {exc}') from exc
+
+        if mime_type == 'image/webp':
+            if img.mode not in ('RGB', 'RGBA'):
+                img = img.convert('RGBA' if 'A' in img.mode or img.mode == 'P' else 'RGB')
+        else:
+            # GIF: Pillow handles palette conversion internally
+            if img.mode == 'RGBA':
+                img = img.convert('RGB')
+        frames.append(img)
+
+    buf = io.BytesIO()
+    frames[0].save(
+        buf,
+        format=pil_format,
+        save_all=True,
+        append_images=frames[1:],
+        duration=duration,
+        loop=loop,
+    )
+    buf.seek(0)
+    return PillowProcessor().read(buf)
