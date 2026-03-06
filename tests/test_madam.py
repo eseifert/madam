@@ -266,9 +266,11 @@ class TestMadam:
         for mp in manager._metadata_processors:
             original = mp.strip
             original_strip_methods[mp] = original
+
             def counting_strip(file, _mp=mp, _orig=original):
                 strip_call_count.append(type(_mp).__name__)
                 return _orig(file)
+
             mp.strip = counting_strip
 
         try:

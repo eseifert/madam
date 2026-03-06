@@ -1,4 +1,5 @@
 """Tests for madam.ffmpeg.combine() — create video from image frames."""
+
 import io
 
 import PIL.Image

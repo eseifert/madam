@@ -595,9 +595,7 @@ class TestConcatenate:
         assert result.mime_type == 'video/x-matroska'
 
     def test_concatenate_three_clips_triples_duration(self, video_asset):
-        result = concatenate(
-            [video_asset, video_asset, video_asset], mime_type=video_asset.mime_type
-        )
+        result = concatenate([video_asset, video_asset, video_asset], mime_type=video_asset.mime_type)
 
         assert result.duration == pytest.approx(video_asset.duration * 3, rel=0.15)
 
@@ -638,9 +636,7 @@ class TestFFmpegNormalizeAudio:
         normalized = normalize(video_asset)
 
         command = 'ffprobe -print_format json -loglevel error -show_format -i pipe:'.split()
-        result = subprocess.run(
-            command, input=normalized.essence.read(), capture_output=True, check=True
-        )
+        result = subprocess.run(command, input=normalized.essence.read(), capture_output=True, check=True)
         info = json.loads(result.stdout.decode('utf-8'))
         assert bool(info.get('format'))
 
@@ -660,8 +656,11 @@ class TestFFmpegOverlay:
     def overlay_image(self):
         """Small solid-color PNG to use as the overlay asset."""
         import io as _io
+
         import PIL.Image
+
         import madam.image
+
         pillow = madam.image.PillowProcessor()
         img = PIL.Image.new('RGBA', (4, 4), (255, 0, 0, 255))
         buf = _io.BytesIO()
@@ -701,7 +700,9 @@ class TestFFmpegOverlay:
         # Supplying from_seconds beyond the clip duration should still produce
         # a valid output (the overlay simply never appears).
         overlay_op = processor.overlay(
-            overlay_asset=overlay_image, x=0, y=0,
+            overlay_asset=overlay_image,
+            x=0,
+            y=0,
             from_seconds=video_asset.duration + 1.0,
         )
 
@@ -735,9 +736,7 @@ class TestFFmpegThumbnailSprite:
         assert sprite.height == rows * thumb_height
 
     def test_thumbnail_sprite_accepts_custom_mime_type(self, processor, video_asset):
-        sprite_op = processor.thumbnail_sprite(
-            columns=2, rows=2, thumb_width=8, thumb_height=4, mime_type='image/png'
-        )
+        sprite_op = processor.thumbnail_sprite(columns=2, rows=2, thumb_width=8, thumb_height=4, mime_type='image/png')
 
         sprite = sprite_op(video_asset)
 
@@ -838,14 +837,29 @@ class TestFFmpegVideoMetadataProcessor:
         Uses pipe output for streamable formats; falls back to a temp file
         for seekable-only formats like MOV/MP4.
         """
-        import tempfile, os
+        import os
+        import tempfile
 
         cmd = [
-            'ffmpeg', '-loglevel', 'error',
-            '-f', 'lavfi', '-i', 'color=red:size=32x24:rate=1:duration=0.5',
-            '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.5',
-            '-map', '0:v', '-map', '1:a',
-            '-c:v', video_codec, '-c:a', audio_codec,
+            'ffmpeg',
+            '-loglevel',
+            'error',
+            '-f',
+            'lavfi',
+            '-i',
+            'color=red:size=32x24:rate=1:duration=0.5',
+            '-f',
+            'lavfi',
+            '-i',
+            'sine=frequency=440:duration=0.5',
+            '-map',
+            '0:v',
+            '-map',
+            '1:a',
+            '-c:v',
+            video_codec,
+            '-c:a',
+            audio_codec,
         ]
         for key, val in (extra_metadata or {}).items():
             cmd += ['-metadata', f'{key}={val}']
@@ -866,36 +880,41 @@ class TestFFmpegVideoMetadataProcessor:
             return result.stdout
 
     def test_read_returns_title_for_mkv(self, processor):
-        data = self._make_video_bytes('matroska', video_codec='libx264', audio_codec='aac',
-                                      extra_metadata={'title': 'MKV Title'})
+        data = self._make_video_bytes(
+            'matroska', video_codec='libx264', audio_codec='aac', extra_metadata={'title': 'MKV Title'}
+        )
         metadata = processor.read(io.BytesIO(data))
 
         assert metadata['ffmetadata']['title'] == 'MKV Title'
 
     def test_read_returns_title_for_mov(self, processor):
-        data = self._make_video_bytes('mov', video_codec='libx264', audio_codec='aac',
-                                      extra_metadata={'title': 'MOV Title'})
+        data = self._make_video_bytes(
+            'mov', video_codec='libx264', audio_codec='aac', extra_metadata={'title': 'MOV Title'}
+        )
         metadata = processor.read(io.BytesIO(data))
 
         assert metadata['ffmetadata']['title'] == 'MOV Title'
 
     def test_read_returns_title_for_avi(self, processor):
-        data = self._make_video_bytes('avi', video_codec='libx264', audio_codec='mp3',
-                                      extra_metadata={'title': 'AVI Title'})
+        data = self._make_video_bytes(
+            'avi', video_codec='libx264', audio_codec='mp3', extra_metadata={'title': 'AVI Title'}
+        )
         metadata = processor.read(io.BytesIO(data))
 
         assert metadata['ffmetadata']['title'] == 'AVI Title'
 
     def test_read_returns_comment_for_mkv(self, processor):
-        data = self._make_video_bytes('matroska', video_codec='libx264', audio_codec='aac',
-                                      extra_metadata={'COMMENT': 'MKV Comment'})
+        data = self._make_video_bytes(
+            'matroska', video_codec='libx264', audio_codec='aac', extra_metadata={'COMMENT': 'MKV Comment'}
+        )
         metadata = processor.read(io.BytesIO(data))
 
         assert metadata['ffmetadata']['comment'] == 'MKV Comment'
 
     def test_read_returns_comment_for_mov(self, processor):
-        data = self._make_video_bytes('mov', video_codec='libx264', audio_codec='aac',
-                                      extra_metadata={'comment': 'MOV Comment'})
+        data = self._make_video_bytes(
+            'mov', video_codec='libx264', audio_codec='aac', extra_metadata={'comment': 'MOV Comment'}
+        )
         metadata = processor.read(io.BytesIO(data))
 
         assert metadata['ffmetadata']['comment'] == 'MOV Comment'

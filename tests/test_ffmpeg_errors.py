@@ -1,4 +1,5 @@
 """Tests for R04: FFmpeg stderr sanitization in public OperatorError messages."""
+
 import subprocess
 import unittest.mock
 
@@ -77,6 +78,7 @@ class TestOperatorErrorDoesNotLeakFullStderr:
             raise err
 
         import madam.ffmpeg
+
         with unittest.mock.patch.object(madam.ffmpeg.subprocess, 'run', side_effect=fake_run):
             with pytest.raises(OperatorError) as exc_info:
                 resize_op = proc.resize(width=50, height=50)

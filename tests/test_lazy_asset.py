@@ -15,6 +15,7 @@ def sample_bytes():
 def loader(sample_bytes):
     def _load(uri: str) -> io.IOBase:
         return io.BytesIO(sample_bytes)
+
     return _load
 
 
@@ -61,6 +62,7 @@ class TestLazyAsset:
 
     def test_lazy_asset_content_id_equals_sha256_of_loaded_bytes(self, loader, sample_bytes):
         import hashlib
+
         asset = LazyAsset('file:///tmp/test.jpg', loader)
         expected = hashlib.sha256(sample_bytes).hexdigest()
         assert asset.content_id == expected

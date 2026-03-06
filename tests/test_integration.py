@@ -1,4 +1,5 @@
 """Integration tests for deferred pipeline execution."""
+
 from __future__ import annotations
 
 import io
@@ -12,10 +13,10 @@ import pytest
 import madam.image
 from madam.core import Asset, Pipeline
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _jpeg_asset(width: int, height: int, quality: int = 95) -> Asset:
     """Create a simple JPEG Asset with a gradient pattern."""
@@ -114,17 +115,21 @@ class TestImageQualityRegression:
 
 
 def _probe_json_video():
-    return json.dumps({
-        'format': {'format_name': 'matroska,webm', 'duration': '10.0'},
-        'streams': [{'codec_type': 'video', 'codec_name': 'h264', 'width': 128, 'height': 128}],
-    }).encode()
+    return json.dumps(
+        {
+            'format': {'format_name': 'matroska,webm', 'duration': '10.0'},
+            'streams': [{'codec_type': 'video', 'codec_name': 'h264', 'width': 128, 'height': 128}],
+        }
+    ).encode()
 
 
 def _probe_json_audio():
-    return json.dumps({
-        'format': {'format_name': 'ogg', 'duration': '10.0'},
-        'streams': [{'codec_type': 'audio', 'codec_name': 'opus'}],
-    }).encode()
+    return json.dumps(
+        {
+            'format': {'format_name': 'ogg', 'duration': '10.0'},
+            'streams': [{'codec_type': 'audio', 'codec_name': 'opus'}],
+        }
+    ).encode()
 
 
 def _make_fake_run(call_log, probe_json):
@@ -140,6 +145,7 @@ def _make_fake_run(call_log, probe_json):
         else:
             result.stdout = probe_json
         return result
+
     return fake_run
 
 
@@ -176,9 +182,7 @@ class TestFFmpegSubprocessCount:
             pass  # ignore materialisation failures from fake bytes
 
         ffmpeg_calls = [c for c in call_log if c and c[0] == 'ffmpeg']
-        assert len(ffmpeg_calls) == 1, (
-            f'Expected 1 ffmpeg subprocess for three video ops, got {len(ffmpeg_calls)}'
-        )
+        assert len(ffmpeg_calls) == 1, f'Expected 1 ffmpeg subprocess for three video ops, got {len(ffmpeg_calls)}'
 
     def test_three_video_ops_combined_command_contains_all_filters(self, monkeypatch):
         import madam.ffmpeg

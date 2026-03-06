@@ -1,4 +1,5 @@
 """Tests for FileSystemAssetStorage."""
+
 import io
 
 import pytest

@@ -44,15 +44,19 @@ class TestGravity:
 
     def test_gravity_is_str_enum(self):
         from enum import StrEnum
+
         from madam.image import Gravity
+
         assert issubclass(Gravity, StrEnum)
 
     def test_gravity_has_nine_values(self):
         from madam.image import Gravity
+
         assert len(Gravity) == 9
 
     def test_gravity_values_equal_strings(self):
         from madam.image import Gravity
+
         assert Gravity.NORTH_WEST == 'north_west'
         assert Gravity.NORTH == 'north'
         assert Gravity.NORTH_EAST == 'north_east'
@@ -65,6 +69,7 @@ class TestGravity:
 
     def test_gravity_enum_works_as_operator_parameter(self):
         from madam.image import Gravity, PillowProcessor
+
         processor = PillowProcessor()
         asset = _solid_png_asset((100, 100, 100), width=20, height=20)
         result = processor.crop(width=10, height=10, gravity=Gravity.CENTER)(asset)
@@ -1431,6 +1436,7 @@ class TestPillowContext:
 
     def test_pillow_context_holds_image_and_mime_type(self):
         import PIL.Image
+
         from madam.image import PillowContext, PillowProcessor
 
         proc = PillowProcessor()
@@ -1442,6 +1448,7 @@ class TestPillowContext:
 
     def test_pillow_context_processor_returns_owning_processor(self):
         import PIL.Image
+
         from madam.image import PillowContext, PillowProcessor
 
         proc = PillowProcessor()
@@ -1452,6 +1459,7 @@ class TestPillowContext:
 
     def test_pillow_context_materialize_returns_asset_with_correct_mime_type(self):
         import PIL.Image
+
         from madam.image import PillowContext, PillowProcessor
 
         proc = PillowProcessor()
@@ -1464,6 +1472,7 @@ class TestPillowContext:
 
     def test_pillow_context_materialize_returns_asset_with_correct_dimensions(self):
         import PIL.Image
+
         from madam.image import PillowContext, PillowProcessor
 
         proc = PillowProcessor()
@@ -1490,6 +1499,7 @@ class TestPillowDeferredExecution:
     def test_pipeline_calls_pil_open_once_for_chained_operators(self, processor):
         """Two Pillow operators in a Pipeline must decode the image only once."""
         import unittest.mock
+
         from madam.core import Pipeline
 
         jpeg_asset = get_jpeg_image_asset(width=64, height=64)
@@ -1564,6 +1574,7 @@ class TestPillowDeferredFormatConversion:
 
     def test_resize_then_convert_calls_pil_open_once(self, processor):
         import unittest.mock
+
         from madam.core import Pipeline
 
         png_img = PIL.Image.new('RGB', (64, 64), (0, 128, 255))

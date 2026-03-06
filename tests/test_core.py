@@ -374,8 +374,10 @@ class _FakeProcessor:
 
     def _make_op(self):
         """Return a tagged no-op operator."""
+
         def noop(asset):
             return asset
+
         noop._processor = self
         return noop
 
@@ -479,6 +481,7 @@ class TestProcessingContext:
 
     def test_processing_context_is_abstract(self):
         import abc
+
         from madam.core import ProcessingContext
 
         assert issubclass(ProcessingContext, abc.ABC)
@@ -567,10 +570,12 @@ class TestPipelineFlush:
 
     def test_flush_is_importable_via_pipeline(self):
         from madam.core import Pipeline
+
         assert hasattr(Pipeline, 'flush')
 
     def test_flush_returns_callable(self):
         from madam.core import Pipeline
+
         flush_step = Pipeline.flush()
         assert callable(flush_step)
 
@@ -589,9 +594,7 @@ class TestPipelineFlush:
 
         list(pipeline.process(asset))
 
-        assert len(proc.run_calls) == 2, (
-            f'Expected 2 execute_run calls (one per run), got {len(proc.run_calls)}'
-        )
+        assert len(proc.run_calls) == 2, f'Expected 2 execute_run calls (one per run), got {len(proc.run_calls)}'
 
     def test_flush_without_flush_gives_single_run(self):
         from madam.core import Pipeline

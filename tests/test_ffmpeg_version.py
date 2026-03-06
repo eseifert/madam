@@ -1,4 +1,5 @@
 """Tests for R06: FFmpegProcessor version check and graceful degradation."""
+
 import subprocess
 import unittest.mock
 
@@ -79,5 +80,6 @@ class TestFFmpegProcessorInit:
 
     def test_zero_thread_config_falls_back_to_cpu_count(self, mock_ffprobe_ok):
         import multiprocessing
+
         proc = FFmpegProcessor(config={'ffmpeg': {'threads': 0}})
         assert proc._threads == multiprocessing.cpu_count()

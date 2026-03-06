@@ -1,4 +1,5 @@
 """Tests for R10: PillowProcessor warns on unknown config keys."""
+
 import io
 import warnings
 
