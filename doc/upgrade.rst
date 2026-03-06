@@ -1076,10 +1076,10 @@ from permanent ones, see the new error hierarchy below.
 Changes requiring attention
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Changed: ``FFmpegProcessor.__init__`` raises ``EnvironmentError`` on bad setup
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changed: ``FFmpegProcessor.__init__`` raises ``OSError`` on bad setup
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:class:`~madam.ffmpeg.FFmpegProcessor` now raises :exc:`EnvironmentError`
+:class:`~madam.ffmpeg.FFmpegProcessor` now raises :exc:`OSError`
 (rather than crashing with an unhandled exception) if:
 
 * ``ffprobe`` is not found on ``PATH`` — message contains ``'not found'``.
