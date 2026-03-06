@@ -28,6 +28,7 @@ Practical recipes for specific tasks.
    :maxdepth: 1
 
    howto
+   advanced
 
 
 Reference
