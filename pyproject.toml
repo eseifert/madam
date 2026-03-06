@@ -14,7 +14,7 @@ authors = [
 urls = {Homepage = "https://github.com/eseifert/madam"}
 requires-python = ">=3.11"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU Affero General Public License v3",
