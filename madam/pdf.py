@@ -9,8 +9,10 @@ The optional ``pdf`` dependency group must be installed::
 from __future__ import annotations
 
 import io
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import IO, Any
+
+import PIL.Image
 
 from madam.core import Asset, OperatorError, Processor, operator
 
@@ -18,6 +20,104 @@ _MIME_TYPE_TO_PIL_FORMAT: dict[str, str] = {
     'image/jpeg': 'JPEG',
     'image/png': 'PNG',
 }
+
+_PDF_DPI: int = 72
+
+PAGE_SIZES: dict[str, tuple[float, float]] = {
+    'a4': (595.0, 842.0),
+    'letter': (612.0, 792.0),
+    'a3': (842.0, 1191.0),
+    'legal': (612.0, 1008.0),
+}
+
+
+def _fit_image_on_page(img: PIL.Image.Image, page_px_w: int, page_px_h: int) -> PIL.Image.Image:
+    """Flatten alpha/palette → RGB, FIT-scale, centre on white canvas."""
+    # Normalise mode
+    if img.mode in ('RGBA', 'LA', 'PA'):
+        background = PIL.Image.new('RGB', img.size, (255, 255, 255))
+        if img.mode == 'PA':
+            img = img.convert('RGBA')
+        background.paste(img, mask=img.split()[-1])
+        img = background
+    elif img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    # FIT-scale preserving aspect ratio
+    img_w, img_h = img.size
+    scale = min(page_px_w / img_w, page_px_h / img_h)
+    new_w = max(1, int(img_w * scale))
+    new_h = max(1, int(img_h * scale))
+    img = img.resize((new_w, new_h), PIL.Image.Resampling.LANCZOS)
+
+    # Centre on white canvas
+    canvas = PIL.Image.new('RGB', (page_px_w, page_px_h), (255, 255, 255))
+    x_off = (page_px_w - new_w) // 2
+    y_off = (page_px_h - new_h) // 2
+    canvas.paste(img, (x_off, y_off))
+    return canvas
+
+
+def combine(
+    assets: Iterable[Asset],
+    *,
+    page_width: float,
+    page_height: float,
+) -> Asset:
+    """
+    Combines a sequence of image assets into a multi-page PDF.
+
+    Each image is scaled to fit the page dimensions (preserving aspect ratio)
+    and centred on a white background.  The page dimensions are given in PDF
+    points (1 pt = 1/72 inch); at 72 DPI one point equals one pixel.
+
+    :param assets: Iterable of image assets
+    :type assets: Iterable[Asset]
+    :param page_width: Page width in PDF points (must be positive)
+    :type page_width: float
+    :param page_height: Page height in PDF points (must be positive)
+    :type page_height: float
+    :return: Asset with ``mime_type='application/pdf'`` and ``page_count``
+    :rtype: Asset
+    :raises ValueError: If *assets* is empty or dimensions are non-positive
+    :raises OperatorError: If an asset is not an image or cannot be decoded
+
+    .. versionadded:: 1.0
+    """
+    asset_list = list(assets)
+    if not asset_list:
+        raise ValueError('Cannot combine an empty sequence of assets')
+    if page_width <= 0:
+        raise ValueError(f'page_width must be positive, got {page_width!r}')
+    if page_height <= 0:
+        raise ValueError(f'page_height must be positive, got {page_height!r}')
+
+    page_px_w = int(round(page_width))
+    page_px_h = int(round(page_height))
+
+    pages: list[PIL.Image.Image] = []
+    for asset in asset_list:
+        mime = str(asset.mime_type)
+        if not mime.startswith('image/'):
+            raise OperatorError(f'Expected an image asset, got mime_type={mime!r}')
+        try:
+            img = PIL.Image.open(asset.essence)
+            img.load()
+            asset.essence.seek(0)
+        except Exception as exc:
+            raise OperatorError(f'Cannot decode image asset: {exc}') from exc
+        pages.append(_fit_image_on_page(img, page_px_w, page_px_h))
+
+    buf = io.BytesIO()
+    pages[0].save(
+        buf,
+        format='PDF',
+        save_all=True,
+        append_images=pages[1:],
+        resolution=_PDF_DPI,
+    )
+    buf.seek(0)
+    return Asset._from_bytes(buf.getvalue(), mime_type='application/pdf', page_count=len(pages))
 
 
 class PDFProcessor(Processor):
@@ -38,6 +138,10 @@ class PDFProcessor(Processor):
         :param config: Mapping with settings.
         """
         super().__init__(config)
+
+    @property
+    def supported_mime_types(self) -> frozenset:
+        return frozenset({'application/pdf'})
 
     def can_read(self, file: IO) -> bool:
         header = file.read(4)

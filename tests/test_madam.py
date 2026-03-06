@@ -244,11 +244,11 @@ class TestMadam:
         assert file.read() != jpeg_image_asset.essence.read()
 
     def test_contains_set_of_all_processors_by_default(self, manager):
-        assert manager.processors == {
+        assert {
             'madam.image.PillowProcessor',
             'madam.vector.SVGProcessor',
             'madam.ffmpeg.FFmpegProcessor',
-        }
+        }.issubset(manager.processors)
 
     def test_contains_set_of_all_metadata_processors_by_default(self, manager):
         assert manager.metadata_processors == {

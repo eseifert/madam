@@ -20,6 +20,23 @@ def pdf_asset(pdf_processor):
         return pdf_processor.read(f)
 
 
+class TestPDFProcessorRegistration:
+    def test_madam_registers_pdf_processor(self):
+        pytest.importorskip('pypdf')
+        from madam.pdf import PDFProcessor
+
+        manager = madam.core.Madam()
+        processor = manager.get_processor('application/pdf')
+        assert isinstance(processor, PDFProcessor)
+
+    def test_pdf_processor_supported_mime_types(self):
+        pytest.importorskip('pypdf')
+        from madam.pdf import PDFProcessor
+
+        processor = PDFProcessor()
+        assert 'application/pdf' in processor.supported_mime_types
+
+
 class TestPDFProcessor:
     def test_can_read_pdf(self, pdf_processor):
         with open('tests/resources/test.pdf', 'rb') as f:

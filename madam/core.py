@@ -695,11 +695,15 @@ class Madam:
         self.processors = {
             'madam.image.PillowProcessor',
             'madam.vector.SVGProcessor',
+            'madam.raw.RawImageProcessor',
+            'madam.pdf.PDFProcessor',
             'madam.ffmpeg.FFmpegProcessor',
         }
         _processor_priority = [
             'madam.image.PillowProcessor',
             'madam.vector.SVGProcessor',
+            'madam.raw.RawImageProcessor',
+            'madam.pdf.PDFProcessor',
             'madam.ffmpeg.FFmpegProcessor',
         ]
 

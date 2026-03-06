@@ -1026,28 +1026,25 @@ Install the optional PDF dependencies (requires Poppler on the system)::
 
    pip install "madam[pdf]"
 
+Once installed, :class:`~madam.pdf.PDFProcessor` is registered automatically
+and you can use the standard :meth:`~madam.core.Madam.read` /
+:meth:`~madam.core.Madam.get_processor` entry points:
+
 .. code-block:: python
 
-   from madam.pdf import PDFProcessor
-
-   pdf_proc = PDFProcessor()
-
    with open('document.pdf', 'rb') as f:
-       pdf_asset = pdf_proc.read(f)
+       pdf_asset = madam.read(f)
 
    print(pdf_asset.page_count)   # total pages
 
+   processor = madam.get_processor(pdf_asset)
+
    # Rasterize page 0 (first page) at 150 DPI as PNG.
-   rasterize = pdf_proc.rasterize(page=0, dpi=150, mime_type='image/png')
+   rasterize = processor.rasterize(page=0, dpi=150, mime_type='image/png')
    image = rasterize(pdf_asset)
 
    with open('page1.png', 'wb') as f:
        f.write(image.essence.read())
-
-.. note::
-
-   ``PDFProcessor`` is not registered in the default :class:`~madam.core.Madam`
-   registry.  Instantiate it directly as shown above.
 
 
 How to rasterize all pages of a PDF
@@ -1057,15 +1054,13 @@ Iterate over the ``page_count`` metadata attribute to convert every page:
 
 .. code-block:: python
 
-   from madam.pdf import PDFProcessor
-
-   pdf_proc = PDFProcessor()
-
    with open('document.pdf', 'rb') as f:
-       pdf_asset = pdf_proc.read(f)
+       pdf_asset = madam.read(f)
+
+   processor = madam.get_processor(pdf_asset)
 
    for page_index in range(pdf_asset.page_count):
-       rasterize = pdf_proc.rasterize(page=page_index, dpi=150, mime_type='image/png')
+       rasterize = processor.rasterize(page=page_index, dpi=150, mime_type='image/png')
        image = rasterize(pdf_asset)
        with open(f'page_{page_index + 1:04d}.png', 'wb') as f:
            f.write(image.essence.read())
@@ -1091,31 +1086,25 @@ Install the optional ``rawpy`` library (requires LibRaw on the system)::
 
    pip install "madam[raw]"
 
+Once installed, :class:`~madam.raw.RawImageProcessor` is registered
+automatically and you can use the standard entry points:
+
 .. code-block:: python
 
-   from madam.raw import RawImageProcessor
-
-   raw_proc = RawImageProcessor()
-
    with open('photo.dng', 'rb') as f:
-       raw_asset = raw_proc.read(f)
+       raw_asset = madam.read(f)
 
    print(raw_asset.mime_type)   # 'image/x-raw'
    print(raw_asset.width)       # sensor width in pixels
 
+   processor = madam.get_processor(raw_asset)
+
    # Decode the raw Bayer data to a TIFF (lossless).
-   decode = raw_proc.decode(mime_type='image/tiff')
-   tiff = decode(raw_asset)
+   tiff = processor.decode(mime_type='image/tiff')(raw_asset)
 
    # Hand off to the normal image pipeline via the Madam registry.
    image_processor = madam.get_processor(tiff)
    thumbnail = image_processor.resize(width=800, height=600)(tiff)
-
-.. note::
-
-   ``RawImageProcessor`` is not registered in the default
-   :class:`~madam.core.Madam` registry.  Instantiate it directly as shown
-   above.
 
 
 Error handling

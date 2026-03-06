@@ -18,6 +18,35 @@ All changes in this release are new features.  There are no breaking changes.
 New features
 ~~~~~~~~~~~~
 
+New: Optional processors auto-registered when extras are installed
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.pdf.PDFProcessor` and :class:`~madam.raw.RawImageProcessor` are
+now registered automatically in the default :class:`~madam.core.Madam` registry
+when the corresponding optional extra is installed.  This means you can use
+the standard :meth:`~madam.core.Madam.read` / :meth:`~madam.core.Madam.get_processor`
+entry points instead of instantiating the processors directly:
+
+.. code-block:: python
+
+   # With madam[pdf] installed — no import needed
+   with open('document.pdf', 'rb') as f:
+       pdf_asset = madam.read(f)
+
+   processor = madam.get_processor(pdf_asset)   # → PDFProcessor
+   image = processor.rasterize(page=0, dpi=150)(pdf_asset)
+
+   # With madam[raw] installed
+   with open('photo.dng', 'rb') as f:
+       raw_asset = madam.read(f)
+
+   processor = madam.get_processor(raw_asset)   # → RawImageProcessor
+   tiff = processor.decode(mime_type='image/tiff')(raw_asset)
+
+Direct instantiation (``PDFProcessor()``, ``RawImageProcessor()``) continues
+to work and remains the only option when the extras are *not* installed.
+
+
 New: Deferred pipeline execution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

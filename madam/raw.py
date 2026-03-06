@@ -45,6 +45,10 @@ class RawImageProcessor(Processor):
         """
         super().__init__(config)
 
+    @property
+    def supported_mime_types(self) -> frozenset:
+        return frozenset({'image/x-raw'})
+
     def can_read(self, file: IO) -> bool:
         try:
             import rawpy

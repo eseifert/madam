@@ -19,6 +19,23 @@ def raw_asset(raw_processor):
         return raw_processor.read(f)
 
 
+class TestRawImageProcessorRegistration:
+    def test_madam_registers_raw_processor(self):
+        pytest.importorskip('rawpy')
+        from madam.raw import RawImageProcessor
+
+        manager = madam.core.Madam()
+        processor = manager.get_processor('image/x-raw')
+        assert isinstance(processor, RawImageProcessor)
+
+    def test_raw_processor_supported_mime_types(self):
+        pytest.importorskip('rawpy')
+        from madam.raw import RawImageProcessor
+
+        processor = RawImageProcessor()
+        assert 'image/x-raw' in processor.supported_mime_types
+
+
 class TestRawImageProcessor:
     def test_can_read_dng(self, raw_processor):
         with open('tests/resources/test.dng', 'rb') as f:
