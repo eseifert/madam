@@ -105,6 +105,70 @@ def _write_svg(tree: ET.ElementTree[ET.Element]) -> IO:
     return file
 
 
+def _remove_xml_whitespace(elem: ET.Element) -> None:
+    for node in elem.iter():
+        if node.text:
+            node.text = node.text.strip()
+        if node.tail:
+            node.tail = node.tail.strip()
+
+
+def _remove_elements(root: ET.Element, qname: str, keep_func: Callable[[ET.Element], bool]) -> None:
+    parents = root.findall(f'.//{qname}/..', XML_NS)
+    for parent in parents:
+        for elem in parent.findall(f'./{qname}', XML_NS):
+            if not keep_func(elem):
+                parent.remove(elem)
+
+
+def _shrink_svg(root: ET.Element) -> None:
+    """Apply all shrink transforms to an SVG root element in place."""
+    # Minify XML
+    _remove_xml_whitespace(root)
+    # Remove empty texts
+    _remove_elements(root, 'svg:text', lambda e: bool(e.text and e.text.strip() or list(e)))
+    # Remove all empty circles with radius 0
+    _remove_elements(root, 'svg:circle', lambda e: bool(list(e)) or not _attr_is_zero(e.get('r')))
+    # Remove all empty ellipses with x-axis or y-axis radius 0
+    _remove_elements(
+        root, 'svg:ellipse',
+        lambda e: bool(list(e)) or not (_attr_is_zero(e.get('rx')) or _attr_is_zero(e.get('ry')))
+    )
+    # Remove all empty rectangles with width or height 0
+    _remove_elements(
+        root, 'svg:rect',
+        lambda e: bool(list(e)) or not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
+    )
+    # Remove all patterns with width or height 0
+    _remove_elements(
+        root, 'svg:pattern',
+        lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
+    )
+    # Remove all images with width or height 0
+    _remove_elements(
+        root, 'svg:image',
+        lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
+    )
+    # Remove all paths without coordinates
+    _remove_elements(root, 'svg:path', lambda e: bool(e.get('d', '').strip()))
+    # Remove all polygons without points
+    _remove_elements(root, 'svg:polygon', lambda e: bool(e.get('points', '').strip()))
+    # Remove all polylines without points
+    _remove_elements(root, 'svg:polyline', lambda e: bool(e.get('points', '').strip()))
+    # Remove all zero-length lines
+    _remove_elements(root, 'svg:line', lambda e: bool(list(e)) or not _is_zero_length_line(e))
+    # Remove all invisible or hidden elements
+    _remove_elements(
+        root,
+        '*',
+        lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and not _attr_is_zero(e.get('opacity')),
+    )
+    # Remove empty groups
+    _remove_elements(root, 'svg:g', lambda e: bool(list(e)))
+    # Remove empty defs
+    _remove_elements(root, 'svg:defs', lambda e: bool(list(e)))
+
+
 class SVGContext(ProcessingContext):
     """
     Deferred in-memory state for an SVG processing run.
@@ -195,38 +259,7 @@ class SVGProcessor(Processor):
         tree: ET.ElementTree[ET.Element],
     ) -> ET.ElementTree[ET.Element]:
         """Apply shrink transforms directly to the ElementTree (no parse/serialise)."""
-        root = tree.getroot()
-        # Reuse the existing shrink logic by applying it to the in-memory tree.
-        SVGProcessor.__remove_xml_whitespace(root)  # type: ignore[attr-defined]
-        SVGProcessor.__remove_elements(root, 'svg:text', lambda e: bool(e.text and e.text.strip() or list(e)))  # type: ignore[attr-defined]
-        SVGProcessor.__remove_elements(root, 'svg:circle', lambda e: bool(list(e)) or not _attr_is_zero(e.get('r')))  # type: ignore[attr-defined]
-        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
-            root, 'svg:ellipse',
-            lambda e: bool(list(e)) or not (_attr_is_zero(e.get('rx')) or _attr_is_zero(e.get('ry')))
-        )
-        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
-            root, 'svg:rect',
-            lambda e: bool(list(e)) or not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
-        )
-        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
-            root, 'svg:pattern',
-            lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
-        )
-        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
-            root, 'svg:image',
-            lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
-        )
-        SVGProcessor.__remove_elements(root, 'svg:path', lambda e: bool(e.get('d', '').strip()))  # type: ignore[attr-defined]
-        SVGProcessor.__remove_elements(root, 'svg:polygon', lambda e: bool(e.get('points', '').strip()))  # type: ignore[attr-defined]
-        SVGProcessor.__remove_elements(root, 'svg:polyline', lambda e: bool(e.get('points', '').strip()))  # type: ignore[attr-defined]
-        SVGProcessor.__remove_elements(root, 'svg:line', lambda e: bool(list(e)) or not _is_zero_length_line(e))  # type: ignore[attr-defined]
-        SVGProcessor.__remove_elements(  # type: ignore[attr-defined]
-            root,
-            '*',
-            lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and not _attr_is_zero(e.get('opacity')),
-        )
-        SVGProcessor.__remove_elements(root, 'svg:g', lambda e: bool(list(e)))  # type: ignore[attr-defined]
-        SVGProcessor.__remove_elements(root, 'svg:defs', lambda e: bool(list(e)))  # type: ignore[attr-defined]
+        _shrink_svg(tree.getroot())
         return tree
 
     def read(self, file: IO) -> Asset:
@@ -241,22 +274,6 @@ class SVGProcessor(Processor):
         file.seek(0)
         return Asset(essence=file, **metadata)
 
-    @staticmethod
-    def __remove_xml_whitespace(elem: ET.Element) -> None:
-        for node in elem.iter():
-            if node.text:
-                node.text = node.text.strip()
-            if node.tail:
-                node.tail = node.tail.strip()
-
-    @staticmethod
-    def __remove_elements(root: ET.Element, qname: str, keep_func: Callable[[ET.Element], bool]) -> None:
-        parents = root.findall(f'.//{qname}/..', XML_NS)
-        for parent in parents:
-            for elem in parent.findall(f'./{qname}', XML_NS):
-                if not keep_func(elem):
-                    parent.remove(elem)
-
     @operator
     def shrink(self, asset: Asset) -> Asset:
         """
@@ -268,52 +285,7 @@ class SVGProcessor(Processor):
         :rtype: Asset
         """
         tree, root = _parse_svg(asset.essence)
-
-        # Minify XML
-        SVGProcessor.__remove_xml_whitespace(root)
-        # Remove empty texts
-        SVGProcessor.__remove_elements(root, 'svg:text', lambda e: bool(e.text and e.text.strip() or list(e)))
-        # Remove all empty circles with radius 0
-        SVGProcessor.__remove_elements(root, 'svg:circle', lambda e: bool(list(e)) or not _attr_is_zero(e.get('r')))
-        # Remove all empty ellipses with x-axis or y-axis radius 0
-        SVGProcessor.__remove_elements(
-            root, 'svg:ellipse',
-            lambda e: bool(list(e)) or not (_attr_is_zero(e.get('rx')) or _attr_is_zero(e.get('ry')))
-        )
-        # Remove all empty rectangles with width or height 0
-        SVGProcessor.__remove_elements(
-            root, 'svg:rect',
-            lambda e: bool(list(e)) or not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
-        )
-        # Remove all patterns with width or height 0
-        SVGProcessor.__remove_elements(
-            root, 'svg:pattern',
-            lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
-        )
-        # Remove all images with width or height 0
-        SVGProcessor.__remove_elements(
-            root, 'svg:image',
-            lambda e: not (_attr_is_zero(e.get('width')) or _attr_is_zero(e.get('height')))
-        )
-        # Remove all paths without coordinates
-        SVGProcessor.__remove_elements(root, 'svg:path', lambda e: bool(e.get('d', '').strip()))
-        # Remove all polygons without points
-        SVGProcessor.__remove_elements(root, 'svg:polygon', lambda e: bool(e.get('points', '').strip()))
-        # Remove all polylines without points
-        SVGProcessor.__remove_elements(root, 'svg:polyline', lambda e: bool(e.get('points', '').strip()))
-        # Remove all zero-length lines
-        SVGProcessor.__remove_elements(root, 'svg:line', lambda e: bool(list(e)) or not _is_zero_length_line(e))
-        # Remove all invisible or hidden elements
-        SVGProcessor.__remove_elements(
-            root,
-            '*',
-            lambda e: e.get('display') != 'none' and e.get('visibility') != 'hidden' and not _attr_is_zero(e.get('opacity')),
-        )
-        # Remove empty groups
-        SVGProcessor.__remove_elements(root, 'svg:g', lambda e: bool(list(e)))
-        # Remove empty defs
-        SVGProcessor.__remove_elements(root, 'svg:defs', lambda e: bool(list(e)))
-
+        _shrink_svg(root)
         essence = _write_svg(tree)
 
         metadata = dict(mime_type='image/svg+xml')
