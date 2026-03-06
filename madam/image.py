@@ -443,7 +443,7 @@ class PillowProcessor(Processor):
         try:
             PIL.Image.open(file)
             return True
-        except IOError:
+        except OSError:
             return False
         finally:
             file.seek(0)
@@ -763,7 +763,7 @@ class PillowProcessor(Processor):
                 if pil_mode is not None and pil_mode != image.mode:
                     image = image.convert(pil_mode)
                 converted_asset = self._image_to_asset(image, mime_type, icc_profile=icc_profile_bytes)
-        except (IOError, KeyError) as pil_error:
+        except (OSError, KeyError) as pil_error:
             raise OperatorError(f'Could not convert image to {mime_type}: {pil_error}')
 
         return converted_asset

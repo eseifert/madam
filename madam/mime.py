@@ -18,7 +18,7 @@ class MimeType:
 
     __slots__ = 'type', 'subtype'
 
-    def __init__(self, mediatype: str | 'MimeType' | None, subtype: str | None = None):
+    def __init__(self, mediatype: str | MimeType | None, subtype: str | None = None):
         """
         Initializes a new MIME type with either
 

@@ -193,12 +193,12 @@ class SVGContext(ProcessingContext):
     .. versionadded:: 1.0
     """
 
-    def __init__(self, processor: 'SVGProcessor', tree: ET.ElementTree[ET.Element]) -> None:
+    def __init__(self, processor: SVGProcessor, tree: ET.ElementTree[ET.Element]) -> None:
         self._proc = processor
         self.tree = tree
 
     @property
-    def processor(self) -> 'SVGProcessor':
+    def processor(self) -> SVGProcessor:
         return self._proc
 
     def materialize(self) -> Asset:
@@ -236,7 +236,7 @@ class SVGProcessor(Processor):
         tree, _ = _parse_svg(file)
         return tree
 
-    def execute_run(self, steps: list[Callable], asset_or_context: 'Asset | SVGContext') -> 'Asset | SVGContext':  # type: ignore[override]
+    def execute_run(self, steps: list[Callable], asset_or_context: Asset | SVGContext) -> Asset | SVGContext:  # type: ignore[override]
         """
         Apply a group of consecutive SVG operators in a single parse/serialise cycle.
 

@@ -709,21 +709,21 @@ class FFmpegProcessor(Processor):
                 timeout=10,
             )
         except FileNotFoundError:
-            raise EnvironmentError('ffprobe not found. Install FFmpeg >= 3.3 and ensure it is on PATH.')
+            raise OSError('ffprobe not found. Install FFmpeg >= 3.3 and ensure it is on PATH.')
         except subprocess.TimeoutExpired:
-            raise EnvironmentError('ffprobe version check timed out.')
+            raise OSError('ffprobe version check timed out.')
 
         parts = result.stdout.decode('utf-8').split()
         try:
             version_idx = parts.index('version') + 1
             version_string = parts[version_idx]
         except (ValueError, IndexError):
-            raise EnvironmentError('Cannot determine ffprobe version from output.')
+            raise OSError('Cannot determine ffprobe version from output.')
 
         detected = _parse_version(version_string)
         if detected < self._MIN_VERSION:
             min_str = '.'.join(str(v) for v in self._MIN_VERSION)
-            raise EnvironmentError(f'Found ffprobe version {version_string}. Requiring at least version {min_str}.')
+            raise OSError(f'Found ffprobe version {version_string}. Requiring at least version {min_str}.')
 
         self._configured_threads: int = self.config.get('ffmpeg', {}).get('threads', 0)
 

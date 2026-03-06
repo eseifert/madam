@@ -396,10 +396,10 @@ class TestSVGMetadataProcessor:
 
 
 SVG_SIMPLE = (
-    '<svg height="12px" version="1.1" width="24px" xmlns="http://www.w3.org/2000/svg">'
-    '<rect width="24px" height="12px"/>'
-    '</svg>'
-).encode('utf-8')
+    b'<svg height="12px" version="1.1" width="24px" xmlns="http://www.w3.org/2000/svg">'
+    b'<rect width="24px" height="12px"/>'
+    b'</svg>'
+)
 
 
 class TestSVGContext:
