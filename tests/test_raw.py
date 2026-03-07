@@ -61,6 +61,77 @@ class TestRawImageProcessor:
         data = raw_asset.essence.read()
         assert data[:4] in (b'II\x2a\x00', b'MM\x00\x2a')  # TIFF/DNG magic
 
+    def test_read_exif_metadata_stored_under_exif_key(self, raw_asset):
+        assert hasattr(raw_asset, 'exif')
+
+    def test_read_camera_model(self, raw_asset):
+        # test.dng embeds 'Canon EOS 5D Mark III'
+        assert raw_asset.exif['camera.model'] == 'Canon EOS 5D Mark III'
+
+    def test_read_iso_speed_is_float_when_present(self, raw_asset):
+        if 'iso_speed' in raw_asset.exif:
+            assert isinstance(raw_asset.exif['iso_speed'], float)
+            assert raw_asset.exif['iso_speed'] > 0
+
+    def test_read_exposure_time_is_float_when_present(self, raw_asset):
+        if 'exposure_time' in raw_asset.exif:
+            assert isinstance(raw_asset.exif['exposure_time'], float)
+            assert raw_asset.exif['exposure_time'] > 0
+
+    def test_read_fnumber_is_float_when_present(self, raw_asset):
+        if 'fnumber' in raw_asset.exif:
+            assert isinstance(raw_asset.exif['fnumber'], float)
+            assert raw_asset.exif['fnumber'] > 0
+
+    def test_read_focal_length_is_float_when_present(self, raw_asset):
+        if 'focal_length' in raw_asset.exif:
+            assert isinstance(raw_asset.exif['focal_length'], float)
+            assert raw_asset.exif['focal_length'] > 0
+
+    def test_read_created_at_is_str_when_present(self, raw_asset):
+        if 'created_at' in raw_asset.exif:
+            assert isinstance(raw_asset.exif['created_at'], str)
+
+
+class TestRawMetadataProcessor:
+    @pytest.fixture
+    def processor(self):
+        pytest.importorskip('rawpy')
+        from madam.raw import RawMetadataProcessor
+
+        return RawMetadataProcessor()
+
+    def test_formats_contains_exif(self, processor):
+        assert 'exif' in processor.formats
+
+    def test_read_returns_exif_format_key(self, processor):
+        with open('tests/resources/test.dng', 'rb') as f:
+            result = processor.read(f)
+        assert 'exif' in result
+
+    def test_read_extracts_camera_model(self, processor):
+        with open('tests/resources/test.dng', 'rb') as f:
+            result = processor.read(f)
+        assert result['exif']['camera.model'] == 'Canon EOS 5D Mark III'
+
+    def test_read_raises_for_non_raw(self, processor):
+        from madam.core import UnsupportedFormatError
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.read(io.BytesIO(b'not a raw file'))
+
+    def test_strip_returns_io(self, processor):
+        with open('tests/resources/test.dng', 'rb') as f:
+            result = processor.strip(f)
+        assert hasattr(result, 'read')
+
+    def test_combine_raises_unsupported(self, processor):
+        from madam.core import UnsupportedFormatError
+
+        with open('tests/resources/test.dng', 'rb') as f:
+            with pytest.raises(UnsupportedFormatError):
+                processor.combine(f, {'exif': {'camera.model': 'Test'}})
+
 
 class TestRawImageProcessorDecode:
     def test_decode_returns_asset(self, raw_processor, raw_asset):
