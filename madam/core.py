@@ -4,6 +4,7 @@ import hashlib
 import importlib
 import io
 import json
+import logging
 import os
 import shelve
 import shutil
@@ -710,6 +711,8 @@ class Madam:
         def _proc_key(p: str) -> int:
             return _processor_priority.index(p) if p in _processor_priority else len(_processor_priority)
 
+        _log = logging.getLogger(__name__)
+
         self._processors = []
         for processor_path in sorted(self.processors, key=_proc_key):
             try:
@@ -717,7 +720,12 @@ class Madam:
             except ImportError:
                 self.processors.remove(processor_path)
                 continue
-            processor = processor_class(self.config)
+            try:
+                processor = processor_class(self.config)
+            except OSError as exc:
+                _log.warning('Skipping %s: %s', processor_path, exc)
+                self.processors.remove(processor_path)
+                continue
             self._processors.append(processor)
 
         # Initialize metadata processors
@@ -747,7 +755,12 @@ class Madam:
             except ImportError:
                 self.metadata_processors.remove(processor_path)
                 continue
-            processor = processor_class(self.config)
+            try:
+                processor = processor_class(self.config)
+            except OSError as exc:
+                _log.warning('Skipping %s: %s', processor_path, exc)
+                self.metadata_processors.remove(processor_path)
+                continue
             self._metadata_processors.append(processor)
 
         # Build a MIME-type → processor index for O(1) lookup.
