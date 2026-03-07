@@ -112,10 +112,7 @@ class FFmpegFilterGraph:
         """
         for key, value in opts.items():
             if key in self.codec_options and self.codec_options[key] != value:
-                raise ValueError(
-                    f'Conflicting codec option {key!r}: '
-                    f'{self.codec_options[key]!r} vs {value!r}'
-                )
+                raise ValueError(f'Conflicting codec option {key!r}: {self.codec_options[key]!r} vs {value!r}')
             self.codec_options[key] = value
 
     # ------------------------------------------------------------------
@@ -338,6 +335,25 @@ class AudioCodec:
     NONE = None  # discard audio stream (-an)
 
 
+class SubtitleFormat:
+    """Named constants for subtitle codec strings accepted by :meth:`FFmpegProcessor.convert`.
+
+    Use these instead of raw FFmpeg codec names to avoid depending on FFmpeg internals::
+
+        processor.convert(mime_type='text/vtt', subtitle={'codec': SubtitleFormat.WEBVTT})
+
+    .. versionadded:: 1.0
+    """
+
+    WEBVTT = 'webvtt'
+    SRT = 'subrip'
+    ASS = 'ass'
+    SSA = 'ssa'
+    DVB = 'dvb_subtitle'
+    COPY = 'copy'
+    NONE = None  # discard subtitle stream (-sn)
+
+
 class FFmpegContext(ProcessingContext):
     """
     Deferred in-memory state for an FFmpeg processing run.
@@ -401,6 +417,9 @@ class FFmpegProcessor(Processor):
         ('ogg', 'audio'): MimeType('audio/ogg'),
         ('wav', 'audio'): MimeType('audio/wav'),
         ('webvtt', 'subtitle'): MimeType('text/vtt'),
+        ('srt', 'subtitle'): MimeType('text/x-subrip'),
+        ('ass', 'subtitle'): MimeType('text/x-ssa'),
+        ('ttml', 'subtitle'): MimeType('application/ttml+xml'),
     }
 
     __mime_type_to_encoder = {
@@ -428,6 +447,9 @@ class FFmpegProcessor(Processor):
         MimeType('image/webp'): 'image2',
         MimeType('text/vnd.dvb.subtitle'): 'dvbsub',
         MimeType('text/vtt'): 'webvtt',
+        MimeType('text/x-subrip'): 'srt',
+        MimeType('text/x-ssa'): 'ass',
+        MimeType('application/ttml+xml'): 'ttml',
     }
 
     __mime_type_to_codec = {
@@ -903,6 +925,11 @@ class FFmpegProcessor(Processor):
                 metadata[stream_type]['codec'] = stream['codec_name']
             if 'bit_rate' in stream:
                 metadata[stream_type]['bitrate'] = float(stream['bit_rate']) / 1000.0
+            tags = stream.get('tags', {})
+            if 'language' in tags:
+                metadata[stream_type]['language'] = tags['language']
+            if stream_type == 'subtitle' and 'title' in tags:
+                metadata[stream_type]['title'] = tags['title']
             if 'pix_fmt' in stream:
                 color_space, depth, data_type = FFmpegProcessor.__ffmpeg_pix_fmt_to_color_mode[stream['pix_fmt']]
                 metadata[stream_type]['color_space'] = color_space
