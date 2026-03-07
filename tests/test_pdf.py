@@ -60,6 +60,157 @@ class TestPDFProcessor:
         pdf_asset.essence.seek(0)
         assert data[:4] == b'%PDF'
 
+    def test_read_includes_page_width(self, pdf_asset):
+        assert hasattr(pdf_asset, 'page_width')
+        assert isinstance(pdf_asset.page_width, float)
+        assert pdf_asset.page_width > 0
+
+    def test_read_includes_page_height(self, pdf_asset):
+        assert hasattr(pdf_asset, 'page_height')
+        assert isinstance(pdf_asset.page_height, float)
+        assert pdf_asset.page_height > 0
+
+    def test_read_pdf_metadata_dict_when_present(self, pdf_asset):
+        if hasattr(pdf_asset, 'pdf'):
+            assert isinstance(pdf_asset.pdf, (dict, type(pdf_asset.metadata)))
+
+
+@pytest.fixture
+def pdf_with_info_bytes():
+    """Return raw PDF bytes for a single-page document with known /Info metadata."""
+    pypdf = pytest.importorskip('pypdf')
+    writer = pypdf.PdfWriter()
+    writer.add_blank_page(width=595, height=842)
+    writer.add_metadata(
+        {
+            '/Title': 'Test Document',
+            '/Author': 'Test Author',
+            '/Subject': 'Test Subject',
+            '/Creator': 'Test Creator',
+            '/Producer': 'Test Producer',
+        }
+    )
+    buf = io.BytesIO()
+    writer.write(buf)
+    buf.seek(0)
+    return buf.read()
+
+
+class TestPDFMetadataFromBytes:
+    """Test metadata extraction from a PDF created in-memory with known attributes."""
+
+    @pytest.fixture
+    def pdf_with_metadata(self, pdf_with_info_bytes):
+        pytest.importorskip('pypdf')
+        from madam.pdf import PDFProcessor
+
+        processor = PDFProcessor()
+        return processor.read(io.BytesIO(pdf_with_info_bytes))
+
+    def test_metadata_stored_under_pdf_key(self, pdf_with_metadata):
+        assert hasattr(pdf_with_metadata, 'pdf')
+
+    def test_metadata_title(self, pdf_with_metadata):
+        assert pdf_with_metadata.pdf['title'] == 'Test Document'
+
+    def test_metadata_author(self, pdf_with_metadata):
+        assert pdf_with_metadata.pdf['author'] == 'Test Author'
+
+    def test_metadata_subject(self, pdf_with_metadata):
+        assert pdf_with_metadata.pdf['subject'] == 'Test Subject'
+
+    def test_metadata_creator(self, pdf_with_metadata):
+        assert pdf_with_metadata.pdf['creator'] == 'Test Creator'
+
+    def test_metadata_producer(self, pdf_with_metadata):
+        assert pdf_with_metadata.pdf['producer'] == 'Test Producer'
+
+    def test_page_width(self, pdf_with_metadata):
+        assert pdf_with_metadata.page_width == pytest.approx(595.0, abs=1)
+
+    def test_page_height(self, pdf_with_metadata):
+        assert pdf_with_metadata.page_height == pytest.approx(842.0, abs=1)
+
+
+class TestPDFMetadataProcessor:
+    @pytest.fixture
+    def processor(self):
+        pytest.importorskip('pypdf')
+        from madam.pdf import PDFMetadataProcessor
+
+        return PDFMetadataProcessor()
+
+    def test_formats_contains_pdf(self, processor):
+        assert 'pdf' in processor.formats
+
+    def test_read_returns_pdf_format_key(self, processor, pdf_with_info_bytes):
+        result = processor.read(io.BytesIO(pdf_with_info_bytes))
+        assert 'pdf' in result
+
+    def test_read_extracts_title(self, processor, pdf_with_info_bytes):
+        result = processor.read(io.BytesIO(pdf_with_info_bytes))
+        assert result['pdf']['title'] == 'Test Document'
+
+    def test_read_extracts_author(self, processor, pdf_with_info_bytes):
+        result = processor.read(io.BytesIO(pdf_with_info_bytes))
+        assert result['pdf']['author'] == 'Test Author'
+
+    def test_read_extracts_subject(self, processor, pdf_with_info_bytes):
+        result = processor.read(io.BytesIO(pdf_with_info_bytes))
+        assert result['pdf']['subject'] == 'Test Subject'
+
+    def test_read_extracts_creator(self, processor, pdf_with_info_bytes):
+        result = processor.read(io.BytesIO(pdf_with_info_bytes))
+        assert result['pdf']['creator'] == 'Test Creator'
+
+    def test_read_extracts_producer(self, processor, pdf_with_info_bytes):
+        result = processor.read(io.BytesIO(pdf_with_info_bytes))
+        assert result['pdf']['producer'] == 'Test Producer'
+
+    def test_read_returns_no_title_for_pdf_without_title(self, processor):
+        pypdf = pytest.importorskip('pypdf')
+        writer = pypdf.PdfWriter()
+        writer.add_blank_page(width=100, height=100)
+        buf = io.BytesIO()
+        writer.write(buf)
+        buf.seek(0)
+        result = processor.read(buf)
+        # pypdf may inject a /Producer field; we only care that /Title is absent
+        assert result.get('pdf', {}).get('title') is None
+
+    def test_read_raises_for_non_pdf(self, processor):
+        from madam.core import UnsupportedFormatError
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.read(io.BytesIO(b'not a pdf'))
+
+    def test_strip_removes_title_from_pdf(self, processor, pdf_with_info_bytes):
+        pypdf = pytest.importorskip('pypdf')
+        stripped = processor.strip(io.BytesIO(pdf_with_info_bytes))
+        reader = pypdf.PdfReader(stripped)
+        assert not reader.metadata or reader.metadata.get('/Title', '') == ''
+
+    def test_strip_raises_for_non_pdf(self, processor):
+        from madam.core import UnsupportedFormatError
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.strip(io.BytesIO(b'not a pdf'))
+
+    def test_combine_writes_title_to_pdf(self, processor, pdf_with_info_bytes):
+        pypdf = pytest.importorskip('pypdf')
+        # Start from stripped PDF, then combine metadata back
+        stripped = processor.strip(io.BytesIO(pdf_with_info_bytes))
+        combined = processor.combine(stripped, {'pdf': {'title': 'New Title', 'author': 'New Author'}})
+        reader = pypdf.PdfReader(combined)
+        assert reader.metadata.get('/Title') == 'New Title'
+        assert reader.metadata.get('/Author') == 'New Author'
+
+    def test_combine_raises_for_empty_metadata(self, processor, pdf_with_info_bytes):
+        from madam.core import UnsupportedFormatError
+
+        with pytest.raises(UnsupportedFormatError):
+            processor.combine(io.BytesIO(pdf_with_info_bytes), {})
+
 
 class TestCombine:
     def test_combine_single_image_returns_asset(self, jpeg_image_asset):

@@ -14,7 +14,8 @@ from typing import IO, Any
 
 import PIL.Image
 
-from madam.core import Asset, OperatorError, Processor, operator
+from madam.core import Asset, MetadataProcessor, OperatorError, Processor, UnsupportedFormatError, operator
+from madam.mime import MimeType
 
 _MIME_TYPE_TO_PIL_FORMAT: dict[str, str] = {
     'image/jpeg': 'JPEG',
@@ -120,6 +121,146 @@ def combine(
     return Asset._from_bytes(buf.getvalue(), mime_type='application/pdf', page_count=len(pages))
 
 
+class PDFMetadataProcessor(MetadataProcessor):
+    """
+    Reads, strips, and writes PDF document information metadata (title, author,
+    subject, creator, producer).
+
+    Metadata is stored under the ``'pdf'`` format key, so reading a PDF via
+    :class:`PDFProcessor` yields ``asset.pdf`` as a mapping with the available
+    fields.
+
+    Requires the ``pypdf`` package (``madam[pdf]`` extra).
+
+    .. versionadded:: 1.0
+    """
+
+    supported_mime_types: frozenset = frozenset({MimeType('application/pdf')})
+
+    # PDF /Info key → madam attribute name
+    _FIELD_MAP: tuple[tuple[str, str], ...] = (
+        ('/Title', 'title'),
+        ('/Author', 'author'),
+        ('/Subject', 'subject'),
+        ('/Creator', 'creator'),
+        ('/Producer', 'producer'),
+    )
+
+    def __init__(self, config: Mapping[str, Any] | None = None) -> None:
+        super().__init__(config)
+
+    @property
+    def formats(self) -> frozenset:
+        return frozenset({'pdf'})
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _require_pypdf():
+        try:
+            import pypdf
+
+            return pypdf
+        except ImportError as e:
+            raise UnsupportedFormatError('pypdf is required; install the pdf extra') from e
+
+    @staticmethod
+    def _check_pdf_header(file: IO) -> bytes:
+        header = file.read(4)
+        file.seek(0)
+        if header != b'%PDF':
+            raise UnsupportedFormatError('Not a PDF file')
+        return file.read()
+
+    def _make_reader(self, data: bytes):
+        pypdf = self._require_pypdf()
+        try:
+            return pypdf.PdfReader(io.BytesIO(data))
+        except Exception as exc:
+            raise UnsupportedFormatError('Not a valid PDF file') from exc
+
+    # ------------------------------------------------------------------
+    # MetadataProcessor interface
+    # ------------------------------------------------------------------
+
+    def read(self, file: IO) -> Mapping[str, Mapping]:
+        """
+        Extract document information from a PDF file.
+
+        :return: ``{'pdf': {'title': ..., 'author': ..., ...}}`` or ``{}`` if
+            the document carries no info metadata.
+        :raises UnsupportedFormatError: if *file* is not a PDF.
+        """
+        data = self._check_pdf_header(file)
+        file.seek(0)
+        reader = self._make_reader(data)
+
+        result: dict[str, str] = {}
+        if reader.metadata:
+            for pdf_key, madam_key in self._FIELD_MAP:
+                val = reader.metadata.get(pdf_key)
+                if val:
+                    result[madam_key] = str(val)
+
+        return {'pdf': result} if result else {}
+
+    def strip(self, file: IO) -> IO:
+        """
+        Return a copy of the PDF with document information fields cleared.
+
+        :raises UnsupportedFormatError: if *file* is not a PDF.
+        """
+        pypdf = self._require_pypdf()
+        data = self._check_pdf_header(file)
+        file.seek(0)
+        reader = self._make_reader(data)
+
+        if not reader.metadata or not any(reader.metadata.values()):
+            return io.BytesIO(data)
+
+        writer = pypdf.PdfWriter()
+        writer.clone_reader_document_root(reader)
+        writer.add_metadata({pdf_key: '' for pdf_key, _ in self._FIELD_MAP})
+
+        out = io.BytesIO()
+        writer.write(out)
+        out.seek(0)
+        return out
+
+    def combine(self, file: IO, metadata: Mapping) -> IO:
+        """
+        Return a copy of the PDF with the given document information written back.
+
+        :raises UnsupportedFormatError: if *file* is not a PDF or *metadata*
+            contains no ``'pdf'`` entry.
+        """
+        pdf_meta = metadata.get('pdf', {})
+        if not pdf_meta:
+            raise UnsupportedFormatError('No PDF metadata to write')
+
+        pypdf = self._require_pypdf()
+        data = self._check_pdf_header(file)
+        file.seek(0)
+        reader = self._make_reader(data)
+
+        writer = pypdf.PdfWriter()
+        writer.clone_reader_document_root(reader)
+
+        info: dict[str, str] = {}
+        for pdf_key, madam_key in self._FIELD_MAP:
+            if madam_key in pdf_meta:
+                info[pdf_key] = str(pdf_meta[madam_key])
+        if info:
+            writer.add_metadata(info)
+
+        out = io.BytesIO()
+        writer.write(out)
+        out.seek(0)
+        return out
+
+
 class PDFProcessor(Processor):
     """
     Represents a processor that handles *Portable Document Format* (PDF) files.
@@ -167,7 +308,22 @@ class PDFProcessor(Processor):
         pdf_bytes = file.read()
         reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
         page_count = len(reader.pages)
-        return Asset._from_bytes(pdf_bytes, mime_type='application/pdf', page_count=page_count)
+
+        extra: dict[str, Any] = {}
+
+        if reader.pages:
+            box = reader.pages[0].mediabox
+            extra['page_width'] = float(box.width)
+            extra['page_height'] = float(box.height)
+
+        # Delegate document info metadata to PDFMetadataProcessor
+        try:
+            meta_by_format = PDFMetadataProcessor().read(io.BytesIO(pdf_bytes))
+            extra.update(meta_by_format)
+        except UnsupportedFormatError:
+            pass
+
+        return Asset._from_bytes(pdf_bytes, mime_type='application/pdf', page_count=page_count, **extra)
 
     @operator
     def rasterize(self, asset: Asset, page: int = 0, dpi: int = 72, mime_type: str = 'image/jpeg') -> Asset:
