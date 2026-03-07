@@ -154,6 +154,77 @@ Use ``Pipeline`` to chain operators and process batches:
     ...         f.write(processed.essence.read())
 
 
+PDF processing
+--------------
+
+.. code:: pycon
+
+    >>> from madam import Madam
+    >>> madam = Madam()   # PDFProcessor auto-registered with madam[pdf]
+    >>> with open('document.pdf', 'rb') as f:
+    ...     pdf_asset = madam.read(f)
+    >>> pdf_asset.page_count
+    12
+    >>> pdf_asset.page_width    # first page width in PDF points
+    595.0
+    >>> pdf_asset.page_height
+    842.0
+    >>> pdf_asset.pdf.get('title')
+    'Annual Report 2024'
+    >>> pdf_asset.pdf.get('author')
+    'Jane Smith'
+    >>> # Rasterize the first page at 150 DPI as PNG
+    >>> processor = madam.get_processor(pdf_asset)
+    >>> rasterize = processor.rasterize(page=0, dpi=150, mime_type='image/png')
+    >>> image_asset = rasterize(pdf_asset)
+
+
+Raw camera images
+------------------
+
+.. code:: pycon
+
+    >>> from madam import Madam
+    >>> madam = Madam()   # RawImageProcessor auto-registered with madam[raw]
+    >>> with open('photo.dng', 'rb') as f:
+    ...     raw_asset = madam.read(f)
+    >>> raw_asset.width, raw_asset.height
+    (6720, 4480)
+    >>> raw_asset.exif.get('camera.model')
+    'Canon EOS 5D Mark III'
+    >>> raw_asset.exif.get('iso_speed')
+    400.0
+    >>> raw_asset.exif.get('exposure_time')   # seconds
+    0.005
+    >>> # Decode to a standard image format
+    >>> processor = madam.get_processor(raw_asset)
+    >>> decode = processor.decode(mime_type='image/tiff')
+    >>> tiff_asset = decode(raw_asset)
+
+
+Subtitle support
+-----------------
+
+.. code:: pycon
+
+    >>> from madam import Madam
+    >>> from madam.subtitle import SubtitleFormat
+    >>> madam = Madam()
+    >>> with open('captions.srt', 'rb') as f:
+    ...     srt_asset = madam.read(f)
+    >>> srt_asset.mime_type
+    'text/x-subrip'
+    >>> srt_asset.subtitle['codec']
+    'subrip'
+    >>> # Convert SRT to WebVTT
+    >>> processor = madam.get_processor(srt_asset)
+    >>> convert = processor.convert(
+    ...     mime_type='text/vtt',
+    ...     subtitle={'codec': SubtitleFormat.WEBVTT},
+    ... )
+    >>> vtt_asset = convert(srt_asset)
+
+
 Audio processing
 -----------------
 

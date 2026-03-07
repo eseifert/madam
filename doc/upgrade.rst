@@ -9,6 +9,170 @@ of when upgrading from one release to the next.
    :depth: 2
 
 
+1.0.0 → 1.1.0
+--------------
+
+All changes in this release are new features.  There are no breaking changes.
+
+
+New features
+~~~~~~~~~~~~
+
+New: ``PDFMetadataProcessor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.pdf.PDFMetadataProcessor` reads, strips, and writes PDF
+document information fields (title, author, subject, creator, producer)
+using *pypdf*.  Metadata is stored under the ``'pdf'`` format key, consistent
+with the :class:`~madam.core.MetadataProcessor` pattern.
+
+:meth:`~madam.pdf.PDFProcessor.read` calls ``PDFMetadataProcessor``
+automatically, so document info is available directly on the asset:
+
+.. code-block:: python
+
+   from madam import Madam
+
+   madam = Madam()
+
+   with open('document.pdf', 'rb') as f:
+       pdf_asset = madam.read(f)
+
+   print(pdf_asset.page_count)            # total pages
+   print(pdf_asset.page_width)            # first page width in PDF points
+   print(pdf_asset.page_height)           # first page height in PDF points
+   print(pdf_asset.pdf.get('title'))      # e.g. 'Annual Report'
+   print(pdf_asset.pdf.get('author'))     # e.g. 'Jane Smith'
+   print(pdf_asset.pdf.get('subject'))
+   print(pdf_asset.pdf.get('creator'))
+   print(pdf_asset.pdf.get('producer'))
+
+To access the processor directly:
+
+.. code-block:: python
+
+   from madam.pdf import PDFMetadataProcessor
+
+   processor = PDFMetadataProcessor()
+
+   with open('document.pdf', 'rb') as f:
+       metadata = processor.read(f)   # {'pdf': {'title': ..., 'author': ...}}
+
+   # Strip document info from the PDF essence
+   with open('document.pdf', 'rb') as f:
+       stripped = processor.strip(f)
+
+   # Write metadata back
+   updated = processor.combine(stripped, {
+       'pdf': {'title': 'New Title', 'author': 'New Author'},
+   })
+
+
+New: ``RawMetadataProcessor``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.raw.RawMetadataProcessor` extracts EXIF metadata from raw
+camera image files (DNG, CR2, NEF, ARW, …) using *piexif*.  Metadata is
+stored under the ``'exif'`` format key — the same schema used by
+:class:`~madam.exif.ExifMetadataProcessor` for JPEG/WebP.
+
+:meth:`~madam.raw.RawImageProcessor.read` calls ``RawMetadataProcessor``
+automatically, so EXIF camera data is available directly on the asset:
+
+.. code-block:: python
+
+   from madam import Madam
+
+   madam = Madam()
+
+   with open('photo.dng', 'rb') as f:
+       raw_asset = madam.read(f)
+
+   print(raw_asset.exif.get('camera.model'))      # e.g. 'Canon EOS 5D Mark III'
+   print(raw_asset.exif.get('camera.manufacturer'))
+   print(raw_asset.exif.get('iso_speed'))         # float
+   print(raw_asset.exif.get('exposure_time'))     # float, seconds
+   print(raw_asset.exif.get('fnumber'))           # float
+   print(raw_asset.exif.get('focal_length'))      # float, mm
+   print(raw_asset.exif.get('created_at'))        # ISO 8601 string or None
+
+To access the processor directly:
+
+.. code-block:: python
+
+   from madam.raw import RawMetadataProcessor
+
+   processor = RawMetadataProcessor()
+
+   with open('photo.dng', 'rb') as f:
+       metadata = processor.read(f)   # {'exif': {'camera.model': ..., ...}}
+
+Because EXIF data is integral to the raw TIFF structure,
+:meth:`~madam.raw.RawMetadataProcessor.strip` returns the file unchanged and
+:meth:`~madam.raw.RawMetadataProcessor.combine` raises
+:class:`~madam.core.UnsupportedFormatError` (piexif does not support
+inserting EXIF into TIFF/DNG).
+
+
+New: ``SubtitleFormat`` constant class and ``madam.subtitle`` module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.ffmpeg.SubtitleFormat` provides stable, named constants for
+the subtitle codec strings accepted by
+:meth:`~madam.ffmpeg.FFmpegProcessor.convert`.  Import it from
+:mod:`madam.ffmpeg` or the new :mod:`madam.subtitle` thin re-export module:
+
+.. code-block:: python
+
+   from madam import Madam
+   from madam.subtitle import SubtitleFormat
+
+   madam = Madam()
+
+   with open('captions.srt', 'rb') as f:
+       srt_asset = madam.read(f)   # mime_type='text/x-subrip'
+
+   processor = madam.get_processor(srt_asset)
+   vtt_asset = processor.convert(
+       mime_type='text/vtt',
+       subtitle={'codec': SubtitleFormat.WEBVTT},
+   )(srt_asset)
+
+Available constants:
+
+* ``SubtitleFormat.WEBVTT`` — ``'webvtt'``
+* ``SubtitleFormat.SRT`` — ``'subrip'``
+* ``SubtitleFormat.ASS`` — ``'ass'``
+* ``SubtitleFormat.SSA`` — ``'ssa'``
+* ``SubtitleFormat.DVB`` — ``'dvb_subtitle'``
+* ``SubtitleFormat.COPY`` — ``'copy'`` (stream copy)
+* ``SubtitleFormat.NONE`` — ``None`` (drop the subtitle stream; ``-sn``)
+
+
+New: Additional subtitle MIME types and stream metadata
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:class:`~madam.ffmpeg.FFmpegProcessor` now recognises three additional
+subtitle container formats as both read and encode targets:
+
+* ``text/x-subrip`` — SubRip (SRT)
+* ``text/x-ssa`` — ASS/SSA
+* ``application/ttml+xml`` — TTML
+
+These join the existing ``text/vtt`` (WebVTT) support.
+
+``FFmpegProcessor.read()`` now also extracts ``language`` and ``title`` tags
+from subtitle streams when present in the container:
+
+.. code-block:: python
+
+   with open('video_with_subs.mkv', 'rb') as f:
+       asset = madam.read(f)
+   print(asset.subtitle.get('codec'))      # e.g. 'subrip'
+   print(asset.subtitle.get('language'))   # e.g. 'eng'
+   print(asset.subtitle.get('title'))      # e.g. 'English (SDH)'
+
+
 0.26.0 → 1.0.0
 ---------------
 
