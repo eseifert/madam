@@ -30,7 +30,7 @@ _ICC_PROFILE_FORMATS: frozenset[MimeType] = frozenset(
 
 _VALID_FORMAT_CONFIG_KEYS: dict[MimeType, frozenset[str]] = {
     MimeType('image/avif'): frozenset({'quality', 'speed'}),
-    MimeType('image/jpeg'): frozenset({'quality', 'progressive'}),
+    MimeType('image/jpeg'): frozenset({'quality', 'progressive', 'subsampling'}),
     MimeType('image/png'): frozenset({'optimize', 'zopfli', 'zopfli_strategies'}),
     MimeType('image/tiff'): frozenset({'compression'}),
     MimeType('image/webp'): frozenset({'quality', 'method'}),
@@ -230,7 +230,7 @@ class PillowProcessor(Processor):
     __format_defaults = {
         MimeType('image/avif'): dict(
             quality=80,
-            speed=6,
+            speed=4,  # lower = better compression; 4 is the web/VOD sweet spot
         ),
         MimeType('image/gif'): dict(
             optimize=True,
@@ -581,6 +581,8 @@ class PillowProcessor(Processor):
         elif mime_type == MimeType('image/jpeg'):
             pil_options['progressive'] = int(format_config.get('progressive', pil_options['progressive']))
             pil_options['quality'] = int(format_config.get('quality', pil_options['quality']))
+            if 'subsampling' in format_config:
+                pil_options['subsampling'] = int(format_config['subsampling'])
             image.save(image_buffer, pil_format, **pil_options)
         elif mime_type == MimeType('image/tiff') and image.mode == 'P':
             pil_options.pop('compression', '')

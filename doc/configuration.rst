@@ -60,17 +60,25 @@ quality
 
 speed
     An integer in the range between 0 and 10 that controls the encode speed/
-    quality trade-off. 0 is the slowest and highest-quality setting; 10 is the
-    fastest and lowest-quality setting.
+    quality trade-off. 0 is the slowest and produces the best compression; 10
+    is the fastest and produces the largest files at the same quality level.
 
-    Defaults to 6.
+    Defaults to 4.
+
+    .. tip::
+
+        For batch processing or CI pipelines where encode time matters more than
+        file size, raise this to 6 or higher::
+
+            config = {'image/avif': {'speed': 8}}
 
 
 JPEG (image/jpeg)
 -----------------
 progressive
     A boolean value that defines whether progressive JPEG images should be
-    written.
+    written.  Progressive JPEGs appear to load gradually in browsers, which
+    feels faster on slow connections.
 
     Defaults to True.
 
@@ -79,6 +87,20 @@ quality
     factors produce smaller files with lower quality.
 
     Defaults to 80.
+
+subsampling
+    Controls chroma subsampling.  ``2`` uses 4:2:0 (default Pillow behaviour
+    for photographic content), ``1`` uses 4:2:2, and ``0`` uses 4:4:4 (no
+    chroma subsampling).
+
+    When unset the Pillow default (4:2:0) is used.
+
+    .. tip::
+
+        Use ``subsampling=0`` for images that contain sharp text, line art, or
+        vivid solid colours, where 4:2:0 can cause visible colour fringing::
+
+            config = {'image/jpeg': {'subsampling': 0, 'quality': 85}}
 
 
 PNG (image/png)
@@ -146,79 +168,137 @@ Video content is split into two categories: container options are stored by
 MIME type, and codec options are stored under a separate ``'codec/<name>'``
 key.
 
-The following example sets the ``faststart`` flag for QuickTime/MPEG-4
-containers and lowers the CRF for h.265 encoding:
+The following example tightens quality for H.265 and caps FFmpeg's thread
+count to 4:
 
 .. code:: pycon
 
     >>> config = {
-    ...     'video/quicktime': {
-    ...         'faststart': True,
-    ...     },
     ...     'codec/libx265': {
-    ...         'crf': 24,
+    ...         'crf': 22,
     ...     },
-    ... }
-
-To cap the number of threads used by FFmpeg, add an ``'ffmpeg'`` key:
-
-.. code:: pycon
-
-    >>> config = {
     ...     'ffmpeg': {'threads': 4},
     ... }
 
-When ``threads`` is ``0`` or absent, MADAM uses ``multiprocessing.cpu_count()``
-threads by default.
+When ``ffmpeg.threads`` is ``0`` or absent, MADAM uses
+``multiprocessing.cpu_count()`` threads by default.
 
 The following list documents all available options for video containers.
 
-Quicktime/MPEG4 (video/quicktime)
----------------------------------
+MP4 (video/mp4) and QuickTime (video/quicktime)
+------------------------------------------------
 faststart
-    Boolean that defines whether the video and audio files should be written in
-    a way that allows a fast start when streaming.
+    Boolean that defines whether the ``moov`` atom is moved to the beginning of
+    the file so that playback can start before the entire file is downloaded.
+    This is required for progressive web delivery and HTTP streaming — leave it
+    enabled for any content served over the web.
 
-    Defaults to True.
+    Defaults to ``True``.
+
+    .. tip::
+
+        Disable faststart only for files that are always downloaded in full
+        before playback (e.g. local archives), where the extra seek saved by
+        faststart has no benefit::
+
+            config = {'video/mp4': {'faststart': False}}
+
+Matroska / MKV (video/x-matroska)
+----------------------------------
+There are no user-configurable container options for Matroska.  The encoder
+automatically sets ``-avoid_negative_ts make_zero`` to prevent timestamp
+issues when muxing streams from multiple sources.
 
 The following list shows all available options for video codecs.
 
-AVC/h.264 (libx264)
+AVC/H.264 (libx264)
 -------------------
 crf
     An integer that defines the Constant Rate Factor (CRF) for quality and
-    rate control in videos. 0 would encode slowly to lossless quality, while 51
-    would encode fast to the worst quality. A sane range for AVC/h.264 is
-    between 18 and 28.
+    rate control. 0 encodes to lossless quality; 51 produces the smallest but
+    worst-looking output.  A sane range for H.264 is between 18 and 28.
 
-    Defaults to 23.
+    Defaults to 22.
 
-HEVC/h.265 (libx265)
+    .. note::
+
+        MADAM encodes H.264 with ``preset=medium``, ``pix_fmt=yuv420p``,
+        ``profile:v=high``, and ``level:v=4.1`` by default.  These settings
+        maximise compatibility with browsers, mobile devices, and streaming
+        platforms.  They are not currently user-configurable.
+
+    .. tip::
+
+        Lower the CRF for archival masters or content with a lot of fine
+        detail; raise it when bandwidth or storage is the priority::
+
+            # Archival quality
+            config = {'codec/libx264': {'crf': 18}}
+
+            # Small file size for previews
+            config = {'codec/libx264': {'crf': 28}}
+
+HEVC/H.265 (libx265)
 --------------------
 crf
     An integer that defines the Constant Rate Factor (CRF) for quality and
-    rate control in videos. 0 would encode slowly to lossless quality, while 51
-    would encode fast to the worst quality. A sane range for HEVC/h.265 is
-    between 18 and 28.
+    rate control. 0 encodes to lossless quality; 51 produces the smallest but
+    worst-looking output.  A sane range for H.265 is between 18 and 28.
 
-    Defaults to 28.
+    Defaults to 26.
+
+    .. note::
+
+        MADAM encodes H.265 with ``preset=medium``, ``pix_fmt=yuv420p``, and
+        ``tag:v=hvc1`` by default.  The ``hvc1`` tag is required for Safari and
+        iOS to play H.265 video in MP4 containers.  These settings are not
+        currently user-configurable.
+
+    .. tip::
+
+        H.265 achieves roughly the same visual quality as H.264 at about half
+        the bitrate.  Use it when storage or bandwidth is critical and broad
+        legacy-device support is not required::
+
+            # Equivalent perceived quality to H.264 crf=22:
+            config = {'codec/libx265': {'crf': 26}}
 
 VP8 (libvpx)
 ------------
 crf
     An integer that defines the Constant Rate Factor (CRF) for quality and
-    rate control in videos. 0 would encode very slowly to lossless quality,
-    while 63 would encode very fast to the worst quality. A sane range for VP8
-    is between 4 and 63.
+    rate control. 0 encodes very slowly to lossless quality; 63 encodes very
+    fast to the worst quality.  A sane range for VP8 is between 4 and 63.
 
     Defaults to 10.
 
-VP9 (libvpx-vp9 or vp9)
------------------------
+VP9 (libvpx-vp9)
+----------------
 crf
     An integer that defines the Constant Rate Factor (CRF) for quality and
-    rate control in videos. 0 would encode very slowly to lossless quality,
-    while 63 would encode very fast to the worst quality. A sane range for VP9
-    is between 4 and 63.
+    rate control. 0 encodes very slowly to lossless quality; 63 encodes very
+    fast to the worst quality.  A sane range for VP9 is between 15 and 44.
 
-    Defaults to 32.
+    Defaults to 33.
+
+    .. note::
+
+        MADAM enables true constant-quality mode (``-b:v 0 -crf N``) and sets
+        ``tile-columns=2`` and ``cpu-used=2`` by default.  Without ``-b:v 0``
+        the CRF value is silently ignored by FFmpeg and VP9 falls back to
+        variable bitrate mode; MADAM prevents this automatically.
+        ``cpu-used=2`` is the VOD sweet spot — it is 3-4× faster than the
+        default (0) with minimal quality loss.  These settings are not
+        currently user-configurable.
+
+    .. tip::
+
+        VP9 is the open-source alternative to H.265.  Use it when you need
+        good compression without patent-encumbered codecs (e.g. for WebM
+        delivery in browsers)::
+
+            convert = processor.convert(
+                mime_type='video/webm',
+                video={'codec': 'libvpx-vp9'},
+                audio={'codec': 'libopus'},
+            )

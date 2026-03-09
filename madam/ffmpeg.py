@@ -464,19 +464,27 @@ class FFmpegProcessor(Processor):
     __codec_options = {
         'video': {
             'libx264': {
-                'preset': 'slow',
-                'crf': 23,
+                'preset': 'medium',    # 'slow' is 2-3× slower for marginal gain; 'medium' is the web/VOD sweet spot
+                'crf': 22,             # 22 is visually transparent for most content (default 23 is one step looser)
+                'pix_fmt': 'yuv420p',  # required for broad browser/device compatibility
+                'profile:v': 'high',   # H.264 High Profile for best compression
+                'level:v': '4.1',      # compatible with most devices and streaming platforms
             },
             'libx265': {
-                'preset': 'slow',
-                'crf': 28,
+                'preset': 'medium',    # 'slow' is acceptable but unnecessary for VOD pipelines
+                'crf': 26,             # ~equivalent quality to x264 crf=22; was 28
+                'pix_fmt': 'yuv420p',  # broad compatibility; without this some sources encode as yuv444p
+                'tag:v': 'hvc1',       # required for Safari/iOS QuickTime playback
             },
             'libvpx': {
                 'crf': 10,
             },
             'libvpx-vp9': {
-                'row-mt': 1,
-                'crf': 32,
+                'row-mt': 1,           # row-based multi-threading (already present)
+                'b:v': 0,              # REQUIRED for CRF mode; without this CRF is silently ignored (VBR fallback)
+                'crf': 33,             # ~equivalent to x264 crf=22 perceptually
+                'tile-columns': 2,     # parallel tile-column encoding (2^2 = 4 columns)
+                'cpu-used': 2,         # 0=slowest/best quality, 5=fastest; 2 is the VOD sweet spot
             },
             'opus': {'strict': -2},
             'vorbis': {'ac': 2, 'strict': -2},
@@ -1109,9 +1117,9 @@ class FFmpegProcessor(Processor):
                     else:
                         command.extend(['-sn'])
 
-            container_options = FFmpegProcessor.__container_options.get(mime_type, [])
+            container_options = list(FFmpegProcessor.__container_options.get(mime_type, []))
             container_config = self.config.get(str(mime_type), {})
-            if mime_type == 'video/quicktime':
+            if mime_type in ('video/quicktime', 'video/mp4'):
                 use_faststart = container_config.get('faststart', True)
                 if use_faststart:
                     container_options.extend(['-movflags', '+faststart'])

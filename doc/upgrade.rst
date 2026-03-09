@@ -9,6 +9,142 @@ of when upgrading from one release to the next.
    :depth: 2
 
 
+1.1.0 → 1.2.0
+--------------
+
+This release changes several encoding defaults to better suit web delivery and
+VOD pipelines.  All changes are improvements to the out-of-the-box experience;
+existing code that passes explicit codec or quality options is unaffected.
+
+
+Changed defaults
+~~~~~~~~~~~~~~~~
+
+MP4 output now includes ``-movflags +faststart`` by default
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``FFmpegProcessor.convert(mime_type='video/mp4', …)`` now writes the ``moov``
+atom at the beginning of the file (HTTP progressive streaming / faststart).
+Previously this was only applied to ``video/quicktime`` output.
+
+**Impact:** MP4 files produced by MADAM are now directly streamable from any
+HTTP server without requiring a server-side ``moov`` rewrite step.  File sizes
+are unchanged; only the internal atom order differs.
+
+To opt out for a specific processor instance:
+
+.. code-block:: python
+
+   from madam.ffmpeg import FFmpegProcessor
+
+   proc = FFmpegProcessor(config={'video/mp4': {'faststart': False}})
+
+H.264 (libx264) — updated defaults for web compatibility
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++------------+---------------+---------------+--------------------------------------+
+| Option     | Old default   | New default   | Reason                               |
++============+===============+===============+======================================+
+| ``crf``    | 23            | 22            | One step better visual quality       |
++------------+---------------+---------------+--------------------------------------+
+| ``preset`` | ``slow``      | ``medium``    | 2–3× faster; negligible quality loss |
++------------+---------------+---------------+--------------------------------------+
+| ``pix_fmt``| (source)      | ``yuv420p``   | Required by most browsers/devices    |
++------------+---------------+---------------+--------------------------------------+
+| ``profile``| (source)      | ``high``      | Better compression than Baseline/Main|
++------------+---------------+---------------+--------------------------------------+
+| ``level``  | (source)      | ``4.1``       | Covers 1080p60 and all modern targets|
++------------+---------------+---------------+--------------------------------------+
+
+**Impact on output files:** H.264 output is slightly smaller (lower CRF) and
+encodes faster (medium preset).  The ``yuv420p`` pixel format change only
+affects sources that were previously encoded in a wider colour space (e.g.
+``yuv444p`` screen captures or synthetic images); for photographic video the
+output is identical in practice.
+
+Override the CRF via config as before:
+
+.. code-block:: python
+
+   madam = Madam(config={'codec/libx264': {'crf': 18}})   # archival quality
+
+H.265 (libx265) — updated defaults for broader device support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++------------+---------------+---------------+--------------------------------------+
+| Option     | Old default   | New default   | Reason                               |
++============+===============+===============+======================================+
+| ``crf``    | 28            | 26            | Better quality; ~same as x264 crf=22 |
++------------+---------------+---------------+--------------------------------------+
+| ``preset`` | ``slow``      | ``medium``    | 2–3× faster; negligible quality loss |
++------------+---------------+---------------+--------------------------------------+
+| ``pix_fmt``| (source)      | ``yuv420p``   | Broad compatibility                  |
++------------+---------------+---------------+--------------------------------------+
+| ``tag:v``  | (none)        | ``hvc1``      | Required for Safari and iOS playback |
++------------+---------------+---------------+--------------------------------------+
+
+**Impact on output files:** H.265 output is slightly smaller.  The ``hvc1``
+tag change means MP4 files with H.265 video will now play in Safari and on iOS
+without additional post-processing.
+
+VP9 (libvpx-vp9) — constant-quality mode and parallel encoding
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++-------------------+---------------+---------------+-------------------------------------------+
+| Option            | Old default   | New default   | Reason                                    |
++===================+===============+===============+===========================================+
+| ``b:v``           | (unset)       | ``0``         | Activates true CRF mode (was silently VBR)|
++-------------------+---------------+---------------+-------------------------------------------+
+| ``crf``           | 32            | 33            | Recalibrated for true CRF mode            |
++-------------------+---------------+---------------+-------------------------------------------+
+| ``tile-columns``  | (unset)       | ``2``         | Parallel tile encoding (4 columns)        |
++-------------------+---------------+---------------+-------------------------------------------+
+| ``cpu-used``      | (unset)       | ``2``         | 3–4× faster with minimal quality loss     |
++-------------------+---------------+---------------+-------------------------------------------+
+
+**Impact on output files:** This is the most significant behavioural change.
+Previously, passing ``video={'codec': 'libvpx-vp9'}`` to ``convert()`` applied
+the CRF value but FFmpeg silently fell back to VBR mode because ``-b:v 0`` was
+missing.  MADAM now explicitly enables constant-quality CRF mode.  Output
+files will have a different (generally more consistent) file size distribution
+than before.
+
+The ``cpu-used=2`` default makes VP9 encoding 3–4× faster than the prior
+implicit default of 0 at the cost of a small and typically imperceptible
+quality reduction.
+
+AVIF — improved default compression
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The default ``speed`` for AVIF encoding changed from ``6`` to ``4``.
+
+**Impact:** AVIF images produced with no explicit speed configuration will be
+somewhat smaller at the same quality level.  Encoding takes longer.
+
+To restore the previous behaviour or prioritise speed over file size:
+
+.. code-block:: python
+
+   madam = Madam(config={'image/avif': {'speed': 6}})
+
+JPEG — new ``subsampling`` configuration key
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``subsampling`` key is now accepted under ``image/jpeg`` configuration.
+It was previously rejected with a :exc:`UserWarning`.
+
+No existing code is broken by this change.  The default chroma subsampling
+behaviour (Pillow 4:2:0) is unchanged when the key is absent.
+
+.. code-block:: python
+
+   # 4:4:4 — no chroma subsampling; best for sharp text and line art
+   madam = Madam(config={'image/jpeg': {'subsampling': 0}})
+
+   # 4:2:0 — default; good for photographic content
+   madam = Madam(config={'image/jpeg': {'subsampling': 2}})
+
+
 1.0.0 → 1.1.0
 --------------
 
