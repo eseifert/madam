@@ -138,6 +138,44 @@ def _parse_version(version_str: str) -> tuple[int, ...]:
     return tuple(int(g) for g in match.groups() if g is not None)
 
 
+#: Oldest FFmpeg release whose ``ffprobe`` output MADAM can parse.
+_MIN_VERSION: tuple[int, ...] = (3, 3)
+
+
+def _check_ffprobe() -> None:
+    """Verify that a supported ``ffprobe`` is installed.
+
+    Called by the FFmpeg processors' constructors so that
+    :class:`~madam.core.Madam` skips them on a system without FFmpeg.
+
+    :raises OSError: if ffprobe is not found, times out, or its version is
+        below the minimum requirement (3.3).
+    """
+    try:
+        result = subprocess.run(
+            ['ffprobe', '-version'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+        )
+    except FileNotFoundError:
+        raise OSError('ffprobe not found. Install FFmpeg >= 3.3 and ensure it is on PATH.')
+    except subprocess.TimeoutExpired:
+        raise OSError('ffprobe version check timed out.')
+
+    parts = result.stdout.decode('utf-8').split()
+    try:
+        version_idx = parts.index('version') + 1
+        version_string = parts[version_idx]
+    except (ValueError, IndexError):
+        raise OSError('Cannot determine ffprobe version from output.')
+
+    detected = _parse_version(version_string)
+    if detected < _MIN_VERSION:
+        min_str = '.'.join(str(v) for v in _MIN_VERSION)
+        raise OSError(f'Found ffprobe version {version_string}. Requiring at least version {min_str}.')
+
+
 def _ffmpeg_error_message(error: subprocess.CalledProcessError, operation: str) -> str:
     """Return a concise, backend-agnostic error message from a failed FFmpeg call.
 
@@ -715,8 +753,6 @@ class FFmpegProcessor(Processor):
         ('YUVA', 16, 'uint'): 'yuva420p16le',
     }
 
-    _MIN_VERSION: tuple[int, ...] = (3, 3)
-
     @property
     def supported_mime_types(self) -> frozenset:
         return frozenset(FFmpegProcessor.__decoder_and_stream_type_to_mime_type.values())
@@ -730,30 +766,7 @@ class FFmpegProcessor(Processor):
             version is below the minimum requirement (3.3).
         """
         super().__init__(config)
-
-        try:
-            result = subprocess.run(
-                ['ffprobe', '-version'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                timeout=10,
-            )
-        except FileNotFoundError:
-            raise OSError('ffprobe not found. Install FFmpeg >= 3.3 and ensure it is on PATH.')
-        except subprocess.TimeoutExpired:
-            raise OSError('ffprobe version check timed out.')
-
-        parts = result.stdout.decode('utf-8').split()
-        try:
-            version_idx = parts.index('version') + 1
-            version_string = parts[version_idx]
-        except (ValueError, IndexError):
-            raise OSError('Cannot determine ffprobe version from output.')
-
-        detected = _parse_version(version_string)
-        if detected < self._MIN_VERSION:
-            min_str = '.'.join(str(v) for v in self._MIN_VERSION)
-            raise OSError(f'Found ffprobe version {version_string}. Requiring at least version {min_str}.')
+        _check_ffprobe()
 
         self._configured_threads: int = self.config.get('ffmpeg', {}).get('threads', 0)
 
@@ -2425,8 +2438,11 @@ class FFmpegMetadataProcessor(MetadataProcessor):
         Initializes a new `FFmpegMetadataProcessor`.
 
         :param config: Mapping with settings.
+        :raises EnvironmentError: if ffprobe is not found, times out, or its
+            version is below the minimum requirement (3.3).
         """
         super().__init__(config)
+        _check_ffprobe()
 
     @property
     def formats(self) -> Iterable[str]:

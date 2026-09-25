@@ -4,8 +4,10 @@ import subprocess
 import unittest.mock
 
 import pytest
+from assets import get_jpeg_image_asset
 
-from madam.ffmpeg import FFmpegProcessor, _parse_version
+from madam import Madam
+from madam.ffmpeg import FFmpegMetadataProcessor, FFmpegProcessor, _parse_version
 
 
 class TestParseVersion:
@@ -83,3 +85,48 @@ class TestFFmpegProcessorInit:
 
         proc = FFmpegProcessor(config={'ffmpeg': {'threads': 0}})
         assert proc._threads == multiprocessing.cpu_count()
+
+
+class TestFFmpegMetadataProcessorInit:
+    def test_raises_environment_error_when_ffprobe_not_found(self, monkeypatch):
+        monkeypatch.setattr(
+            'subprocess.run',
+            unittest.mock.Mock(side_effect=FileNotFoundError),
+        )
+        with pytest.raises(EnvironmentError, match='not found'):
+            FFmpegMetadataProcessor()
+
+    def test_raises_environment_error_when_ffprobe_times_out(self, monkeypatch):
+        monkeypatch.setattr(
+            'subprocess.run',
+            unittest.mock.Mock(side_effect=subprocess.TimeoutExpired('ffprobe', 10)),
+        )
+        with pytest.raises(EnvironmentError, match='timed out'):
+            FFmpegMetadataProcessor()
+
+    def test_raises_environment_error_for_version_below_minimum(self, monkeypatch):
+        result = unittest.mock.MagicMock()
+        result.stdout = b'ffprobe version 3.2 Copyright ...'
+        monkeypatch.setattr('subprocess.run', lambda *a, **kw: result)
+        with pytest.raises(EnvironmentError, match='3.2'):
+            FFmpegMetadataProcessor()
+
+
+class TestMadamWithoutFFprobe:
+    @pytest.fixture
+    def manager(self, monkeypatch):
+        monkeypatch.setattr(
+            'subprocess.run',
+            unittest.mock.Mock(side_effect=FileNotFoundError),
+        )
+        return Madam()
+
+    def test_skips_ffmpeg_metadata_processor(self, manager):
+        assert 'madam.ffmpeg.FFmpegMetadataProcessor' not in manager.metadata_processors
+
+    def test_reads_image_without_ffprobe(self, manager):
+        image = get_jpeg_image_asset()
+
+        asset = manager.read(image.essence)
+
+        assert asset.mime_type == 'image/jpeg'
